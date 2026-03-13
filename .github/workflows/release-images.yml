@@ -3,8 +3,6 @@ name: release-images
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
     tags:
       - "v*.*.*"
 
@@ -18,6 +16,8 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     strategy:
       fail-fast: false
       matrix:
@@ -83,17 +83,18 @@ jobs:
           exit-code: "1"
 
       - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: ${{ always() && hashFiles(format('trivy-{0}.sarif', matrix.name)) != '' }}
         with:
           sarif_file: trivy-${{ matrix.name }}.sarif
 
       - name: Upload scan artifacts
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && hashFiles(format('trivy-{0}.sarif', matrix.name)) != '' }}
         with:
           name: scan-results-${{ matrix.name }}
           path: trivy-${{ matrix.name }}.sarif
+          if-no-files-found: ignore
 
       - name: Log in to GHCR
         uses: docker/login-action@v3

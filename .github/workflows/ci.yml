@@ -9,6 +9,8 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
     steps:
       - name: Check out repository
@@ -20,6 +22,9 @@ jobs:
 
       - name: Run root workflow
         run: |
-          git config --global --add safe.directory /workspaces/polyglot-devcontainers
-          task ci
-        shell: docker run --rm -u root -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" -w /workspaces/polyglot-devcontainers polyglot-devcontainers-root:ci bash -lc "{0}"
+          docker run --rm \
+            -u root \
+            -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" \
+            -w /workspaces/polyglot-devcontainers \
+            polyglot-devcontainers-root:ci \
+            bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
