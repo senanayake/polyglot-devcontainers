@@ -1,0 +1,9 @@
+{
+  "id": "node-engineering",
+  "version": "0.1.0",
+  "name": "Node Engineering",
+  "description": "Enable a pinned pnpm-based Node development workflow.",
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/node"
+  ]
+}

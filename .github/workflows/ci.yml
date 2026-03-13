@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Phase 0 image
+        run: |
+          docker build --file .devcontainer/Containerfile --tag polyglot-devcontainers-phase-0 .
+
+      - name: Run Phase 0 workflow
+        run: task ci
+        shell: docker run --rm -u root -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" -w /workspaces/polyglot-devcontainers polyglot-devcontainers-phase-0 bash -lc "{0}"

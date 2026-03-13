@@ -1,0 +1,30 @@
+version: "3"
+
+tasks:
+  init:
+    cmds:
+      - python tasks.py init
+
+  lint:
+    cmds:
+      - python tasks.py lint
+
+  test:
+    cmds:
+      - python tasks.py test
+
+  scan:
+    cmds:
+      - python tasks.py scan
+      - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
+
+  format:
+    cmds:
+      - python tasks.py format
+
+  ci:
+    cmds:
+      - task init
+      - task lint
+      - task test
+      - task scan

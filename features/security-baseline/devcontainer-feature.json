@@ -1,0 +1,9 @@
+{
+  "id": "security-baseline",
+  "version": "0.1.0",
+  "name": "Security Baseline",
+  "description": "Install Task, Gitleaks, and baseline security tooling.",
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ]
+}

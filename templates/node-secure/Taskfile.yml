@@ -1,0 +1,33 @@
+version: "3"
+
+tasks:
+  init:
+    cmds:
+      - corepack pnpm install
+
+  lint:
+    cmds:
+      - corepack pnpm lint
+      - corepack pnpm format:check
+      - corepack pnpm typecheck
+
+  test:
+    cmds:
+      - corepack pnpm test
+
+  scan:
+    cmds:
+      - mkdir -p .artifacts/scans
+      - corepack pnpm audit --prod --audit-level high --json > .artifacts/scans/pnpm-audit.json
+      - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
+
+  format:
+    cmds:
+      - corepack pnpm format
+
+  ci:
+    cmds:
+      - task init
+      - task lint
+      - task test
+      - task scan

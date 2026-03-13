@@ -1,0 +1,9 @@
+{
+  "id": "python-engineering",
+  "version": "0.1.0",
+  "name": "Python Engineering",
+  "description": "Install Python development workflow helpers.",
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/python"
+  ]
+}

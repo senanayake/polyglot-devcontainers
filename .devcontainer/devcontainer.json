@@ -1,0 +1,24 @@
+{
+  "name": "polyglot-devcontainers-phase-0",
+  "build": {
+    "dockerfile": "Containerfile",
+    "context": ".."
+  },
+  "postCreateCommand": "task init && pre-commit install",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/workspaces/polyglot-devcontainers/examples/python-example/.venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.analysis.typeCheckingMode": "basic"
+      },
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "editorconfig.editorconfig"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}

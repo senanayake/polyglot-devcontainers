@@ -1,0 +1,36 @@
+version: "3"
+
+tasks:
+  init:
+    desc: Bootstrap the repository development environment
+    cmds:
+      - python examples/python-example/tasks.py init
+
+  lint:
+    desc: Run repository quality checks
+    cmds:
+      - python examples/python-example/tasks.py lint
+
+  test:
+    desc: Run automated tests
+    cmds:
+      - python examples/python-example/tasks.py test
+
+  scan:
+    desc: Run security checks and write scan artifacts
+    cmds:
+      - python examples/python-example/tasks.py scan
+      - gitleaks git . --no-banner --redact --report-format sarif --report-path examples/python-example/.artifacts/scans/gitleaks.sarif
+
+  format:
+    desc: Format repository Python sources
+    cmds:
+      - python examples/python-example/tasks.py format
+
+  ci:
+    desc: Run the full repository workflow
+    cmds:
+      - task init
+      - task lint
+      - task test
+      - task scan

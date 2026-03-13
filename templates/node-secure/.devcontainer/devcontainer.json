@@ -1,0 +1,20 @@
+{
+  "name": "node-secure",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+  "features": {
+    "../../features/security-baseline": {},
+    "../../features/node-engineering": {},
+    "../../features/agent-runtime": {}
+  },
+  "postCreateCommand": "task init",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "vitest.explorer"
+      ]
+    }
+  },
+  "remoteUser": "node"
+}

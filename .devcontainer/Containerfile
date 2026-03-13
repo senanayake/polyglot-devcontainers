@@ -1,0 +1,12 @@
+FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
+
+USER root
+
+COPY features /tmp/features
+
+RUN bash /tmp/features/security-baseline/install.sh \
+    && bash /tmp/features/python-engineering/install.sh \
+    && bash /tmp/features/agent-runtime/install.sh \
+    && rm -rf /tmp/features
+
+USER vscode

@@ -1,0 +1,9 @@
+{
+  "id": "agent-runtime",
+  "version": "0.1.0",
+  "name": "Agent Runtime",
+  "description": "Install agent-friendly command-line utilities.",
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ]
+}
