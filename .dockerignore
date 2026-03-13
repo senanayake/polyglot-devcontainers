@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+**/.venv
+**/.tmp
+**/.artifacts
+**/.mypy_cache
+**/.pytest_cache
+**/.ruff_cache
+**/.coverage
+**/coverage
+**/dist
+**/node_modules
+**/.pnpm-store

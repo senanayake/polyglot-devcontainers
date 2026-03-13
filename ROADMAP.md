@@ -75,10 +75,26 @@ container while preserving the standard task contract and feature composition.
 
 Planned:
 
-- published images
-- container scanning
-- registry distribution
-- signing and supply-chain improvements
+- build validated OCI images for the repository root environment and selected templates
+- publish public images to a free OCI registry using open standards
+- run `task ci` inside the built container before publication
+- add container image scanning as part of the standard release workflow
+- sign published images and attach provenance attestations
+- document supported tags, retention rules, and verification steps
+
+Initial delivery target:
+
+- publish the root repository image
+- publish the Python plus Node / TypeScript polyglot image
+- use GitHub Actions for CI and GHCR for public image hosting
+- preserve the existing task contract as the single validation interface
+
+Guiding approach:
+
+- start with a small number of published images rather than every template
+- keep CI behavior aligned with the local container-first workflow
+- use free and open tooling for build, scan, signing, and verification
+- prefer standard OCI-compatible outputs so registry choices can evolve later
 
 ### Phase 7 - Agent-Optimized Environments
 
@@ -100,3 +116,7 @@ The repository still avoids:
 - polyglot templates without a validated workflow need
 - large custom Dockerfiles that replace feature composition
 - combining unrelated runtimes in ways that increase maintenance burden without improving the development workflow
+- publishing every template image before there is a clear maintenance and support model
+- release pipelines that bypass `task ci`
+- registry-specific build logic that makes migration difficult
+- paid-only infrastructure requirements for the default open-source workflow

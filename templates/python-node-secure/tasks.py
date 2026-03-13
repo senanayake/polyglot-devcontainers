@@ -31,7 +31,7 @@ def init() -> None:
         run([sys.executable, "-m", "venv", str(VENV_DIR)])
     run([str(PYTHON), "-m", "pip", "install", "--upgrade", "pip==26.0.1"])
     run([str(PYTHON), "-m", "pip", "install", "-e", ".[dev]"])
-    run(PNPM + ["install"])
+    run(PNPM + ["install", "--frozen-lockfile", "--force"])
 
 
 def lint() -> None:

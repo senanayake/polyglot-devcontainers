@@ -23,6 +23,10 @@ Open the repository in the devcontainer, then run `task ci`.
 GitHub Actions validates the same image definition by building
 `.devcontainer/Containerfile` and running `task ci` inside that container.
 
+Phase 6 infrastructure is prepared for publishing a small set of validated
+OCI images to GHCR with Trivy scanning, Cosign signing, and provenance
+attestations.
+
 ## Documentation
 
 The documentation is organized with the Diataxis approach:

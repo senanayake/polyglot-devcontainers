@@ -5,4 +5,5 @@ repository.
 
 - [Use the Templates](./use-the-templates.md)
 - [Compose Features](./compose-features.md)
+- [Release Images](./release-images.md)
 - [Run the Security Workflow](./run-the-security-workflow.md)
