@@ -6,7 +6,7 @@ The project follows Gall's Law:
 
 > A complex system that works is invariably found to have evolved from a simple system that worked.
 
-Phases 0 through 4 are now implemented. Phases 5 through 7 remain future work.
+Phases 0 through 5 are now implemented. Phases 6 and 7 remain future work.
 
 ## Implemented
 
@@ -60,24 +60,16 @@ Delivered:
 
 These features are intentionally modular and composable.
 
-## Future Work
-
 ### Phase 5 - Polyglot Devcontainers
 
-Planned:
+Delivered:
 
-- support shared development environments for common multi-language workflows
-- begin with a small set of validated language combinations instead of a universal all-in-one container
-- prioritize combinations with clear engineering value, starting with Python plus Node / TypeScript
-- preserve the standard task contract across polyglot templates
-- continue using composable Features and minimal container configuration
-- use additional service containers only when needed for dependencies such as databases or message brokers
+- `templates/python-node-secure`
 
-Guiding approach:
+This template validates a focused Python plus Node / TypeScript workflow in one
+container while preserving the standard task contract and feature composition.
 
-- polyglot support should expand incrementally from proven single-language templates
-- the default should remain focused, maintainable environments rather than maximal images
-- each polyglot template should represent a real workflow that benefits from multiple runtimes in one workspace
+## Future Work
 
 ### Phase 6 - CI/CD and Image Distribution
 

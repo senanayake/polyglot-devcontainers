@@ -1,9 +1,10 @@
 # polyglot-devcontainers
 
-`polyglot-devcontainers` now delivers the roadmap through Phase 4:
+`polyglot-devcontainers` now delivers the roadmap through Phase 5:
 
 - a hardened Python baseline
 - reusable Python and Node/TypeScript templates
+- a focused Python and Node/TypeScript polyglot template
 - a composable feature library
 - documentation organized using the Diataxis model
 
@@ -38,6 +39,7 @@ The documentation is organized with the Diataxis approach:
 - Phase 2: reusable `templates/python-secure`
 - Phase 3: reusable `templates/node-secure`
 - Phase 4: composable features under `features/`
+- Phase 5: reusable `templates/python-node-secure`
 
 ## Machine-Agnostic Contract
 

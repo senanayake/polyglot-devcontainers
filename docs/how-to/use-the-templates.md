@@ -16,6 +16,15 @@
 4. Reopen the repository in a devcontainer.
 5. Run `task ci`.
 
+## Start from the Python and Node template
+
+1. Copy `templates/python-node-secure` into your new repository.
+2. Update the package metadata in `pyproject.toml` and `package.json`.
+3. Rename the Python package under `backend/src/`.
+4. Replace the TypeScript sample module under `frontend/src/`.
+5. Reopen the repository in a devcontainer.
+6. Run `task ci`.
+
 ## Keep the contract unchanged
 
 Do not rename the required tasks:
