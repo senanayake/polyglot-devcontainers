@@ -27,11 +27,13 @@ jobs:
             dockerfile: .devcontainer/Containerfile
             context: .
             workdir: /workspaces/polyglot-devcontainers
+            description: Reference Python engineering container for polyglot-devcontainers.
           - name: python-node
             image_name: polyglot-devcontainers-python-node
             dockerfile: templates/python-node-secure/.devcontainer/Containerfile
             context: .
             workdir: /workspaces/polyglot-devcontainers/templates/python-node-secure
+            description: Focused Python and Node / TypeScript polyglot container for polyglot-devcontainers.
 
     steps:
       - name: Check out repository
@@ -51,6 +53,9 @@ jobs:
             type=raw,value=main,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=${{ matrix.description }}
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.title=${{ matrix.image_name }}
 
       - name: Build image for validation
         uses: docker/build-push-action@v6
