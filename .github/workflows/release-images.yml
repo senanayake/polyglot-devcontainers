@@ -73,14 +73,17 @@ jobs:
             bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
 
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          image-ref: ${{ matrix.image_name }}:ci
-          format: sarif
-          output: trivy-${{ matrix.name }}.sarif
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: "1"
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ github.workspace }}:/workspace" \
+            aquasec/trivy:0.65.0 \
+            image \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --format sarif \
+            --output "/workspace/trivy-${{ matrix.name }}.sarif" \
+            "${{ matrix.image_name }}:ci"
 
       - name: Upload Trivy results
         uses: github/codeql-action/upload-sarif@v4
