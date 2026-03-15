@@ -1,0 +1,9 @@
+.venv/
+.tmp/
+.artifacts/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+src/*.egg-info/
+src/**/*.egg-info/
