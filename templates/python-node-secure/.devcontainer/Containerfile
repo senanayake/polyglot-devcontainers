@@ -1,16 +1,16 @@
 FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
 
-LABEL org.opencontainers.image.source="https://github.com/senanayake/polyglot-devcontainers" \
-      org.opencontainers.image.description="Focused Python and Node / TypeScript polyglot container for polyglot-devcontainers." \
-      org.opencontainers.image.licenses="MIT"
-
 USER root
 
-COPY features /tmp/features
+ARG TASK_VERSION=3.49.1
+ARG GITLEAKS_VERSION=8.30.0
+ARG PRE_COMMIT_VERSION=4.2.0
+ARG UV_VERSION=0.8.13
+ARG PNPM_VERSION=10.7.0
 
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+    && apt-get install -y --no-install-recommends ca-certificates curl git gnupg jq ripgrep shellcheck tar unzip \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
     | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
@@ -18,10 +18,14 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     > /etc/apt/sources.list.d/nodesource.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends nodejs \
-    && bash /tmp/features/security-baseline/install.sh \
-    && bash /tmp/features/python-engineering/install.sh \
-    && bash /tmp/features/node-engineering/install.sh \
-    && bash /tmp/features/agent-runtime/install.sh \
-    && rm -rf /var/lib/apt/lists/* /tmp/features /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
+    && curl -sSL https://taskfile.dev/install.sh | sh -s -- -d -b /usr/local/bin "v${TASK_VERSION}" \
+    && curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+    | tar -xz -C /usr/local/bin gitleaks \
+    && chmod +x /usr/local/bin/gitleaks \
+    && python3 -m pip install --no-cache-dir "pre-commit==${PRE_COMMIT_VERSION}" "uv==${UV_VERSION}" \
+    && corepack enable \
+    && corepack prepare "pnpm@${PNPM_VERSION}" --activate \
+    && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
+    && rm -rf /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
 
 USER vscode

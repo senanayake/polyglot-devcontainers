@@ -25,6 +25,14 @@
 5. Reopen the repository in a devcontainer.
 6. Run `task ci`.
 
+## Start from the Java template
+
+1. Copy `templates/java-secure` into your new repository.
+2. Update the project name in `settings.gradle.kts`.
+3. Replace the sample sources under `src/main/java/` and `src/test/java/`.
+4. Reopen the repository in a devcontainer.
+5. Run `task ci`.
+
 ## Keep the contract unchanged
 
 Do not rename the required tasks:

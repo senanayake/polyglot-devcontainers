@@ -1,0 +1,25 @@
+{
+  "name": "java-secure",
+  "build": {
+    "dockerfile": "Containerfile",
+    "context": ".."
+  },
+  "postCreateCommand": "task init",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "java.import.gradle.enabled": true,
+        "[java]": {
+          "editor.defaultFormatter": "redhat.java"
+        }
+      },
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-gradle"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}

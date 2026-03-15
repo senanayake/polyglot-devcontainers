@@ -5,4 +5,5 @@ repository by building something in sequence.
 
 - [Create a Python Workspace](./create-a-python-workspace.md)
 - [Create a Node Workspace](./create-a-node-workspace.md)
+- [Create a Java Workspace](./create-a-java-workspace.md)
 - [Create a Polyglot Workspace](./create-a-polyglot-workspace.md)

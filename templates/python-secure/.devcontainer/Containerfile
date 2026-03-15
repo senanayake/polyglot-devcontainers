@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
+
+USER root
+
+ARG TASK_VERSION=3.49.1
+ARG GITLEAKS_VERSION=8.30.0
+ARG PRE_COMMIT_VERSION=4.2.0
+ARG UV_VERSION=0.8.13
+
+RUN rm -f /etc/apt/sources.list.d/yarn.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl git jq ripgrep shellcheck tar unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -sSL https://taskfile.dev/install.sh | sh -s -- -d -b /usr/local/bin "v${TASK_VERSION}" \
+    && curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+    | tar -xz -C /usr/local/bin gitleaks \
+    && chmod +x /usr/local/bin/gitleaks \
+    && python3 -m pip install --no-cache-dir "pre-commit==${PRE_COMMIT_VERSION}" "uv==${UV_VERSION}" \
+    && ln -sf /usr/bin/fdfind /usr/local/bin/fd
+
+USER vscode

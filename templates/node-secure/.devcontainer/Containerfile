@@ -1,0 +1,20 @@
+FROM mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+
+USER root
+
+ARG TASK_VERSION=3.49.1
+ARG GITLEAKS_VERSION=8.30.0
+ARG PNPM_VERSION=10.7.0
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl git jq ripgrep shellcheck tar unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -sSL https://taskfile.dev/install.sh | sh -s -- -d -b /usr/local/bin "v${TASK_VERSION}" \
+    && curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+    | tar -xz -C /usr/local/bin gitleaks \
+    && chmod +x /usr/local/bin/gitleaks \
+    && corepack enable \
+    && corepack prepare "pnpm@${PNPM_VERSION}" --activate \
+    && ln -sf /usr/bin/fdfind /usr/local/bin/fd
+
+USER node

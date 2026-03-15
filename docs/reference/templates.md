@@ -29,3 +29,14 @@ Contains:
 - Python sample package and tests under `backend/`
 - TypeScript sample module and tests under `frontend/`
 - pinned Python developer tooling, pinned `pnpm`, and pre-commit configuration
+
+## java-secure
+
+Contains:
+
+- Java devcontainer definition based on the official Java devcontainer image
+- Taskfile using a Gradle-first workflow
+- sample Java library and JUnit tests
+- Spotless formatting checks
+- SpotBugs with FindSecBugs
+- Trivy-based dependency vulnerability auditing

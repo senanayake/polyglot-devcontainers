@@ -1,11 +1,13 @@
 # polyglot-devcontainers
 
-`polyglot-devcontainers` now delivers the roadmap through Phase 5:
+`polyglot-devcontainers` now delivers the roadmap through Phase 8:
 
 - a hardened Python baseline
 - reusable Python and Node/TypeScript templates
+- a reusable Java template with a Gradle-first workflow
 - a focused Python and Node/TypeScript polyglot template
 - a composable feature library
+- improved IDE-first devcontainer defaults across the active templates
 - documentation organized using the Diataxis model
 
 Every environment in this repository follows the same task contract:
@@ -23,9 +25,8 @@ Open the repository in the devcontainer, then run `task ci`.
 GitHub Actions validates the same image definition by building
 `.devcontainer/Containerfile` and running `task ci` inside that container.
 
-Phase 6 infrastructure is prepared for publishing a small set of validated
-OCI images to GHCR with Trivy scanning, Cosign signing, and provenance
-attestations.
+Validated OCI images are published to GHCR with Trivy scanning, Cosign signing,
+and provenance attestations.
 
 ## Documentation
 
@@ -44,6 +45,9 @@ The documentation is organized with the Diataxis approach:
 - Phase 3: reusable `templates/node-secure`
 - Phase 4: composable features under `features/`
 - Phase 5: reusable `templates/python-node-secure`
+- Phase 6: validated and published OCI images
+- Phase 7: reusable `templates/java-secure`
+- Phase 8: IDE-first devcontainer customizations across active templates
 
 ## Machine-Agnostic Contract
 

@@ -1,0 +1,9 @@
+{
+  "id": "java-engineering",
+  "version": "0.1.0",
+  "name": "Java Engineering",
+  "description": "Install a pinned Gradle-based Java development workflow.",
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/java"
+  ]
+}
