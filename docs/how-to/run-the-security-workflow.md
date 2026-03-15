@@ -19,6 +19,14 @@ task upgrade
 This performs the ecosystem-specific dependency upgrade workflow and then
 re-verifies the workspace.
 
+Where implemented, you can also inspect the dependency evidence and plan before
+mutating the workspace:
+
+```bash
+task deps:inventory
+task deps:plan
+```
+
 Current scope:
 
 - Python templates and published-image examples update exact-pinned Python dev
@@ -41,15 +49,23 @@ Node template artifacts are written to:
 
 Python upgrade artifacts are written to:
 
+- `.artifacts/scans/dependency-inventory.json`
+- `.artifacts/scans/dependency-plan.json`
 - `.artifacts/scans/pypi-upgrades.json`
 
 Java upgrade artifacts are written to:
 
+- `.artifacts/scans/dependency-inventory.json`
+- `.artifacts/scans/dependency-plan.json`
 - `.artifacts/scans/gradle-dependency-updates.json`
 
 ## Interpret the results
 
 - `pip-audit.json` and `pnpm-audit.json` contain dependency findings.
+- `dependency-inventory.json` records the currently declared or locked
+  dependencies used as the basis for later planning.
+- `dependency-plan.json` records the currently known update candidates before
+  any files are changed.
 - `pypi-upgrades.json` records the current and latest Python package versions
   considered by the upgrade workflow.
 - `gradle-dependency-updates.json` records the dependency update report produced

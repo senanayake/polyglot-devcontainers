@@ -4,34 +4,86 @@ tasks:
   init:
     cmds:
       - mkdir -p .artifacts/scans
-      - GRADLE_USER_HOME=.gradle gradle --no-daemon --write-locks testClasses
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --write-locks testClasses
 
   lint:
     cmds:
-      - GRADLE_USER_HOME=.gradle gradle --no-daemon spotlessCheck spotbugsMain spotbugsTest
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon spotlessCheck spotbugsMain spotbugsTest
 
   test:
     cmds:
-      - GRADLE_USER_HOME=.gradle gradle --no-daemon test
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon test
 
   scan:
     cmds:
       - mkdir -p .artifacts/scans
-      - GRADLE_USER_HOME=.gradle gradle --no-daemon testClasses
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon testClasses
       - trivy fs --scanners vuln --format json --output .artifacts/scans/trivy-java.json .
       - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
 
+  deps:inventory:
+    cmds:
+      - mkdir -p .artifacts/scans
+      - >
+        jq -Rn
+        '[inputs | select(length > 0 and (startswith("#") | not)) | split("=")
+        as $parts | ($parts[0]) as $dependency | ($dependency |
+        capture("^(?<coordinates>.+):(?<current_version>[^:]+)$")) as $parsed
+        | {name: $parsed.coordinates, scope: "locked", specifier: $dependency,
+        current_version: $parsed.current_version, configurations: (($parts[1]
+        // "") | split(",") | map(select(length > 0)))}] | {ecosystem: "java",
+        source: "gradle.lockfile", dependencies: .}'
+        gradle.lockfile > .artifacts/scans/dependency-inventory.json
+
+  deps:plan:
+    cmds:
+      - mkdir -p .artifacts/scans
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --no-parallel dependencyUpdates -Drevision=release -DoutputFormatter=json -DoutputDir=.artifacts/scans -DreportfileName=gradle-dependency-updates
+      - >
+        jq
+        'def numeric_parts($value): if $value == null then [] else [$value |
+        scan("\\d+") | tonumber] end; def component_at($parts; $index): if
+        ($parts | length) > $index then $parts[$index] else 0 end; def
+        classify($current; $latest): if $current == null or $latest == null
+        then "none" else (numeric_parts($current)) as $c |
+        (numeric_parts($latest)) as $l | if component_at($c; 0) !=
+        component_at($l; 0) then "major" elif component_at($c; 1) !=
+        component_at($l; 1) then "minor" elif component_at($c; 2) !=
+        component_at($l; 2) then "patch" elif $current != $latest then
+        "variant" else "none" end end; (.outdated.dependencies // []) as
+        $outdated | (.outdated.gradle // {}) as $gradle_update | {ecosystem:
+        "java", source: "gradle-dependency-updates.json", dependencies:
+        [(.current.dependencies // [])[] as $current | ($outdated[]? |
+        select(.group == $current.group and .name == $current.name) |
+        .available.release // .available.milestone // .available.integration)
+        as $latest | {name: ($current.group + ":" + $current.name), scope:
+        "direct", current_version: $current.version, latest_version: $latest,
+        update_type: classify($current.version; $latest), will_update:
+        ($latest != null and $latest != $current.version)}], gradle:
+        {current_version: (.gradle.current // null), latest_version:
+        ($gradle_update.releaseCandidate // $gradle_update.nightly //
+        $gradle_update.current // null), update_type:
+        classify(.gradle.current;
+        ($gradle_update.releaseCandidate // $gradle_update.nightly //
+        $gradle_update.current // null)), will_update:
+        (($gradle_update.releaseCandidate // $gradle_update.nightly //
+        $gradle_update.current // null) != null and (.gradle.current !=
+        ($gradle_update.releaseCandidate // $gradle_update.nightly //
+        $gradle_update.current // null)))}}'
+        .artifacts/scans/gradle-dependency-updates.json >
+        .artifacts/scans/dependency-plan.json
+
   format:
     cmds:
-      - GRADLE_USER_HOME=.gradle gradle --no-daemon spotlessApply
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon spotlessApply
 
   upgrade:
     cmds:
-      - mkdir -p .artifacts/scans
-      - GRADLE_USER_HOME=.gradle gradle --no-daemon --no-parallel dependencyUpdates -Drevision=release -DoutputFormatter=json -DoutputDir=.artifacts/scans -DreportfileName=gradle-dependency-updates
-      - GRADLE_USER_HOME=.gradle gradle --no-daemon --no-parallel useLatestVersions -Drevision=release
-      - GRADLE_USER_HOME=.gradle gradle --no-daemon --no-parallel useLatestVersionsCheck -Drevision=release
-      - GRADLE_USER_HOME=.gradle gradle --no-daemon --write-locks test
+      - task deps:inventory
+      - task deps:plan
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --no-parallel useLatestVersions -Drevision=release
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --no-parallel useLatestVersionsCheck -Drevision=release
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --write-locks test
       - task lint
       - task scan
 

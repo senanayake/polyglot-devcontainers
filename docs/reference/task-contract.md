@@ -14,6 +14,8 @@ Some repositories may also expose optional helper tasks such as:
 
 ```bash
 task format
+task deps:inventory
+task deps:plan
 task upgrade
 ```
 
@@ -26,6 +28,8 @@ These helpers must extend the standard workflow rather than replace it.
 - `test`: run automated tests
 - `scan`: run security checks
 - `ci`: run the full workflow
+- `deps:inventory` (optional): write normalized dependency inventory artifacts
+- `deps:plan` (optional): write normalized dependency update planning artifacts
 - `upgrade` (optional): run a validated dependency-upgrade workflow and
   re-verify the repository
 

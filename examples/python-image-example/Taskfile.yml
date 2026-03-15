@@ -18,12 +18,22 @@ tasks:
       - python tasks.py scan
       - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
 
+  deps:inventory:
+    cmds:
+      - python tasks.py inventory
+
+  deps:plan:
+    cmds:
+      - python tasks.py plan
+
   format:
     cmds:
       - python tasks.py format
 
   upgrade:
     cmds:
+      - task deps:inventory
+      - task deps:plan
       - python tasks.py upgrade
       - task ci
 
