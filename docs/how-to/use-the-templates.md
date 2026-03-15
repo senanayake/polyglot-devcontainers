@@ -33,6 +33,9 @@
 4. Reopen the repository in a devcontainer.
 5. Run `task ci`.
 
+If you want to use the published Java image directly instead of copying the
+template Containerfile, follow [Use the Published Java Image](./use-the-published-java-image.md).
+
 ## Keep the contract unchanged
 
 Do not rename the required tasks:
