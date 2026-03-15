@@ -22,6 +22,11 @@ tasks:
     cmds:
       - python tasks.py format
 
+  upgrade:
+    cmds:
+      - python tasks.py upgrade
+      - task ci
+
   ci:
     cmds:
       - task init

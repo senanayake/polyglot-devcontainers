@@ -10,6 +10,15 @@ task scan
 task ci
 ```
 
+Some repositories may also expose optional helper tasks such as:
+
+```bash
+task format
+task upgrade
+```
+
+These helpers must extend the standard workflow rather than replace it.
+
 ## Meanings
 
 - `init`: bootstrap the development environment
@@ -17,6 +26,8 @@ task ci
 - `test`: run automated tests
 - `scan`: run security checks
 - `ci`: run the full workflow
+- `upgrade` (optional): run a validated dependency-upgrade workflow and
+  re-verify the repository
 
 ## Phase 1 Python behavior
 

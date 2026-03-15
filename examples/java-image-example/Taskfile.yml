@@ -25,6 +25,16 @@ tasks:
     cmds:
       - GRADLE_USER_HOME=.gradle gradle --no-daemon spotlessApply
 
+  upgrade:
+    cmds:
+      - mkdir -p .artifacts/scans
+      - GRADLE_USER_HOME=.gradle gradle --no-daemon --no-parallel dependencyUpdates -Drevision=release -DoutputFormatter=json -DoutputDir=.artifacts/scans -DreportfileName=gradle-dependency-updates
+      - GRADLE_USER_HOME=.gradle gradle --no-daemon --no-parallel useLatestVersions -Drevision=release
+      - GRADLE_USER_HOME=.gradle gradle --no-daemon --no-parallel useLatestVersionsCheck -Drevision=release
+      - GRADLE_USER_HOME=.gradle gradle --no-daemon --write-locks test
+      - task lint
+      - task scan
+
   ci:
     cmds:
       - task init

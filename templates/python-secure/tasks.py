@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
+import tomllib
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -11,6 +14,7 @@ ARTIFACTS_DIR = ROOT / ".artifacts"
 SCANS_DIR = ARTIFACTS_DIR / "scans"
 VENV_DIR = ROOT / ".venv"
 PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+PYPROJECT = ROOT / "pyproject.toml"
 
 
 def run(command: list[str]) -> None:
@@ -67,12 +71,51 @@ def scan() -> None:
     )
 
 
+def latest_pypi_version(package_name: str) -> str:
+    request_url = f"https://pypi.org/pypi/{package_name}/json"
+    with urllib.request.urlopen(request_url, timeout=30) as response:
+        data = json.load(response)
+    return str(data["info"]["version"])
+
+
+def upgrade() -> None:
+    SCANS_DIR.mkdir(parents=True, exist_ok=True)
+    data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
+    dependencies = data["project"]["optional-dependencies"]["dev"]
+    updates: list[dict[str, str]] = []
+    content = PYPROJECT.read_text(encoding="utf-8")
+
+    for dependency in dependencies:
+        name, current_version = dependency.split("==", maxsplit=1)
+        latest_version = latest_pypi_version(name)
+        updates.append(
+            {
+                "name": name,
+                "current_version": current_version,
+                "latest_version": latest_version,
+                "updated": str(current_version != latest_version).lower(),
+            }
+        )
+        if current_version != latest_version:
+            content = content.replace(
+                f'"{name}=={current_version}"',
+                f'"{name}=={latest_version}"',
+            )
+
+    PYPROJECT.write_text(content, encoding="utf-8")
+    (SCANS_DIR / "pypi-upgrades.json").write_text(
+        json.dumps({"dependencies": updates}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
 COMMANDS = {
     "format": format_code,
     "init": init,
     "lint": lint,
     "scan": scan,
     "test": test,
+    "upgrade": upgrade,
 }
 
 

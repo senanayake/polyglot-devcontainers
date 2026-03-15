@@ -298,6 +298,14 @@ without changing the task contract.
 
 ## Phase 9 - Dependency Detection and Safe Upgrades
 
+Delivered initial slice:
+
+- Python dependency upgrade tasks for `templates/python-secure` and
+  `examples/python-image-example`
+- Java dependency upgrade tasks for `templates/java-secure` and
+  `examples/java-image-example`
+- upgrade artifacts written into `.artifacts/scans/`
+
 Objective:
 
 Automate dependency-oriented detection and safe upgrade workflows before taking

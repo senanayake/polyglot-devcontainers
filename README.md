@@ -1,6 +1,7 @@
 # polyglot-devcontainers
 
-`polyglot-devcontainers` now delivers the roadmap through Phase 8:
+`polyglot-devcontainers` now delivers the roadmap through the initial Phase 9
+dependency-upgrade slice:
 
 - a hardened Python baseline
 - reusable Python and Node/TypeScript templates
@@ -8,6 +9,7 @@
 - a focused Python and Node/TypeScript polyglot template
 - a composable feature library
 - improved IDE-first devcontainer defaults across the active templates
+- initial dependency upgrade workflows for Python and Java
 - documentation organized using the Diataxis model
 
 Every environment in this repository follows the same task contract:
@@ -19,6 +21,14 @@ task test
 task scan
 task ci
 ```
+
+Some environments also expose an optional:
+
+```bash
+task upgrade
+```
+
+when they provide a validated dependency-upgrade workflow.
 
 Open the repository in the devcontainer, then run `task ci`.
 
@@ -54,6 +64,7 @@ The documentation is organized with the Diataxis approach:
 - Phase 6: validated and published OCI images
 - Phase 7: reusable `templates/java-secure`
 - Phase 8: IDE-first devcontainer customizations across active templates
+- Phase 9 (initial slice): Python and Java dependency upgrade workflows through `task upgrade`
 
 ## Machine-Agnostic Contract
 

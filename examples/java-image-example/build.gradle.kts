@@ -1,7 +1,11 @@
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+
 plugins {
     java
     id("com.diffplug.spotless") version "8.0.0"
     id("com.github.spotbugs") version "6.4.4"
+    id("com.github.ben-manes.versions") version "0.53.0"
+    id("se.patrikerdes.use-latest-versions") version "0.2.19"
 }
 
 group = "dev.polyglot.examples"
@@ -42,4 +46,21 @@ spotbugs {
     showProgress.set(true)
     effort.set(com.github.spotbugs.snom.Effort.MAX)
     reportLevel.set(com.github.spotbugs.snom.Confidence.LOW)
+}
+
+fun isNonStable(version: String): Boolean {
+    val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
+    val regex = "^[0-9,.v-]+(-r)?$".toRegex()
+    return !stableKeyword && !regex.matches(version)
+}
+
+tasks.named<DependencyUpdatesTask>("dependencyUpdates").configure {
+    checkForGradleUpdate = false
+    outputFormatter = "json"
+    outputDir = ".artifacts/scans"
+    reportfileName = "gradle-dependency-updates"
+    revision = "release"
+    rejectVersionIf {
+        isNonStable(candidate.version) && !isNonStable(currentVersion)
+    }
 }
