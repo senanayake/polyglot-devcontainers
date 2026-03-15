@@ -40,3 +40,11 @@ Contains:
 - Spotless formatting checks
 - SpotBugs with FindSecBugs
 - Trivy-based dependency vulnerability auditing
+
+## Consumption pattern
+
+Use the templates when you want to author or evolve the container definition in
+this repository.
+
+Use `examples/java-image-example` when you want the stable Java image
+consumption path based on `ghcr.io/senanayake/polyglot-devcontainers-java:main`.

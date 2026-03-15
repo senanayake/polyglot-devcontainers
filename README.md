@@ -72,6 +72,7 @@ works.
 ## Repository Structure
 
 - `examples/python-example`: the validated reference implementation
+- `examples/java-image-example`: a Java workspace that consumes the published GHCR image directly
 - `templates/`: starter repositories built on the task contract
 - `features/`: reusable devcontainer Features
 - `docs/`: Diataxis documentation set

@@ -4,6 +4,9 @@ Use this flow when you want a Java workspace in VS Code based on the published
 image `ghcr.io/senanayake/polyglot-devcontainers-java:main` instead of building
 the template locally.
 
+If you want a ready-made starting point, copy
+`examples/java-image-example` and adjust it for your project.
+
 ## 1. Create a repository folder
 
 Create or open your Java project folder.
