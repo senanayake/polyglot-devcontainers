@@ -1,0 +1,21 @@
+{
+  "name": "java-maintenance-example",
+  "image": "ghcr.io/senanayake/polyglot-devcontainers-java:main",
+  "postCreateCommand": "task init",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "java.test.config": {
+          "workingDirectory": "${workspaceFolder}"
+        }
+      },
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-gradle"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}

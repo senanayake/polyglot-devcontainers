@@ -84,7 +84,9 @@ works.
 
 - `examples/python-example`: the validated reference implementation
 - `examples/python-image-example`: a Python workspace that consumes the published GHCR root image directly
+- `examples/python-maintenance-example`: a richer Python proving fixture for dependency evidence and upgrade experiments
 - `examples/java-image-example`: a Java workspace that consumes the published GHCR image directly
+- `examples/java-maintenance-example`: a richer Java proving fixture for dependency evidence and upgrade experiments
 - `templates/`: starter repositories built on the task contract
 - `features/`: reusable devcontainer Features
 - `docs/`: Diataxis documentation set
