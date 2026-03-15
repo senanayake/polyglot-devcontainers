@@ -28,6 +28,12 @@ GitHub Actions validates the same image definition by building
 Validated OCI images are published to GHCR with Trivy scanning, Cosign signing,
 and provenance attestations.
 
+Current published images:
+
+- `ghcr.io/senanayake/polyglot-devcontainers-root`
+- `ghcr.io/senanayake/polyglot-devcontainers-java`
+- `ghcr.io/senanayake/polyglot-devcontainers-python-node`
+
 ## Documentation
 
 The documentation is organized with the Diataxis approach:

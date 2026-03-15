@@ -6,6 +6,7 @@ template immediately.
 ## Initial images
 
 - `ghcr.io/<owner>/polyglot-devcontainers-root`
+- `ghcr.io/<owner>/polyglot-devcontainers-java`
 - `ghcr.io/<owner>/polyglot-devcontainers-python-node`
 
 ## Tag policy

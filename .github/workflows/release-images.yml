@@ -28,10 +28,16 @@ jobs:
             context: .
             workdir: /workspaces/polyglot-devcontainers
             description: Reference Python engineering container for polyglot-devcontainers.
+          - name: java
+            image_name: polyglot-devcontainers-java
+            dockerfile: templates/java-secure/.devcontainer/Containerfile
+            context: templates/java-secure
+            workdir: /workspaces/polyglot-devcontainers/templates/java-secure
+            description: Gradle-first Java engineering container for polyglot-devcontainers.
           - name: python-node
             image_name: polyglot-devcontainers-python-node
             dockerfile: templates/python-node-secure/.devcontainer/Containerfile
-            context: .
+            context: templates/python-node-secure
             workdir: /workspaces/polyglot-devcontainers/templates/python-node-secure
             description: Focused Python and Node / TypeScript polyglot container for polyglot-devcontainers.
 
