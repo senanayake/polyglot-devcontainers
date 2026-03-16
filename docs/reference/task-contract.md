@@ -33,6 +33,14 @@ These helpers must extend the standard workflow rather than replace it.
 - `upgrade` (optional): run a validated dependency-upgrade workflow and
   re-verify the repository
 
+For Python, the dependency helpers now also emit strategy detection metadata so
+the evidence path can distinguish between workflows such as:
+
+- `uv-lock`
+- `pip-tools`
+- `pyproject-exact-pins`
+- `plain-pyproject`
+
 ## Phase 1 Python behavior
 
 In the root repository:

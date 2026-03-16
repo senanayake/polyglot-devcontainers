@@ -27,10 +27,19 @@ task deps:inventory
 task deps:plan
 ```
 
+For Python, these artifacts now include a `strategy_detection` section that
+records the detected workflow shape, such as:
+
+- `uv-lock`
+- `pip-tools`
+- `pyproject-exact-pins`
+- `plain-pyproject`
+
 Current scope:
 
-- Python templates and published-image examples update exact-pinned Python dev
-  dependencies from PyPI, then rerun the task contract
+- Python templates and published-image examples detect the repository workflow
+  shape and currently automate upgrades only for the `pyproject-exact-pins`
+  case, then rerun the task contract
 - Java templates and published-image examples generate a Gradle dependency
   update report, apply stable version updates, refresh lockfiles, and rerun the
   relevant verification steps
@@ -65,7 +74,8 @@ Java upgrade artifacts are written to:
 - `dependency-inventory.json` records the currently declared or locked
   dependencies used as the basis for later planning.
 - `dependency-plan.json` records the currently known update candidates before
-  any files are changed.
+  any files are changed, including the detected workflow strategy where
+  available.
 - `pypi-upgrades.json` records the current and latest Python package versions
   considered by the upgrade workflow.
 - `gradle-dependency-updates.json` records the dependency update report produced

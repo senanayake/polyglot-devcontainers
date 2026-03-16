@@ -17,6 +17,7 @@ SCANS_DIR = ARTIFACTS_DIR / "scans"
 VENV_DIR = ROOT / ".venv"
 PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 PYPROJECT = ROOT / "pyproject.toml"
+LOCKFILE_CANDIDATES = ("uv.lock", "poetry.lock", "Pipfile.lock", "pdm.lock")
 
 
 def run(command: list[str]) -> None:
@@ -49,7 +50,8 @@ def classify_update(current_version: str, latest_version: str) -> str:
 
 
 def iter_declared_dependencies() -> list[dict[str, str]]:
-    project = read_project_metadata()["project"]
+    metadata = read_project_metadata()
+    project = metadata.get("project", {})
     dependencies: list[dict[str, str]] = []
 
     for dependency in project.get("dependencies", []):
@@ -58,6 +60,11 @@ def iter_declared_dependencies() -> list[dict[str, str]]:
     for scope, scoped_dependencies in project.get("optional-dependencies", {}).items():
         for dependency in scoped_dependencies:
             dependencies.append({"scope": scope, "specifier": dependency})
+
+    for scope, scoped_dependencies in metadata.get("dependency-groups", {}).items():
+        for dependency in scoped_dependencies:
+            if isinstance(dependency, str):
+                dependencies.append({"scope": scope, "specifier": dependency})
 
     return dependencies
 
@@ -71,6 +78,114 @@ def parse_exact_pin(specifier: str) -> tuple[str, str | None]:
 
 def write_json_artifact(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def find_matching_files(pattern: str) -> list[str]:
+    return sorted(str(path.relative_to(ROOT)) for path in ROOT.rglob(pattern))
+
+
+def detect_python_strategy() -> dict[str, Any]:
+    metadata = read_project_metadata()
+    project = metadata.get("project", {})
+    lock_files = [name for name in LOCKFILE_CANDIDATES if (ROOT / name).exists()]
+    requirements_in = find_matching_files("requirements*.in")
+    requirements_txt = find_matching_files("requirements*.txt")
+    dependency_groups = metadata.get("dependency-groups", {})
+    optional_dependencies = project.get("optional-dependencies", {})
+    declared_dependencies = iter_declared_dependencies()
+    exact_pins = sum(
+        1
+        for dependency in declared_dependencies
+        if parse_exact_pin(dependency["specifier"])[1] is not None
+    )
+
+    if "uv.lock" in lock_files:
+        strategy = "uv-lock"
+        upgrade_command_candidates = ["uv lock --upgrade"]
+    elif requirements_in:
+        strategy = "pip-tools"
+        upgrade_command_candidates = ["pip-compile <requirements.in> --upgrade"]
+    elif exact_pins > 0:
+        strategy = "pyproject-exact-pins"
+        upgrade_command_candidates = ["rewrite exact pins in pyproject.toml"]
+    elif PYPROJECT.exists():
+        strategy = "plain-pyproject"
+        upgrade_command_candidates = []
+    else:
+        strategy = "unrecognized"
+        upgrade_command_candidates = []
+
+    return {
+        "strategy": strategy,
+        "manifest_files": [str(PYPROJECT.name)] if PYPROJECT.exists() else [],
+        "lock_files": lock_files,
+        "requirements_in_files": requirements_in,
+        "requirements_txt_files": requirements_txt,
+        "dependency_groups": sorted(dependency_groups.keys()),
+        "optional_dependency_groups": sorted(optional_dependencies.keys()),
+        "declared_dependency_count": len(declared_dependencies),
+        "exact_pin_count": exact_pins,
+        "upgrade_command_candidates": upgrade_command_candidates,
+    }
+
+
+def build_inventory_artifact() -> dict[str, Any]:
+    dependencies = []
+
+    for dependency in iter_declared_dependencies():
+        name, version = parse_exact_pin(dependency["specifier"])
+        dependencies.append(
+            {
+                "name": name,
+                "scope": dependency["scope"],
+                "specifier": dependency["specifier"],
+                "current_version": version,
+                "exact_pin": version is not None,
+            }
+        )
+
+    return {
+        "ecosystem": "python",
+        "source": str(PYPROJECT.name),
+        "strategy_detection": detect_python_strategy(),
+        "dependencies": dependencies,
+    }
+
+
+def build_plan_artifact() -> dict[str, Any]:
+    inventory_artifact = build_inventory_artifact()
+    strategy = inventory_artifact["strategy_detection"]["strategy"]
+    dependencies = []
+
+    for dependency in inventory_artifact["dependencies"]:
+        current_version = dependency["current_version"]
+        latest_version = None
+        update_type = "native-workflow-required"
+        will_update = False
+
+        if strategy == "pyproject-exact-pins" and current_version is not None:
+            latest_version = latest_pypi_version(dependency["name"])
+            update_type = classify_update(current_version, latest_version)
+            will_update = current_version != latest_version
+
+        dependencies.append(
+            {
+                "name": dependency["name"],
+                "scope": dependency["scope"],
+                "specifier": dependency["specifier"],
+                "current_version": current_version,
+                "latest_version": latest_version,
+                "update_type": update_type,
+                "will_update": will_update,
+            }
+        )
+
+    return {
+        "ecosystem": "python",
+        "source": str(PYPROJECT.name),
+        "strategy_detection": inventory_artifact["strategy_detection"],
+        "dependencies": dependencies,
+    }
 
 
 def init() -> None:
@@ -126,61 +241,14 @@ def latest_pypi_version(package_name: str) -> str:
 
 def inventory() -> dict[str, Any]:
     SCANS_DIR.mkdir(parents=True, exist_ok=True)
-    dependencies = []
-
-    for dependency in iter_declared_dependencies():
-        name, version = parse_exact_pin(dependency["specifier"])
-        dependencies.append(
-            {
-                "name": name,
-                "scope": dependency["scope"],
-                "specifier": dependency["specifier"],
-                "current_version": version,
-                "exact_pin": version is not None,
-            }
-        )
-
-    artifact = {
-        "ecosystem": "python",
-        "source": str(PYPROJECT.name),
-        "dependencies": dependencies,
-    }
+    artifact = build_inventory_artifact()
     write_json_artifact(SCANS_DIR / "dependency-inventory.json", artifact)
     return artifact
 
 
 def plan() -> dict[str, Any]:
     SCANS_DIR.mkdir(parents=True, exist_ok=True)
-    dependencies = []
-
-    for dependency in iter_declared_dependencies():
-        name, current_version = parse_exact_pin(dependency["specifier"])
-        latest_version = latest_pypi_version(name) if current_version is not None else None
-        dependencies.append(
-            {
-                "name": name,
-                "scope": dependency["scope"],
-                "specifier": dependency["specifier"],
-                "current_version": current_version,
-                "latest_version": latest_version,
-                "update_type": (
-                    classify_update(current_version, latest_version)
-                    if current_version is not None and latest_version is not None
-                    else "unmanaged"
-                ),
-                "will_update": (
-                    current_version is not None
-                    and latest_version is not None
-                    and current_version != latest_version
-                ),
-            }
-        )
-
-    artifact = {
-        "ecosystem": "python",
-        "source": str(PYPROJECT.name),
-        "dependencies": dependencies,
-    }
+    artifact = build_plan_artifact()
     write_json_artifact(SCANS_DIR / "dependency-plan.json", artifact)
     return artifact
 
@@ -188,6 +256,14 @@ def plan() -> dict[str, Any]:
 def upgrade() -> None:
     SCANS_DIR.mkdir(parents=True, exist_ok=True)
     dependency_plan = plan()
+    strategy = dependency_plan["strategy_detection"]["strategy"]
+
+    if strategy != "pyproject-exact-pins":
+        raise SystemExit(
+            "task upgrade currently supports only the 'pyproject-exact-pins' strategy; "
+            f"detected '{strategy}' and recorded native workflow hints in dependency-plan.json"
+        )
+
     content = PYPROJECT.read_text(encoding="utf-8")
     updates: list[dict[str, str]] = []
 
@@ -215,7 +291,12 @@ def upgrade() -> None:
     PYPROJECT.write_text(content, encoding="utf-8")
     write_json_artifact(
         SCANS_DIR / "pypi-upgrades.json",
-        {"ecosystem": "python", "source": str(PYPROJECT.name), "dependencies": updates},
+        {
+            "ecosystem": "python",
+            "source": str(PYPROJECT.name),
+            "strategy_detection": dependency_plan["strategy_detection"],
+            "dependencies": updates,
+        },
     )
 
 
