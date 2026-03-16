@@ -81,6 +81,10 @@ def write_json_artifact(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
+def print_status(message: str) -> None:
+    print(f"[python-deps] {message}", flush=True)
+
+
 def find_matching_files(pattern: str) -> list[str]:
     return sorted(str(path.relative_to(ROOT)) for path in ROOT.rglob(pattern))
 
@@ -312,15 +316,32 @@ def latest_pypi_version(package_name: str) -> str:
 
 def inventory() -> dict[str, Any]:
     SCANS_DIR.mkdir(parents=True, exist_ok=True)
+    print_status("collecting dependency inventory")
     artifact = build_inventory_artifact()
-    write_json_artifact(SCANS_DIR / "dependency-inventory.json", artifact)
+    inventory_path = SCANS_DIR / "dependency-inventory.json"
+    write_json_artifact(inventory_path, artifact)
+    print_status(
+        "inventory complete: "
+        f"strategy={artifact['strategy_detection']['strategy']} "
+        f"dependencies={len(artifact['dependencies'])} "
+        f"artifact={inventory_path}"
+    )
     return artifact
 
 
 def plan() -> dict[str, Any]:
     SCANS_DIR.mkdir(parents=True, exist_ok=True)
+    print_status("building dependency update plan")
     artifact = build_plan_artifact()
-    write_json_artifact(SCANS_DIR / "dependency-plan.json", artifact)
+    plan_path = SCANS_DIR / "dependency-plan.json"
+    write_json_artifact(plan_path, artifact)
+    planned_updates = sum(1 for dependency in artifact["dependencies"] if dependency["will_update"])
+    print_status(
+        "plan complete: "
+        f"strategy={artifact['strategy_detection']['strategy']} "
+        f"planned_updates={planned_updates} "
+        f"artifact={plan_path}"
+    )
     return artifact
 
 
@@ -328,6 +349,7 @@ def upgrade() -> None:
     SCANS_DIR.mkdir(parents=True, exist_ok=True)
     dependency_plan = plan()
     strategy = dependency_plan["strategy_detection"]["strategy"]
+    print_status(f"starting dependency upgrade with strategy={strategy}")
 
     if strategy == "uv-lock":
         before_upgrade = build_uv_package_map()
@@ -355,6 +377,12 @@ def upgrade() -> None:
                 "strategy_detection": dependency_plan["strategy_detection"],
                 "dependencies": uv_updates,
             },
+        )
+        print_status(
+            "upgrade complete: "
+            f"updated={sum(1 for dependency in uv_updates if dependency['updated'] == 'true')} "
+            f"artifact={SCANS_DIR / 'pypi-upgrades.json'} "
+            f"lockfile={UV_LOCK}"
         )
         return
 
@@ -397,6 +425,12 @@ def upgrade() -> None:
             "strategy_detection": dependency_plan["strategy_detection"],
             "dependencies": updates,
         },
+    )
+    print_status(
+        "upgrade complete: "
+        f"updated={sum(1 for dependency in updates if dependency['updated'] == 'true')} "
+        f"artifact={SCANS_DIR / 'pypi-upgrades.json'} "
+        f"manifest={PYPROJECT}"
     )
 
 
