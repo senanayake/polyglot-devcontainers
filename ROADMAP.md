@@ -488,7 +488,8 @@ Current working slice:
   `pyproject-exact-pins`, and `plain-pyproject`
 - `task upgrade` continues to execute the ecosystem-native changes and
   re-verify the repository, with Python currently auto-applying the `uv-lock`
-  and `pyproject-exact-pins` cases until strategy detection proves stable
+  , `pip-tools`, and `pyproject-exact-pins` cases until strategy detection
+  proves stable
 
 Failure signals:
 

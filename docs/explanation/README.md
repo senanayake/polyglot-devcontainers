@@ -5,3 +5,4 @@ Explanation pages describe why the repository is structured the way it is.
 - [Architecture](./architecture.md)
 - [Container-First Workflow](./container-first.md)
 - [Phases 1 to 5](./phases-1-to-4.md)
+- [Python Dependency Workflows](./python-dependency-workflows.md)

@@ -19,6 +19,18 @@ PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 PYPROJECT = ROOT / "pyproject.toml"
 UV_LOCK = ROOT / "uv.lock"
 LOCKFILE_CANDIDATES = ("uv.lock", "poetry.lock", "Pipfile.lock", "pdm.lock")
+IGNORED_SEARCH_PARTS = {
+    ".artifacts",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tmp",
+    ".venv",
+    "build",
+    "dist",
+    "node_modules",
+}
 
 
 def run(command: list[str]) -> None:
@@ -86,7 +98,12 @@ def print_status(message: str) -> None:
 
 
 def find_matching_files(pattern: str) -> list[str]:
-    return sorted(str(path.relative_to(ROOT)) for path in ROOT.rglob(pattern))
+    matches = []
+    for path in ROOT.rglob(pattern):
+        if any(part in IGNORED_SEARCH_PARTS for part in path.parts):
+            continue
+        matches.append(str(path.relative_to(ROOT)))
+    return sorted(matches)
 
 
 def read_uv_lock_metadata() -> dict[str, Any]:
@@ -146,6 +163,129 @@ def build_uv_plan_dependencies() -> list[dict[str, Any]]:
     return dependencies
 
 
+def ensure_venv() -> None:
+    if not PYTHON.exists():
+        run([sys.executable, "-m", "venv", str(VENV_DIR)])
+
+
+def ensure_piptools() -> None:
+    ensure_venv()
+    run([str(PYTHON), "-m", "pip", "install", "--upgrade", "pip==26.0.1"])
+    run([str(PYTHON), "-m", "pip", "install", "pip-tools==7.5.1"])
+
+
+def requirement_lines(path: Path) -> list[str]:
+    entries = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        entries.append(stripped)
+    return entries
+
+
+def parse_compiled_requirements(path: Path) -> dict[str, str]:
+    compiled = {}
+    pattern = re.compile(r"^([A-Za-z0-9_.-]+)==([^ ;]+)")
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or stripped.startswith("--"):
+            continue
+        match = pattern.match(stripped)
+        if match:
+            compiled[match.group(1).lower()] = match.group(2)
+    return compiled
+
+
+def pip_tools_targets() -> list[dict[str, Any]]:
+    targets = []
+    for relative_source in find_matching_files("requirements*.in"):
+        source_path = ROOT / relative_source
+        default_target = source_path.with_suffix(".txt")
+        targets.append(
+            {
+                "source": source_path,
+                "source_rel": relative_source,
+                "target": default_target,
+                "target_rel": str(default_target.relative_to(ROOT)),
+                "target_exists": default_target.exists(),
+            }
+        )
+    return targets
+
+
+def compile_requirements(source_path: Path, output_path: Path, upgrade: bool) -> None:
+    ensure_piptools()
+    command = [
+        str(PYTHON),
+        "-m",
+        "piptools",
+        "compile",
+        str(source_path),
+        "--output-file",
+        str(output_path),
+    ]
+    if upgrade:
+        command.append("--upgrade")
+    run(command)
+
+
+def build_pip_tools_inventory() -> list[dict[str, Any]]:
+    dependencies = []
+    for target in pip_tools_targets():
+        compiled_versions = (
+            parse_compiled_requirements(target["target"]) if target["target_exists"] else {}
+        )
+        for specifier in requirement_lines(target["source"]):
+            name, version = parse_exact_pin(specifier)
+            dependencies.append(
+                {
+                    "name": name,
+                    "scope": target["source_rel"],
+                    "specifier": specifier,
+                    "current_version": compiled_versions.get(name.lower(), version),
+                    "exact_pin": version is not None,
+                    "compiled_target": target["target_rel"],
+                    "compiled_target_exists": target["target_exists"],
+                }
+            )
+    return dependencies
+
+
+def build_pip_tools_plan() -> list[dict[str, Any]]:
+    dependencies = []
+    for target in pip_tools_targets():
+        preview_path = SCANS_DIR / f"{target['source'].stem}.preview.txt"
+        compile_requirements(target["source"], preview_path, upgrade=True)
+        upgraded_versions = parse_compiled_requirements(preview_path)
+        current_versions = (
+            parse_compiled_requirements(target["target"]) if target["target_exists"] else {}
+        )
+        for specifier in requirement_lines(target["source"]):
+            name, current_pin = parse_exact_pin(specifier)
+            current_version = current_versions.get(name.lower(), current_pin)
+            latest_version = upgraded_versions.get(name.lower(), current_version)
+            dependencies.append(
+                {
+                    "name": name,
+                    "scope": target["source_rel"],
+                    "specifier": specifier,
+                    "current_version": current_version,
+                    "latest_version": latest_version,
+                    "update_type": (
+                        classify_update(current_version, latest_version)
+                        if current_version is not None and latest_version is not None
+                        else "compile-generated"
+                    ),
+                    "will_update": current_version != latest_version,
+                    "compiled_target": target["target_rel"],
+                    "compiled_target_exists": target["target_exists"],
+                    "preview_file": str(preview_path.relative_to(ROOT)),
+                }
+            )
+    return dependencies
+
+
 def detect_python_strategy() -> dict[str, Any]:
     metadata = read_project_metadata()
     project = metadata.get("project", {})
@@ -166,7 +306,7 @@ def detect_python_strategy() -> dict[str, Any]:
         upgrade_command_candidates = ["uv lock --upgrade"]
     elif requirements_in:
         strategy = "pip-tools"
-        upgrade_command_candidates = ["pip-compile <requirements.in> --upgrade"]
+        upgrade_command_candidates = ["python -m piptools compile <requirements.in> --upgrade"]
     elif exact_pins > 0:
         strategy = "pyproject-exact-pins"
         upgrade_command_candidates = ["rewrite exact pins in pyproject.toml"]
@@ -197,6 +337,8 @@ def build_inventory_artifact() -> dict[str, Any]:
 
     if strategy["strategy"] == "uv-lock":
         dependencies = iter_uv_locked_dependencies()
+    elif strategy["strategy"] == "pip-tools":
+        dependencies = build_pip_tools_inventory()
     else:
         for dependency in iter_declared_dependencies():
             name, version = parse_exact_pin(dependency["specifier"])
@@ -238,6 +380,15 @@ def build_plan_artifact() -> dict[str, Any]:
                 "dependencies": dependencies,
             }
 
+        if strategy == "pip-tools":
+            dependencies = build_pip_tools_plan()
+            return {
+                "ecosystem": "python",
+                "source": str(PYPROJECT.name),
+                "strategy_detection": inventory_artifact["strategy_detection"],
+                "dependencies": dependencies,
+            }
+
         if strategy == "pyproject-exact-pins" and current_version is not None:
             latest_version = latest_pypi_version(dependency["name"])
             update_type = classify_update(current_version, latest_version)
@@ -264,8 +415,7 @@ def build_plan_artifact() -> dict[str, Any]:
 
 
 def init() -> None:
-    if not PYTHON.exists():
-        run([sys.executable, "-m", "venv", str(VENV_DIR)])
+    ensure_venv()
     run([str(PYTHON), "-m", "pip", "install", "--upgrade", "pip==26.0.1"])
     run([str(PYTHON), "-m", "pip", "install", "-e", ".[dev]"])
 
@@ -386,9 +536,50 @@ def upgrade() -> None:
         )
         return
 
+    if strategy == "pip-tools":
+        plan_dependencies = build_pip_tools_plan()
+        pip_tools_updates = []
+        for target in pip_tools_targets():
+            compile_requirements(target["source"], target["target"], upgrade=True)
+        for dependency in plan_dependencies:
+            pip_tools_updates.append(
+                {
+                    "name": dependency["name"],
+                    "scope": dependency["scope"],
+                    "current_version": dependency["current_version"],
+                    "latest_version": dependency["latest_version"],
+                    "update_type": dependency["update_type"],
+                    "updated": str(dependency["will_update"]).lower(),
+                    "compiled_target": dependency["compiled_target"],
+                }
+            )
+        write_json_artifact(
+            SCANS_DIR / "pypi-upgrades.json",
+            {
+                "ecosystem": "python",
+                "source": "requirements.in",
+                "strategy_detection": dependency_plan["strategy_detection"],
+                "dependencies": pip_tools_updates,
+            },
+        )
+        updated_targets = sorted(
+            {dependency["compiled_target"] for dependency in pip_tools_updates}
+        )
+        updated_count = sum(
+            1 for dependency in pip_tools_updates if dependency["updated"] == "true"
+        )
+        print_status(
+            "upgrade complete: "
+            f"updated={updated_count} "
+            f"artifact={SCANS_DIR / 'pypi-upgrades.json'} "
+            f"compiled_targets={updated_targets}"
+        )
+        return
+
     if strategy != "pyproject-exact-pins":
         raise SystemExit(
-            "task upgrade currently supports only the 'pyproject-exact-pins' strategy; "
+            "task upgrade currently supports only the 'uv-lock', 'pip-tools', and "
+            "'pyproject-exact-pins' strategies; "
             f"detected '{strategy}' and recorded native workflow hints in dependency-plan.json"
         )
 
