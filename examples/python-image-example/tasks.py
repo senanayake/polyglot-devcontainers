@@ -17,6 +17,7 @@ SCANS_DIR = ARTIFACTS_DIR / "scans"
 VENV_DIR = ROOT / ".venv"
 PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 PYPROJECT = ROOT / "pyproject.toml"
+UV_LOCK = ROOT / "uv.lock"
 LOCKFILE_CANDIDATES = ("uv.lock", "poetry.lock", "Pipfile.lock", "pdm.lock")
 
 
@@ -84,6 +85,63 @@ def find_matching_files(pattern: str) -> list[str]:
     return sorted(str(path.relative_to(ROOT)) for path in ROOT.rglob(pattern))
 
 
+def read_uv_lock_metadata() -> dict[str, Any]:
+    return tomllib.loads(UV_LOCK.read_text(encoding="utf-8"))
+
+
+def iter_uv_locked_dependencies() -> list[dict[str, Any]]:
+    dependencies = []
+
+    for package in read_uv_lock_metadata().get("package", []):
+        if not isinstance(package, dict):
+            continue
+        name = str(package.get("name", ""))
+        version = str(package.get("version", ""))
+        source = package.get("source", {})
+        dependencies.append(
+            {
+                "name": name,
+                "scope": "locked",
+                "specifier": f"{name}=={version}",
+                "current_version": version,
+                "exact_pin": True,
+                "source": source.get("registry") if isinstance(source, dict) else None,
+            }
+        )
+
+    return dependencies
+
+
+def build_uv_package_map() -> dict[str, dict[str, Any]]:
+    return {dependency["name"]: dependency for dependency in iter_uv_locked_dependencies()}
+
+
+def build_uv_plan_dependencies() -> list[dict[str, Any]]:
+    original_lock = UV_LOCK.read_text(encoding="utf-8")
+    current_dependencies = build_uv_package_map()
+    run(["uv", "lock", "--upgrade"])
+    upgraded_dependencies = build_uv_package_map()
+    UV_LOCK.write_text(original_lock, encoding="utf-8")
+
+    dependencies = []
+    for name, dependency in current_dependencies.items():
+        latest_version = upgraded_dependencies.get(name, dependency)["current_version"]
+        current_version = dependency["current_version"]
+        dependencies.append(
+            {
+                "name": name,
+                "scope": dependency["scope"],
+                "specifier": dependency["specifier"],
+                "current_version": current_version,
+                "latest_version": latest_version,
+                "update_type": classify_update(current_version, latest_version),
+                "will_update": current_version != latest_version,
+            }
+        )
+
+    return dependencies
+
+
 def detect_python_strategy() -> dict[str, Any]:
     metadata = read_project_metadata()
     project = metadata.get("project", {})
@@ -130,24 +188,28 @@ def detect_python_strategy() -> dict[str, Any]:
 
 
 def build_inventory_artifact() -> dict[str, Any]:
+    strategy = detect_python_strategy()
     dependencies = []
 
-    for dependency in iter_declared_dependencies():
-        name, version = parse_exact_pin(dependency["specifier"])
-        dependencies.append(
-            {
-                "name": name,
-                "scope": dependency["scope"],
-                "specifier": dependency["specifier"],
-                "current_version": version,
-                "exact_pin": version is not None,
-            }
-        )
+    if strategy["strategy"] == "uv-lock":
+        dependencies = iter_uv_locked_dependencies()
+    else:
+        for dependency in iter_declared_dependencies():
+            name, version = parse_exact_pin(dependency["specifier"])
+            dependencies.append(
+                {
+                    "name": name,
+                    "scope": dependency["scope"],
+                    "specifier": dependency["specifier"],
+                    "current_version": version,
+                    "exact_pin": version is not None,
+                }
+            )
 
     return {
         "ecosystem": "python",
         "source": str(PYPROJECT.name),
-        "strategy_detection": detect_python_strategy(),
+        "strategy_detection": strategy,
         "dependencies": dependencies,
     }
 
@@ -162,6 +224,15 @@ def build_plan_artifact() -> dict[str, Any]:
         latest_version = None
         update_type = "native-workflow-required"
         will_update = False
+
+        if strategy == "uv-lock":
+            dependencies = build_uv_plan_dependencies()
+            return {
+                "ecosystem": "python",
+                "source": str(PYPROJECT.name),
+                "strategy_detection": inventory_artifact["strategy_detection"],
+                "dependencies": dependencies,
+            }
 
         if strategy == "pyproject-exact-pins" and current_version is not None:
             latest_version = latest_pypi_version(dependency["name"])
@@ -257,6 +328,35 @@ def upgrade() -> None:
     SCANS_DIR.mkdir(parents=True, exist_ok=True)
     dependency_plan = plan()
     strategy = dependency_plan["strategy_detection"]["strategy"]
+
+    if strategy == "uv-lock":
+        before_upgrade = build_uv_package_map()
+        run(["uv", "lock", "--upgrade"])
+        after_upgrade = build_uv_package_map()
+        uv_updates = []
+        for name, dependency in before_upgrade.items():
+            latest_version = after_upgrade.get(name, dependency)["current_version"]
+            current_version = dependency["current_version"]
+            uv_updates.append(
+                {
+                    "name": name,
+                    "scope": dependency["scope"],
+                    "current_version": current_version,
+                    "latest_version": latest_version,
+                    "update_type": classify_update(current_version, latest_version),
+                    "updated": str(current_version != latest_version).lower(),
+                }
+            )
+        write_json_artifact(
+            SCANS_DIR / "pypi-upgrades.json",
+            {
+                "ecosystem": "python",
+                "source": str(UV_LOCK.name),
+                "strategy_detection": dependency_plan["strategy_detection"],
+                "dependencies": uv_updates,
+            },
+        )
+        return
 
     if strategy != "pyproject-exact-pins":
         raise SystemExit(
