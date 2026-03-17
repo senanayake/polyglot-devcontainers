@@ -11,6 +11,7 @@ VENV_DIR = ROOT / ".venv"
 ARTIFACTS_DIR = ROOT / ".artifacts"
 SCANS_DIR = ARTIFACTS_DIR / "scans"
 PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+UV = "uv.exe" if os.name == "nt" else "uv"
 
 
 def run(command: list[str], *, capture_output: bool = False) -> subprocess.CompletedProcess[str]:
@@ -31,11 +32,7 @@ def run(command: list[str], *, capture_output: bool = False) -> subprocess.Compl
 
 
 def init() -> None:
-    if not PYTHON.exists():
-        run([sys.executable, "-m", "venv", str(VENV_DIR)])
-
-    run([str(PYTHON), "-m", "pip", "install", "--upgrade", "pip==26.0.1"])
-    run([str(PYTHON), "-m", "pip", "install", "-e", ".[dev]"])
+    run([UV, "sync", "--frozen", "--extra", "dev"])
 
 
 def lint() -> None:

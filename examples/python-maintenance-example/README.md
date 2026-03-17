@@ -8,6 +8,9 @@ It exists to pressure-test the Phase 9b dependency evidence and planning flow on
 something more realistic than the minimal math example while still remaining
 small enough to understand quickly.
 
+The repo-owned maintenance fixture now also uses `uv` and a checked-in
+`uv.lock` file as its default Python workflow.
+
 After opening the example in a devcontainer, run:
 
 ```bash

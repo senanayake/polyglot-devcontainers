@@ -10,6 +10,7 @@ Included:
 - a small Python package under `backend/`
 - a small TypeScript module under `frontend/`
 - pinned Python and Node developer tooling
+- a checked-in `uv.lock` file for the Python side of the workspace
 - pre-commit configuration
 
 After opening the template in a devcontainer, run:

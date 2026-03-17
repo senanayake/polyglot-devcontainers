@@ -16,6 +16,7 @@ ARTIFACTS_DIR = ROOT / ".artifacts"
 SCANS_DIR = ARTIFACTS_DIR / "scans"
 VENV_DIR = ROOT / ".venv"
 PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+UV = "uv.exe" if os.name == "nt" else "uv"
 PYPROJECT = ROOT / "pyproject.toml"
 UV_LOCK = ROOT / "uv.lock"
 LOCKFILE_CANDIDATES = ("uv.lock", "poetry.lock", "Pipfile.lock", "pdm.lock")
@@ -268,7 +269,7 @@ def build_uv_plan_dependencies() -> tuple[list[dict[str, Any]], dict[str, Any] |
 
 def ensure_venv() -> None:
     if not PYTHON.exists():
-        run([sys.executable, "-m", "venv", str(VENV_DIR)])
+        run([UV, "sync", "--frozen", "--extra", "dev"])
 
 
 def ensure_piptools() -> None:
@@ -534,9 +535,7 @@ def build_plan_artifact() -> dict[str, Any]:
 
 
 def init() -> None:
-    ensure_venv()
-    run([str(PYTHON), "-m", "pip", "install", "--upgrade", "pip==26.0.1"])
-    run([str(PYTHON), "-m", "pip", "install", "-e", ".[dev]"])
+    run([UV, "sync", "--frozen", "--extra", "dev"])
 
 
 def lint() -> None:

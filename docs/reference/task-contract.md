@@ -42,9 +42,10 @@ the evidence path can distinguish between workflows such as:
 - `plain-pyproject`
 
 In `polyglot-devcontainers`, `uv-lock` is now the first-class Python workflow.
-The other shapes remain important for detection, compatibility, and honest
-artifact generation, but they are not the primary path the repository is
-optimizing going forward.
+The maintained Python examples and templates therefore check in `uv.lock` and
+bootstrap with `uv sync --frozen`. The other shapes remain important for
+detection, compatibility, and honest artifact generation, but they are not the
+primary path the repository is optimizing going forward.
 
 ## Phase 1 Python behavior
 
