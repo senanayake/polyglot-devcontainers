@@ -615,6 +615,14 @@ Decision rule:
 The repository either gains a practical planning workflow, or it decides not to
 promote the experiment further.
 
+Current monorepo experiment:
+
+- a thin `task deps:report` helper now builds a summarized JSON and Markdown
+  report from the existing `dependency-inventory.json` and
+  `dependency-plan.json` artifacts in the Python and Java proving paths
+- this is intentionally a report layer over the current evidence model, not a
+  new planner or separate CLI
+
 ## Experiment 12 - Reduce Input Friction for Proven Planning Workflows
 
 Objective:

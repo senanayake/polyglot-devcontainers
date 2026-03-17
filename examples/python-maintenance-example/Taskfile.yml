@@ -26,6 +26,17 @@ tasks:
     cmds:
       - python tasks.py plan
 
+  deps:report:
+    cmds:
+      - task deps:inventory
+      - task deps:plan
+      - >
+        python ../../scripts/dependency_report.py
+        --inventory .artifacts/scans/dependency-inventory.json
+        --plan .artifacts/scans/dependency-plan.json
+        --json-output .artifacts/scans/dependency-report.json
+        --markdown-output .artifacts/scans/dependency-report.md
+
   format:
     cmds:
       - python tasks.py format

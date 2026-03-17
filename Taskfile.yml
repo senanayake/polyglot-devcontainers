@@ -56,6 +56,16 @@ tasks:
       - task -t templates/node-secure/Taskfile.yml format
       - task -t templates/python-node-secure/Taskfile.yml format
 
+  deps:report:
+    desc: Build dependency summary reports across the Python and Java proving paths
+    cmds:
+      - task -t examples/python-image-example/Taskfile.yml deps:report
+      - task -t examples/python-maintenance-example/Taskfile.yml deps:report
+      - task -t templates/python-secure/Taskfile.yml deps:report
+      - task -t examples/java-image-example/Taskfile.yml deps:report
+      - task -t examples/java-maintenance-example/Taskfile.yml deps:report
+      - task -t templates/java-secure/Taskfile.yml deps:report
+
   ci:
     desc: Run the full repository workflow across maintained environments
     cmds:
