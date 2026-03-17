@@ -2,33 +2,62 @@ version: "3"
 
 tasks:
   init:
-    desc: Bootstrap the repository development environment
+    desc: Bootstrap the maintained repository environments
     cmds:
       - python examples/python-example/tasks.py init
+      - task -t examples/python-image-example/Taskfile.yml init
+      - task -t examples/java-image-example/Taskfile.yml init
+      - task -t templates/python-secure/Taskfile.yml init
+      - task -t templates/node-secure/Taskfile.yml init
+      - task -t templates/python-node-secure/Taskfile.yml init
+      - task -t templates/java-secure/Taskfile.yml init
 
   lint:
-    desc: Run repository quality checks
+    desc: Run repository quality checks across maintained environments
     cmds:
       - python examples/python-example/tasks.py lint
+      - task -t examples/python-image-example/Taskfile.yml lint
+      - task -t examples/java-image-example/Taskfile.yml lint
+      - task -t templates/python-secure/Taskfile.yml lint
+      - task -t templates/node-secure/Taskfile.yml lint
+      - task -t templates/python-node-secure/Taskfile.yml lint
+      - task -t templates/java-secure/Taskfile.yml lint
 
   test:
-    desc: Run automated tests
+    desc: Run automated tests across maintained environments
     cmds:
       - python examples/python-example/tasks.py test
+      - task -t examples/python-image-example/Taskfile.yml test
+      - task -t examples/java-image-example/Taskfile.yml test
+      - task -t templates/python-secure/Taskfile.yml test
+      - task -t templates/node-secure/Taskfile.yml test
+      - task -t templates/python-node-secure/Taskfile.yml test
+      - task -t templates/java-secure/Taskfile.yml test
 
   scan:
-    desc: Run security checks and write scan artifacts
+    desc: Run security checks and write root scan artifacts
     cmds:
+      - mkdir -p .artifacts/scans
       - python examples/python-example/tasks.py scan
-      - gitleaks git . --no-banner --redact --report-format sarif --report-path examples/python-example/.artifacts/scans/gitleaks.sarif
+      - task -t examples/python-image-example/Taskfile.yml scan
+      - task -t examples/java-image-example/Taskfile.yml scan
+      - task -t templates/python-secure/Taskfile.yml scan
+      - task -t templates/node-secure/Taskfile.yml scan
+      - task -t templates/python-node-secure/Taskfile.yml scan
+      - task -t templates/java-secure/Taskfile.yml scan
+      - gitleaks git . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
 
   format:
-    desc: Format repository Python sources
+    desc: Format repository-owned Python and Node template sources
     cmds:
       - python examples/python-example/tasks.py format
+      - task -t examples/python-image-example/Taskfile.yml format
+      - task -t templates/python-secure/Taskfile.yml format
+      - task -t templates/node-secure/Taskfile.yml format
+      - task -t templates/python-node-secure/Taskfile.yml format
 
   ci:
-    desc: Run the full repository workflow
+    desc: Run the full repository workflow across maintained environments
     cmds:
       - task init
       - task lint

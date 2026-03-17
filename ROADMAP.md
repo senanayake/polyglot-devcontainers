@@ -486,10 +486,15 @@ Current working slice:
 - the Python evidence path now classifies repository workflow shape before
   proposing upgrades, with early strategies such as `uv-lock`, `pip-tools`,
   `pyproject-exact-pins`, and `plain-pyproject`
+- for Python, `uv` and `uv.lock` are now the default and first-class
+  maintenance path for new examples, templates, and future hardening work
+- Python compatibility workflows such as `pip-tools`, `pyproject-exact-pins`,
+  and `plain-pyproject` remain important for detection and honest reporting,
+  but they are no longer the primary optimization target
 - `task upgrade` continues to execute the ecosystem-native changes and
-  re-verify the repository, with Python currently auto-applying the `uv-lock`
-  , `pip-tools`, and `pyproject-exact-pins` cases until strategy detection
-  proves stable
+  re-verify the repository, with Python now prioritizing `uv-lock` as the
+  first-class auto-apply path while keeping the other strategies conservative
+  until they earn comparable proof
 
 Failure signals:
 

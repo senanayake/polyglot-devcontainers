@@ -30,6 +30,11 @@ task upgrade
 
 when they provide a validated dependency-upgrade workflow.
 
+For Python environments, `uv` and `uv.lock` are now the first-class dependency
+maintenance path in this repository. Other Python workflow shapes are still
+detected so the artifacts stay honest, but they are compatibility lanes rather
+than equal-priority upgrade targets.
+
 Open the repository in the devcontainer, then run `task ci`.
 
 GitHub Actions validates the same image definition by building
@@ -43,6 +48,10 @@ Current published images:
 - `ghcr.io/senanayake/polyglot-devcontainers-root`
 - `ghcr.io/senanayake/polyglot-devcontainers-java`
 - `ghcr.io/senanayake/polyglot-devcontainers-python-node`
+
+The root image is now the repository validation image, so it includes the
+Python, Node, and Java toolchains needed to execute the maintained repo task
+contract.
 
 ## Documentation
 

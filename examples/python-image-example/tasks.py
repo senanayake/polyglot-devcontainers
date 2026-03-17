@@ -31,20 +31,34 @@ IGNORED_SEARCH_PARTS = {
     "dist",
     "node_modules",
 }
+DEPENDENCY_NAME_RE = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)")
+EXACT_PIN_RE = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)(?:\[[^\]]+\])?\s*==\s*([^,;\s]+)")
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+MINIMUM_VERSION_RE = re.compile(r">=\s*(\d+(?:\.\d+)*)")
+PYPI_PACKAGE_INFO_CACHE: dict[str, dict[str, Any]] = {}
 
 
-def run(command: list[str]) -> None:
+def run(command: list[str], *, capture_output: bool = False) -> subprocess.CompletedProcess[str]:
     TMP_DIR.mkdir(exist_ok=True)
     SCANS_DIR.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
     env["TMP"] = str(TMP_DIR.resolve())
     env["TEMP"] = str(TMP_DIR.resolve())
     env["TMPDIR"] = str(TMP_DIR.resolve())
-    subprocess.run(command, cwd=ROOT, check=True, text=True, env=env)
+    return subprocess.run(
+        command, cwd=ROOT, check=True, text=True, env=env, capture_output=capture_output
+    )
 
 
 def read_project_metadata() -> dict[str, Any]:
     return tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
+
+
+def project_requires_python() -> str | None:
+    metadata = read_project_metadata()
+    project = metadata.get("project", {})
+    requires_python = project.get("requires-python")
+    return str(requires_python) if requires_python else None
 
 
 def version_parts(version: str) -> list[int]:
@@ -60,6 +74,19 @@ def classify_update(current_version: str, latest_version: str) -> str:
         if current_part != latest_part:
             return label
     return "none"
+
+
+def parse_minimum_version(specifier: str | None) -> tuple[int, ...] | None:
+    if not specifier:
+        return None
+    match = MINIMUM_VERSION_RE.search(specifier)
+    if not match:
+        return None
+    return tuple(int(part) for part in match.group(1).split("."))
+
+
+def format_version_tuple(version: tuple[int, ...]) -> str:
+    return ".".join(str(part) for part in version)
 
 
 def iter_declared_dependencies() -> list[dict[str, str]]:
@@ -83,10 +110,15 @@ def iter_declared_dependencies() -> list[dict[str, str]]:
 
 
 def parse_exact_pin(specifier: str) -> tuple[str, str | None]:
-    if "==" in specifier:
-        name, version = specifier.split("==", maxsplit=1)
-        return name, version
-    return specifier, None
+    exact_match = EXACT_PIN_RE.match(specifier)
+    if exact_match:
+        return exact_match.group(1), exact_match.group(2)
+
+    name_match = DEPENDENCY_NAME_RE.match(specifier)
+    if name_match:
+        return name_match.group(1), None
+
+    return specifier.strip(), None
 
 
 def write_json_artifact(path: Path, payload: dict[str, Any]) -> None:
@@ -137,10 +169,81 @@ def build_uv_package_map() -> dict[str, dict[str, Any]]:
     return {dependency["name"]: dependency for dependency in iter_uv_locked_dependencies()}
 
 
-def build_uv_plan_dependencies() -> list[dict[str, Any]]:
+def classify_uv_blocker(message: str) -> str:
+    lowered = message.lower()
+    if "rust and cargo" in lowered:
+        return "build-environment-missing"
+    if "name is shadowed by your project" in lowered or "depends on your project" in lowered:
+        return "workspace-shadowing"
+    return "native-command-failed"
+
+
+def summarize_uv_error(message: str) -> str:
+    for line in message.splitlines():
+        stripped = ANSI_ESCAPE_RE.sub("", line).strip()
+        if not stripped:
+            continue
+        lowered = stripped.lower()
+        if lowered.startswith("using cpython"):
+            continue
+        if lowered.startswith("uv :"):
+            continue
+        if lowered.startswith("at line:"):
+            continue
+        if lowered.startswith("+ "):
+            continue
+        if lowered.startswith("categoryinfo"):
+            continue
+        if lowered.startswith("fullyqualifiederrorid"):
+            continue
+        if stripped.startswith("Resolved ") or stripped.startswith("Audited "):
+            continue
+        if "depends on your project" in lowered:
+            return stripped
+        if "name is shadowed by your project" in lowered:
+            return stripped
+        if "requires rust and cargo" in lowered:
+            return stripped
+        if "cargo, the rust package manager" in lowered:
+            return stripped
+        return stripped
+    return message.splitlines()[0] if message else ""
+
+
+def build_uv_blocker(command: list[str], error: subprocess.CalledProcessError) -> dict[str, Any]:
+    stderr = (error.stderr or "").strip()
+    stdout = (error.stdout or "").strip()
+    message = stderr or stdout or str(error)
+    return {
+        "tool": "uv",
+        "command": " ".join(command),
+        "kind": classify_uv_blocker(message),
+        "message": summarize_uv_error(message) or str(error),
+    }
+
+
+def build_uv_plan_dependencies() -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
     original_lock = UV_LOCK.read_text(encoding="utf-8")
     current_dependencies = build_uv_package_map()
-    run(["uv", "lock", "--upgrade"])
+    try:
+        run(["uv", "lock", "--upgrade"], capture_output=True)
+    except subprocess.CalledProcessError as error:
+        UV_LOCK.write_text(original_lock, encoding="utf-8")
+        dependencies = []
+        for name, dependency in current_dependencies.items():
+            dependencies.append(
+                {
+                    "name": name,
+                    "scope": dependency["scope"],
+                    "specifier": dependency["specifier"],
+                    "current_version": dependency["current_version"],
+                    "latest_version": None,
+                    "update_type": "native-command-failed",
+                    "will_update": False,
+                }
+            )
+        return dependencies, build_uv_blocker(["uv", "lock", "--upgrade"], error)
+
     upgraded_dependencies = build_uv_package_map()
     UV_LOCK.write_text(original_lock, encoding="utf-8")
 
@@ -160,7 +263,7 @@ def build_uv_plan_dependencies() -> list[dict[str, Any]]:
             }
         )
 
-    return dependencies
+    return dependencies, None
 
 
 def ensure_venv() -> None:
@@ -363,7 +466,8 @@ def build_inventory_artifact() -> dict[str, Any]:
 def build_plan_artifact() -> dict[str, Any]:
     inventory_artifact = build_inventory_artifact()
     strategy = inventory_artifact["strategy_detection"]["strategy"]
-    dependencies = []
+    project_python_specifier = project_requires_python()
+    dependencies: list[dict[str, Any]] = []
 
     for dependency in inventory_artifact["dependencies"]:
         current_version = dependency["current_version"]
@@ -372,13 +476,16 @@ def build_plan_artifact() -> dict[str, Any]:
         will_update = False
 
         if strategy == "uv-lock":
-            dependencies = build_uv_plan_dependencies()
-            return {
+            dependencies, blocker = build_uv_plan_dependencies()
+            artifact = {
                 "ecosystem": "python",
                 "source": str(PYPROJECT.name),
                 "strategy_detection": inventory_artifact["strategy_detection"],
                 "dependencies": dependencies,
             }
+            if blocker is not None:
+                artifact["blocked"] = blocker
+            return artifact
 
         if strategy == "pip-tools":
             dependencies = build_pip_tools_plan()
@@ -390,21 +497,33 @@ def build_plan_artifact() -> dict[str, Any]:
             }
 
         if strategy == "pyproject-exact-pins" and current_version is not None:
-            latest_version = latest_pypi_version(dependency["name"])
+            package_info = fetch_pypi_package_info(dependency["name"])
+            latest_version = str(package_info["info"]["version"])
             update_type = classify_update(current_version, latest_version)
-            will_update = current_version != latest_version
+            python_compatibility = build_python_compatibility(
+                project_specifier=project_python_specifier,
+                package_name=dependency["name"],
+                package_specifier=package_info["info"].get("requires_python"),
+            )
+            will_update = (
+                current_version != latest_version
+                and python_compatibility["status"] != "incompatible"
+            )
+        else:
+            python_compatibility = None
 
-        dependencies.append(
-            {
-                "name": dependency["name"],
-                "scope": dependency["scope"],
-                "specifier": dependency["specifier"],
-                "current_version": current_version,
-                "latest_version": latest_version,
-                "update_type": update_type,
-                "will_update": will_update,
-            }
-        )
+        planned_dependency = {
+            "name": dependency["name"],
+            "scope": dependency["scope"],
+            "specifier": dependency["specifier"],
+            "current_version": current_version,
+            "latest_version": latest_version,
+            "update_type": update_type,
+            "will_update": will_update,
+        }
+        if python_compatibility is not None:
+            planned_dependency["python_compatibility"] = python_compatibility
+        dependencies.append(planned_dependency)
 
     return {
         "ecosystem": "python",
@@ -458,10 +577,61 @@ def scan() -> None:
 
 
 def latest_pypi_version(package_name: str) -> str:
+    return str(fetch_pypi_package_info(package_name)["info"]["version"])
+
+
+def fetch_pypi_package_info(package_name: str) -> dict[str, Any]:
+    normalized_name = package_name.lower()
+    if normalized_name in PYPI_PACKAGE_INFO_CACHE:
+        return PYPI_PACKAGE_INFO_CACHE[normalized_name]
+
     request_url = f"https://pypi.org/pypi/{package_name}/json"
     with urllib.request.urlopen(request_url, timeout=30) as response:
-        data = json.load(response)
-    return str(data["info"]["version"])
+        data: dict[str, Any] = json.load(response)
+    PYPI_PACKAGE_INFO_CACHE[normalized_name] = data
+    return data
+
+
+def build_python_compatibility(
+    *,
+    project_specifier: str | None,
+    package_name: str,
+    package_specifier: str | None,
+) -> dict[str, str]:
+    project_minimum = parse_minimum_version(project_specifier)
+    package_minimum = parse_minimum_version(package_specifier)
+
+    if package_specifier is None:
+        return {
+            "status": "compatible",
+            "reason": f"{package_name} does not publish requires_python metadata",
+        }
+
+    if project_minimum is None or package_minimum is None:
+        return {
+            "status": "unknown",
+            "reason": (
+                f"could not compare project requires-python {project_specifier!r} "
+                f"with package requires_python {package_specifier!r}"
+            ),
+        }
+
+    if package_minimum > project_minimum:
+        return {
+            "status": "incompatible",
+            "reason": (
+                f"{package_name} requires Python >={format_version_tuple(package_minimum)} "
+                f"but the project declares {project_specifier}"
+            ),
+        }
+
+    return {
+        "status": "compatible",
+        "reason": (
+            f"{package_name} requires Python >={format_version_tuple(package_minimum)} "
+            f"which fits the project declaration {project_specifier}"
+        ),
+    }
 
 
 def inventory() -> dict[str, Any]:
@@ -486,11 +656,15 @@ def plan() -> dict[str, Any]:
     plan_path = SCANS_DIR / "dependency-plan.json"
     write_json_artifact(plan_path, artifact)
     planned_updates = sum(1 for dependency in artifact["dependencies"] if dependency["will_update"])
+    blocked = artifact.get("blocked")
+    status_suffix = (
+        f"blocked={blocked['kind']} artifact={plan_path}" if blocked else f"artifact={plan_path}"
+    )
     print_status(
         "plan complete: "
         f"strategy={artifact['strategy_detection']['strategy']} "
         f"planned_updates={planned_updates} "
-        f"artifact={plan_path}"
+        f"{status_suffix}"
     )
     return artifact
 
@@ -502,6 +676,12 @@ def upgrade() -> None:
     print_status(f"starting dependency upgrade with strategy={strategy}")
 
     if strategy == "uv-lock":
+        blocked = dependency_plan.get("blocked")
+        if blocked is not None:
+            raise SystemExit(
+                "task upgrade is blocked for the detected uv workflow: "
+                f"{blocked['kind']} ({blocked['message']})"
+            )
         before_upgrade = build_uv_package_map()
         run(["uv", "lock", "--upgrade"])
         after_upgrade = build_uv_package_map()
@@ -591,6 +771,7 @@ def upgrade() -> None:
         latest_version = dependency["latest_version"]
         if current_version is None or latest_version is None:
             continue
+        should_update = bool(dependency["will_update"])
         updates.append(
             {
                 "name": dependency["name"],
@@ -598,10 +779,10 @@ def upgrade() -> None:
                 "current_version": current_version,
                 "latest_version": latest_version,
                 "update_type": dependency["update_type"],
-                "updated": str(current_version != latest_version).lower(),
+                "updated": str(should_update).lower(),
             }
         )
-        if current_version != latest_version:
+        if should_update:
             content = content.replace(
                 f'"{dependency["name"]}=={current_version}"',
                 f'"{dependency["name"]}=={latest_version}"',

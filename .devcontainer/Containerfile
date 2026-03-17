@@ -1,15 +1,35 @@
+FROM mcr.microsoft.com/devcontainers/java:1-21-bookworm AS java_base
+
 FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
 
 LABEL org.opencontainers.image.source="https://github.com/senanayake/polyglot-devcontainers" \
-      org.opencontainers.image.description="Reference Python engineering container for polyglot-devcontainers." \
+      org.opencontainers.image.description="Reference polyglot engineering container for polyglot-devcontainers." \
       org.opencontainers.image.licenses="MIT"
 
 USER root
 
+COPY --from=java_base /usr/lib/jvm/msopenjdk-current /usr/lib/jvm/msopenjdk-current
+
 COPY features /tmp/features
+
+RUN rm -f /etc/apt/sources.list.d/yarn.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl git gnupg \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+    | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
+    > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
+    && ln -sf /usr/lib/jvm/msopenjdk-current/bin/java /usr/local/bin/java \
+    && ln -sf /usr/lib/jvm/msopenjdk-current/bin/javac /usr/local/bin/javac \
+    && rm -rf /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
 
 RUN bash /tmp/features/security-baseline/install.sh \
     && bash /tmp/features/python-engineering/install.sh \
+    && bash /tmp/features/node-engineering/install.sh \
+    && bash /tmp/features/java-engineering/install.sh \
     && bash /tmp/features/agent-runtime/install.sh \
     && rm -rf /tmp/features
 
