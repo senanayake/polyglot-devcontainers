@@ -10,6 +10,7 @@ Included:
 - a small `src/` package
 - tests
 - pinned Python developer tooling
+- a checked-in `uv.lock` file for reproducible Python bootstrap
 - pre-commit configuration
 
 After opening the template in a devcontainer, run:

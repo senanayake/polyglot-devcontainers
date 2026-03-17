@@ -42,6 +42,8 @@ Current scope:
 - Python compatibility workflows such as `pip-tools` and
   `pyproject-exact-pins` may still produce evidence and limited upgrade support,
   but they are no longer equal-priority optimization targets
+- the maintained Python examples and templates in this repository now bootstrap
+  from checked-in `uv.lock` files with `uv sync --frozen`
 - Java templates and published-image examples generate a Gradle dependency
   update report, apply stable version updates, refresh lockfiles, and rerun the
   relevant verification steps

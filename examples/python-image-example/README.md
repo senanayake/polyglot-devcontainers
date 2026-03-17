@@ -7,6 +7,9 @@ directly.
 Use it when you want to validate the stable Python image-consumption path in VS
 Code without building a local devcontainer definition first.
 
+This example now uses `uv` and a checked-in `uv.lock` file for its Python
+environment bootstrap.
+
 After opening the example in a devcontainer, run:
 
 ```bash

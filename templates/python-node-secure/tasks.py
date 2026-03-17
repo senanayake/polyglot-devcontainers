@@ -12,6 +12,7 @@ ARTIFACTS_DIR = ROOT / ".artifacts"
 SCANS_DIR = ARTIFACTS_DIR / "scans"
 VENV_DIR = ROOT / ".venv"
 PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+UV = "uv.exe" if os.name == "nt" else "uv"
 COREPACK = "corepack.cmd" if os.name == "nt" else "corepack"
 PNPM = [COREPACK, "pnpm"]
 
@@ -27,10 +28,7 @@ def run(command: list[str]) -> None:
 
 
 def init() -> None:
-    if not PYTHON.exists():
-        run([sys.executable, "-m", "venv", str(VENV_DIR)])
-    run([str(PYTHON), "-m", "pip", "install", "--upgrade", "pip==26.0.1"])
-    run([str(PYTHON), "-m", "pip", "install", "-e", ".[dev]"])
+    run([UV, "sync", "--frozen", "--extra", "dev"])
     run(PNPM + ["install", "--frozen-lockfile", "--force"])
 
 

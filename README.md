@@ -31,9 +31,11 @@ task upgrade
 when they provide a validated dependency-upgrade workflow.
 
 For Python environments, `uv` and `uv.lock` are now the first-class dependency
-maintenance path in this repository. Other Python workflow shapes are still
-detected so the artifacts stay honest, but they are compatibility lanes rather
-than equal-priority upgrade targets.
+maintenance path in this repository. The maintained Python examples and
+templates now ship with checked-in `uv.lock` files and bootstrap with
+`uv sync --frozen`. Other Python workflow shapes are still detected so the
+artifacts stay honest, but they are compatibility lanes rather than
+equal-priority upgrade targets.
 
 Open the repository in the devcontainer, then run `task ci`.
 
@@ -73,7 +75,8 @@ The documentation is organized with the Diataxis approach:
 - Phase 6: validated and published OCI images
 - Phase 7: reusable `templates/java-secure`
 - Phase 8: IDE-first devcontainer customizations across active templates
-- Phase 9 (initial slice): Python and Java dependency upgrade workflows through `task upgrade`
+- Phase 9b: dependency-upgrade proof and container-backed root CI validation
+- Phase 9c (current consolidation): repo-owned Python paths standardized on `uv` and `uv.lock`
 
 ## Machine-Agnostic Contract
 

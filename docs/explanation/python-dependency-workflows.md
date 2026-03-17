@@ -37,6 +37,8 @@ Python paths:
   `polyglot-devcontainers`
 - new Python examples, templates, and future hardening work should prefer
   `uv-lock`
+- the maintained Python examples and templates in this repository now ship with
+  checked-in `uv.lock` files and bootstrap with `uv sync --frozen`
 - other detected shapes such as `pip-tools`, `pyproject-exact-pins`, and
   `plain-pyproject` remain compatibility and evidence paths rather than
   equal-priority targets for ongoing optimization
@@ -59,9 +61,9 @@ showed that:
 - lockfiles are common in some workflows, but not universal
 - requirements files often remain in use for docs, CI, or compile-based flows
 
-## Why the proving set is staged
+## Why the proving set was staged
 
-The next step in Phase 9b is not a single "top Python projects" run.
+The proving work in Phase 9b was never a single "top Python projects" run.
 
 It is a staged proving set that expands complexity batch by batch.
 
@@ -252,6 +254,18 @@ But the support levels are no longer equal:
 - `uv-lock` is the primary supported path going forward
 - `pip-tools` and `pyproject-exact-pins` are compatibility paths
 - `plain-pyproject` remains detect-only
+
+## Current repository outcome
+
+The current repository policy is no longer hypothetical:
+
+- the maintained Python paths now use `uv sync --frozen` for bootstrap
+- checked-in `uv.lock` files are the source of truth for repo-owned Python
+  examples and templates
+- `uv-lock` is the primary auto-apply workflow for Python dependency
+  maintenance in this repository
+- other detected Python workflow shapes remain part of the evidence boundary,
+  but they are no longer the default path for repo-owned code
 
 ## What the artifacts mean
 

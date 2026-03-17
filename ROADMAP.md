@@ -407,7 +407,7 @@ Java that runs inside the same images and devcontainers it depends on.
 
 ---
 
-# Current De-Risking Stage
+# Current Consolidation Stage
 
 ## Phase 9b - Prove Secure Dependency Maintenance on Real Repositories
 
@@ -417,8 +417,8 @@ Move from simple ecosystem-specific upgrade tasks toward an agent-friendly,
 security-first dependency maintenance flow that still honors the existing task
 contract.
 
-This phase is about proving or killing the next idea, not committing to a fixed
-architecture.
+This phase established whether the dependency-maintenance direction was worth
+keeping before the repository standardized on it.
 
 The project should continue to eat its own dogfood by developing dependency
 remediation capabilities inside the same secure environments that will later run
@@ -502,13 +502,40 @@ Failure signals:
 - evidence and planning artifacts do not help enough to justify themselves
 - the implementation starts to feel more complex than the ecosystem-native tools
 
-Outcome if successful:
+Outcome:
 
-The repository earns the right to try a reusable planning core.
+Phase 9b succeeded.
 
-Outcome if unsuccessful:
+The repository proved the container-backed root `task ci` contract in GitHub
+Actions, proved that `uv-lock` is the strongest Python maintenance path across
+real sampled repositories, and used that result to standardize the
+repository-owned Python paths on `uv` and `uv.lock`.
 
-The project should narrow back to simpler ecosystem-native upgrade flows.
+## Phase 9c - Consolidate the Proven Python-First Path
+
+Objective:
+
+Turn the Phase 9b policy result into the default repository implementation.
+
+Scope:
+
+- standardize repo-owned Python examples and templates on `uv` and `uv.lock`
+- keep compatibility detection for other Python workflow shapes
+- reduce emphasis on non-`uv` upgrade paths in docs and repo defaults
+- preserve the container-backed root `task ci` contract that now validates the
+  maintained repo scope in CI
+
+Success signals:
+
+- maintained Python paths bootstrap with `uv sync --frozen`
+- maintained Python paths check in `uv.lock`
+- root CI continues to pass through the container-backed repo contract
+- compatibility strategies remain available for evidence and honest reporting
+
+Failure signals:
+
+- standardization breaks the maintained task contract
+- `uv` standardization adds more maintenance complexity than it removes
 
 ---
 
