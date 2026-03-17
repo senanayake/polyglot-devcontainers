@@ -255,6 +255,81 @@ But the support levels are no longer equal:
 - `pip-tools` and `pyproject-exact-pins` are compatibility paths
 - `plain-pyproject` remains detect-only
 
+## Findings: why the compatibility paths were problematic
+
+The compatibility paths were useful for detection and evidence, but they did
+not earn equal status as safe default mutation paths.
+
+The main problem was source of truth.
+
+With `uv-lock`, the repository has:
+
+- a checked-in lockfile that represents resolved dependency state
+- a native upgrade command in `uv lock --upgrade`
+- a straightforward bootstrap command in `uv sync --frozen`
+
+The compatibility paths did not offer the same contract.
+
+### `plain-pyproject` was honest but weak
+
+`plain-pyproject` can describe declared dependencies, but it does not tell the
+repository what exact resolved environment should exist or how that environment
+should be updated safely.
+
+That meant the adapter could produce useful inventory and planning artifacts,
+but it could not auto-apply upgrades with strong confidence. It remained
+detect-only because pretending it had a safe rewrite path would have been
+misleading.
+
+### `pyproject-exact-pins` looked easier than it was
+
+Exact pins in `pyproject.toml` look machine-editable, but real repositories
+encode more constraints than the version string alone.
+
+The clearest failure case was `httpx`:
+
+- the adapter rewrote an exact pin
+- the resulting dependency set no longer fit the repository's declared
+  `requires-python` range
+- native verification then failed during environment resolution
+
+That forced the repository to add Python-compatibility gating just to make the
+path conservative enough. Even after that hardening, the path remained a
+compatibility lane rather than a first-class default.
+
+### `pip-tools` remained valid but not strategic
+
+`pip-tools` still represents a coherent native workflow, but it is a
+compile-oriented, multi-file workflow and not the simplest default for
+repository-owned paths.
+
+It remains important for compatibility detection and honest planning, but the
+experiment did not justify carrying it as the primary repo policy when
+`uv-lock` proved simpler and more reliable.
+
+### Environment sensitivity showed up faster outside `uv-lock`
+
+The compatibility lanes were more likely to depend on partial metadata,
+repository-specific conventions, or extra assumptions about the local build
+environment.
+
+That made them useful for answering:
+
+- what workflow shape does this repository appear to use?
+- what evidence can be recorded honestly?
+
+But less trustworthy for answering:
+
+- what should this repository mutate by default?
+- what can the automation reapply repeatedly with low risk?
+
+The conclusion from the proving work was therefore narrow and deliberate:
+
+- compatibility detection is valuable
+- compatibility auto-upgrade paths should remain conservative
+- `uv-lock` is the only Python path in this repository that earned
+  first-class status as the default mutation workflow
+
 ## Current repository outcome
 
 The current repository policy is no longer hypothetical:
