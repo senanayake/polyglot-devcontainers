@@ -77,6 +77,11 @@ Java upgrade artifacts are written to:
 - `.artifacts/scans/dependency-report.md`
 - `.artifacts/scans/gradle-dependency-updates.json`
 
+At the repository root, `task deps:report` also writes:
+
+- `.artifacts/scans/dependency-report.json`
+- `.artifacts/scans/dependency-report.md`
+
 ## Interpret the results
 
 - `pip-audit.json` and `pnpm-audit.json` contain dependency findings.
@@ -87,6 +92,8 @@ Java upgrade artifacts are written to:
   available.
 - `dependency-report.json` and `dependency-report.md` summarize the current
   inventory and plan into a smaller operator-facing report.
+- at the repository root, those same filenames summarize the proving-path
+  reports into a single repository-level view.
 - `pypi-upgrades.json` records the current and latest Python package versions
   considered by the upgrade workflow.
 - `gradle-dependency-updates.json` records the dependency update report produced
