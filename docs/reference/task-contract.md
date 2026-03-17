@@ -41,6 +41,11 @@ the evidence path can distinguish between workflows such as:
 - `pyproject-exact-pins`
 - `plain-pyproject`
 
+In `polyglot-devcontainers`, `uv-lock` is now the first-class Python workflow.
+The other shapes remain important for detection, compatibility, and honest
+artifact generation, but they are not the primary path the repository is
+optimizing going forward.
+
 ## Phase 1 Python behavior
 
 In the root repository:

@@ -27,7 +27,7 @@ jobs:
             dockerfile: .devcontainer/Containerfile
             context: .
             workdir: /workspaces/polyglot-devcontainers
-            description: Reference Python engineering container for polyglot-devcontainers.
+            description: Reference polyglot engineering container for polyglot-devcontainers.
           - name: java
             image_name: polyglot-devcontainers-java
             dockerfile: templates/java-secure/.devcontainer/Containerfile

@@ -9,3 +9,4 @@ repository.
 - [Compose Features](./compose-features.md)
 - [Release Images](./release-images.md)
 - [Run the Security Workflow](./run-the-security-workflow.md)
+- [Run the Python Proving Batches](./run-the-python-proving-batches.md)

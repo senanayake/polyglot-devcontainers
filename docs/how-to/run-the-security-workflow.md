@@ -38,8 +38,10 @@ records the detected workflow shape, such as:
 Current scope:
 
 - Python templates and published-image examples detect the repository workflow
-  shape and currently automate upgrades for the `uv-lock`, `pip-tools`, and
-  `pyproject-exact-pins` cases, then rerun the task contract
+  shape and currently treat `uv-lock` as the first-class upgrade path
+- Python compatibility workflows such as `pip-tools` and
+  `pyproject-exact-pins` may still produce evidence and limited upgrade support,
+  but they are no longer equal-priority optimization targets
 - Java templates and published-image examples generate a Gradle dependency
   update report, apply stable version updates, refresh lockfiles, and rerun the
   relevant verification steps
