@@ -1,6 +1,6 @@
 # Runtime Documentation Architecture
 
-This page describes the planned in-container documentation system for
+This page describes the in-container runtime documentation system for
 `polyglot-devcontainers`.
 
 The goal is practical:
@@ -14,7 +14,7 @@ The goal is practical:
 
 ## Design goals
 
-The runtime documentation system should be:
+The runtime documentation system is:
 
 - local to the container
 - readable by both humans and agents
@@ -28,21 +28,23 @@ The runtime documentation system should be:
 
 Markdown remains the canonical authoring format.
 
-The repository should avoid writing roff by hand.
+The repository avoids writing roff by hand.
 
-The intended authoring model is:
+The authoring model is:
 
 - repository Markdown pages are the source of truth
 - build-time tooling converts selected pages into man pages
 - runtime users consume those pages through `man`
 
-Pandoc is a good candidate for the conversion step, but only as build-time
-tooling. Humans and agents inside the container should never need to invoke it
-directly.
+Pandoc is used for the conversion step, but only as build-time tooling.
+Humans and agents inside the container should never need to invoke it
+directly. The repository provides a builder script at
+`scripts/build_runtime_docs.py`, which uses local `pandoc` when available and
+can fall back to a containerized `pandoc` invocation through `podman`.
 
 ## Runtime delivery model
 
-The documentation system should compile selected Markdown files into:
+The documentation system compiles selected Markdown files into:
 
 - `man/man7/polyglot.7`
 - `man/man7/polyglot-starters.7`
@@ -60,7 +62,7 @@ workflows, and environment guidance rather than standalone executable commands.
 
 ## Top-down navigation model
 
-The runtime help system should be navigable from the top down.
+The runtime help system is navigable from the top down.
 
 The minimum intended flow is:
 
@@ -77,10 +79,10 @@ repository structure in advance to find the correct operating guidance.
 
 ## Recommended source layout
 
-The documentation source tree should be explicit and separate from the existing
+The documentation source tree is explicit and separate from the existing
 Diataxis pages that target the repository website or Markdown readers.
 
-One reasonable layout is:
+Current source layout:
 
 - `docs/core/polyglot.md`
 - `docs/core/polyglot-starters.md`
@@ -93,12 +95,12 @@ One reasonable layout is:
 - `docs/core/polyglot-knowledge.md`
 - `docs/core/polyglot-troubleshooting.md`
 
-These files should be optimized for runtime use, not for preserving the exact
+These files are optimized for runtime use, not for preserving the exact
 shape of the existing Diataxis tree.
 
 ## Page schema
 
-Each runtime-doc source page should use a stable structure so it is predictable
+Each runtime-doc source page uses a stable structure so it is predictable
 for both humans and agents.
 
 Recommended section pattern:
@@ -117,7 +119,7 @@ Not every page needs every section, but the schema should remain mostly stable.
 
 ## The "Knowledge" layer
 
-The runtime documentation should include a curated "Knowledge" layer.
+The runtime documentation includes a curated "Knowledge" layer.
 
 This is not meant to be a generic encyclopedia. It is meant to provide
 high-signal, durable guidance that improves behavior inside the container.
@@ -162,7 +164,7 @@ behavior.
 
 Diataxis remains useful as the primary writing discipline for the repository.
 
-The runtime documentation system should draw from that material, but it should
+The runtime documentation system draws from that material, but it should
 not mirror it mechanically.
 
 A practical mapping is:
@@ -177,19 +179,40 @@ existing documentation structure.
 
 ## Build and installation flow
 
-The intended build flow is:
+The build and installation flow is:
 
 1. author or update Markdown under `docs/core/`
-2. run a build step that converts selected files into man pages
-3. place the generated output under a predictable build directory such as
-   `build/man/`
+2. run `python scripts/build_runtime_docs.py` to convert the runtime pages into
+   `man/man7/*.7`
+3. copy the generated output into the starter template man directories
 4. install the resulting pages into the image so they are available through
    `man`
-5. validate that key pages render correctly in the root, Python, and Java
+5. call `bash scripts/install_runtime_docs.sh man/man7` in the relevant
+   devcontainer `postCreateCommand`
+6. validate that key pages render correctly in the root, Python, and Java
    starter environments
 
-The installation path should make the pages available without requiring custom
+The installation path makes the pages available without requiring custom
 shell aliases or manual environment setup by the user.
+
+## Current implementation status
+
+The current MVP is implemented in the repository:
+
+- runtime-doc source lives under `docs/core/`
+- generated man pages live under `man/man7/`
+- the Python and Java starter templates ship the generated pages under their
+  local `man/man7/` directories
+- the root, Python, and Java devcontainer definitions install the runtime docs
+  during `postCreateCommand`
+- the root, Python, and Java container images install `man-db` and `less`
+
+The validated user experience is:
+
+1. open the root, Python, or Java devcontainer in VS Code
+2. wait for the `postCreateCommand` to complete
+3. run `man polyglot`, `man polyglot-python`, or `man polyglot-java`
+4. use the task contract and linked man pages to operate the workspace
 
 ## Initial implementation phases
 
@@ -228,6 +251,15 @@ Phase 5: troubleshooting and refinement
 - decide whether the runtime-doc contract is stable enough to treat as a
   first-class starter feature
 
+Phases 1 to 5 are now represented in the repository as an MVP. The remaining
+work is refinement:
+
+- broaden starter coverage if more starter types are added
+- keep the generated pages aligned with the source Markdown
+- grow the Knowledge layer carefully without turning it into a generic manual
+- decide whether runtime-doc generation should become part of a stricter CI
+  verification path
+
 ## Validation criteria
 
 The runtime documentation should be considered useful only if it satisfies
@@ -250,12 +282,10 @@ practical tests such as:
 
 ## Current recommendation
 
-The next implementation step should be small and concrete:
+The next implementation steps should focus on refinement rather than basic
+plumbing:
 
-- create the `docs/core/` source tree
-- implement the build pipeline for a minimal page set
-- install those pages into the container
-- validate `man polyglot` end to end
-
-Only after that should the project expand the Knowledge layer or add many more
-pages.
+- teach users how to rely on the runtime docs in the starter tutorials
+- keep the generated man pages synchronized with `docs/core/`
+- expand the Knowledge layer only when it sharpens real engineering behavior
+- decide how much of the runtime-doc build should be enforced in CI

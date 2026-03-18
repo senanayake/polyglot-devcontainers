@@ -1,7 +1,7 @@
 {
   "name": "java-image-example",
   "image": "ghcr.io/senanayake/polyglot-devcontainers-java:main",
-  "postCreateCommand": "task init",
+  "postCreateCommand": "bash ../../scripts/install_runtime_docs.sh ../../man/man7 && task init",
   "customizations": {
     "vscode": {
       "settings": {

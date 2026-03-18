@@ -4,7 +4,7 @@
     "dockerfile": "Containerfile",
     "context": ".."
   },
-  "postCreateCommand": "task init && pre-commit install",
+  "postCreateCommand": "bash scripts/install_runtime_docs.sh man/man7 && task init && pre-commit install",
   "customizations": {
     "vscode": {
       "settings": {

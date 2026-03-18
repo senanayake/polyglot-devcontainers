@@ -13,7 +13,9 @@ validated Python workflow.
 1. Open the repository in VS Code.
 2. Reopen it in the devcontainer.
 3. Wait for `postCreateCommand` to finish.
-4. Run `task ci`.
+4. Run `man polyglot`.
+5. Read `man polyglot-python`.
+6. Run `task ci`.
 
 ## What happened
 
@@ -27,5 +29,8 @@ validated Python workflow.
 
 - Follow [Use uv in This Repository](./use-uv-in-this-repository.md) to learn
   the Python workflow the repository now standardizes on.
+- Use `man polyglot-task-contract`, `man polyglot-security`, and
+  `man polyglot-knowledge` when you need more operating guidance inside the
+  container.
 - Explore [Reference](../reference/README.md) to understand the task contract.
 - Copy `templates/python-secure` when you need a starter repository.

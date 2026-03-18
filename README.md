@@ -1,7 +1,7 @@
 # polyglot-devcontainers
 
-`polyglot-devcontainers` now delivers the roadmap through the initial Phase 9
-dependency-upgrade slice:
+`polyglot-devcontainers` now delivers the roadmap through the initial starter
+runtime-documentation slice:
 
 - a hardened Python baseline
 - reusable Python and Node/TypeScript templates
@@ -10,6 +10,7 @@ dependency-upgrade slice:
 - a composable feature library
 - improved IDE-first devcontainer defaults across the active templates
 - initial dependency upgrade workflows for Python and Java
+- in-container runtime documentation available through `man`
 - documentation organized using the Diataxis model
 
 Every environment in this repository follows the same task contract:
@@ -48,6 +49,22 @@ equal-priority upgrade targets.
 
 Open the repository in the devcontainer, then run `task ci`.
 
+The root, Python starter, and Java starter environments also install a local
+runtime help system. Start with:
+
+```bash
+man polyglot
+```
+
+Then follow the top-down guide to:
+
+- choose the correct starter workflow
+- understand the task contract
+- find dependency and security artifacts
+- recover agent-specific operating guidance
+- read the curated "Knowledge" guidance for stronger engineering and security
+  decisions
+
 GitHub Actions validates the same image definition by building
 `.devcontainer/Containerfile` and running `task ci` inside that container.
 
@@ -85,7 +102,8 @@ The documentation is organized with the Diataxis approach:
 - Phase 7: reusable `templates/java-secure`
 - Phase 8: IDE-first devcontainer customizations across active templates
 - Phase 9b: dependency-upgrade proof and container-backed root CI validation
-- Phase 9c (current consolidation): repo-owned Python paths standardized on `uv` and `uv.lock`
+- Phase 9c: repo-owned Python paths standardized on `uv` and `uv.lock`
+- Phase 9d (runtime-doc MVP): `man`-based runtime guidance installed in the root, Python, and Java starter environments
 
 ## Machine-Agnostic Contract
 

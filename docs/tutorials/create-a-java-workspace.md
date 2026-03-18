@@ -17,6 +17,14 @@ The container provides:
 - `task`
 - `gitleaks`
 - pinned `gradle`
+- runtime help through `man`
+
+After the container opens, start with:
+
+```bash
+man polyglot
+man polyglot-java
+```
 
 ## 3. Initialize the workspace
 
@@ -74,3 +82,7 @@ task ci
 
 At this point you have a working Java workspace that matches the repository's
 container-first contract.
+
+Use `man polyglot-task-contract`, `man polyglot-security`, and
+`man polyglot-knowledge` when you need more operating guidance inside the
+container.

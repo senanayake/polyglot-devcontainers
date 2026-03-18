@@ -8,7 +8,7 @@ ARG GRADLE_VERSION=9.1.0
 
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl git gnupg jq ripgrep shellcheck tar unzip \
+    && apt-get install -y --no-install-recommends ca-certificates curl git gnupg jq less man-db ripgrep shellcheck tar unzip \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://taskfile.dev/install.sh | sh -s -- -d -b /usr/local/bin "v${TASK_VERSION}" \
     && curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
