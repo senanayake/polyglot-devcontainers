@@ -101,6 +101,19 @@ repository.
 
 The project should eat its own dogfood.
 
+### Runtime documentation should be available inside the container
+
+If humans and agents are expected to operate correctly inside the development
+environment, the key usage guidance should be available inside that environment
+without depending on external websites, chat history, or unstated tribal
+knowledge.
+
+The repository should therefore evolve toward a local documentation runtime that
+can be consumed directly in the container by both humans and agents.
+
+Markdown should remain the authoring format, while terminal-native formats such
+as man pages can be generated during the build pipeline for in-container use.
+
 ### Planning should be separated from execution
 
 Security and upgrade automation should distinguish between:
@@ -220,6 +233,7 @@ Tools implement these capabilities within specific ecosystems.
 | sbom_generation | produce a software bill of materials |
 | reachability_analysis | estimate whether vulnerable code paths are actually exercised |
 | agent_execution_contract | expose deterministic machine-usable metadata and outputs |
+| runtime_guidance | expose in-container documentation and operating guidance for humans and agents |
 
 ---
 
@@ -246,6 +260,7 @@ implemented in this repository.
 | sbom_generation | CycloneDX / Syft | CycloneDX / Syft | CycloneDX / Syft |
 | reachability_analysis | limited / later | limited / later | strongest early candidate |
 | agent_execution_contract | structured JSON outputs and task metadata | structured JSON outputs and task metadata | structured JSON outputs and task metadata |
+| runtime_guidance | local docs and man pages for starter usage and task workflows | local docs and man pages for starter usage and task workflows | local docs and man pages for starter usage and task workflows |
 
 ---
 
@@ -539,6 +554,127 @@ Failure signals:
 
 ---
 
+## Phase 9d - Starter Runtime Documentation for Humans and Agents
+
+Objective:
+
+Turn the repository's starter templates and published-image usage paths into
+environments that can explain themselves locally.
+
+The practical goal is that a human or agent should be able to enter the
+container, discover the supported workflow from the top down, and gain enough
+context to operate correctly using strong software engineering and security
+practice without depending on prior chat context or external browsing.
+
+Primary principles:
+
+- the container should carry its own operating guidance
+- the guidance should be consumable by both humans and agents
+- the source of truth should remain concise Markdown in the repository
+- build-time tooling may compile that Markdown into terminal-native formats such
+  as man pages
+- the resulting help system should teach the supported task contract, starter
+  workflows, artifact conventions, and recommended engineering behaviors
+- the help system should also grow a curated "Knowledge" layer that condenses
+  durable engineering and security guidance from strong sources into
+  repo-adapted operating guidance for humans and agents
+
+Proposed runtime model:
+
+- author a core documentation library in Markdown
+- compile selected pages into man pages during the build pipeline
+- install the generated man pages into the container image
+- expose a top-down help tree beginning with `man polyglot`
+
+Knowledge model:
+
+- the runtime docs should include a curated "Knowledge" layer that encodes
+  high-signal baseline guidance for software engineering, architecture,
+  testing, programming, and security
+- the source material should be adapted from durable, respected bodies of work
+  rather than copied mechanically
+- likely inputs include SWEBOK-style software engineering guidance, OWASP and
+  NIST security concepts, and strong ideas from leading books, conference
+  talks, standards, and publications on system design, architecture, testing,
+  and programming
+- the output should remain concise, opinionated, and operational rather than
+  encyclopedic
+- the purpose of the "Knowledge" layer is to help humans and agents operate
+  with better judgment inside the container, not to replace primary sources
+
+Suggested top-level man pages:
+
+- `polyglot(7)`
+- `polyglot-starters(7)`
+- `polyglot-task-contract(7)`
+- `polyglot-python(7)`
+- `polyglot-java(7)`
+- `polyglot-security(7)`
+- `polyglot-deps(7)`
+- `polyglot-agents(7)`
+- `polyglot-knowledge(7)`
+- `polyglot-troubleshooting(7)`
+
+Scope:
+
+- starter-focused Python and Java guidance
+- task contract guidance
+- dependency and security workflow guidance
+- agent operating guidance inside the container
+- a curated "Knowledge" layer for security-first software engineering guidance
+- a top-down runtime navigation model that does not require reading the whole
+  repository first
+
+Non-scope:
+
+- a broad general software-engineering encyclopedia
+- replacing Markdown authoring with roff-first authoring
+- inventing a separate CLI help system before the man-page model proves useful
+- reproducing external standards or books verbatim inside the repository
+
+Success signals:
+
+- a new human or agent can begin at `man polyglot` and navigate to the correct
+  starter workflow without external guidance
+- the generated man pages reflect the validated task contract and artifact
+  locations
+- Python and Java starters become easier to use as practical entry points in
+  IDEs and for agent-driven work
+- the documentation library becomes a place to encode condensed, high-signal
+  software engineering and security guidance that is actually followed in the
+  container
+- the "Knowledge" layer improves agent and human decisions in ways that are
+  visible in the resulting engineering workflow, code quality, and security
+  posture
+
+Failure signals:
+
+- the documentation runtime drifts from the validated task contract
+- the man-page layer becomes a formatting novelty instead of an operational
+  tool
+- the content grows into a generic knowledge dump rather than a focused starter
+  guidance system
+- the "Knowledge" layer becomes vague, bloated, or detached from practical
+  coding work inside the container
+
+Outcome if successful:
+
+The repository gains a distinctive, local, terminal-native knowledge surface
+that makes the starters more self-explanatory and makes agent execution less
+dependent on external context.
+
+It also gains the foundation for a security-first AI coding process in which
+agents can recover not only repository-specific instructions, but also a
+curated baseline of strong engineering judgment from within the environment
+itself.
+
+Outcome if unsuccessful:
+
+The project should fall back to Markdown-only Diataxis pages without promoting
+man pages into a first-class delivery format.
+
+---
+
 # Conditional Experiments
 
 ## Experiment 10 - Evaluate a Reusable Dependency Planning Core
@@ -777,6 +913,18 @@ Examples:
 
 This phase should reflect lessons learned while dogfooding planning and
 remediation inside the repository.
+
+Expanded direction:
+
+- agents should also be able to recover sufficient operational context from the
+  container itself, including task expectations, artifact conventions, starter
+  workflow guidance, and recommended engineering practice
+- the runtime documentation model should complement machine-readable metadata
+  rather than compete with it
+- the runtime documentation should eventually expose a curated "Knowledge"
+  layer that helps agents follow strong software engineering, system design,
+  architecture, testing, programming, and security practice without relying on
+  opaque external memory
 
 Decision rule:
 
