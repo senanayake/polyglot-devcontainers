@@ -25,6 +25,7 @@ mutating the workspace:
 ```bash
 task deps:inventory
 task deps:plan
+task deps:report
 ```
 
 For Python, these artifacts now include a `strategy_detection` section that
@@ -64,13 +65,22 @@ Python upgrade artifacts are written to:
 
 - `.artifacts/scans/dependency-inventory.json`
 - `.artifacts/scans/dependency-plan.json`
+- `.artifacts/scans/dependency-report.json`
+- `.artifacts/scans/dependency-report.md`
 - `.artifacts/scans/pypi-upgrades.json`
 
 Java upgrade artifacts are written to:
 
 - `.artifacts/scans/dependency-inventory.json`
 - `.artifacts/scans/dependency-plan.json`
+- `.artifacts/scans/dependency-report.json`
+- `.artifacts/scans/dependency-report.md`
 - `.artifacts/scans/gradle-dependency-updates.json`
+
+At the repository root, `task deps:report` also writes:
+
+- `.artifacts/scans/dependency-report.json`
+- `.artifacts/scans/dependency-report.md`
 
 ## Interpret the results
 
@@ -80,6 +90,10 @@ Java upgrade artifacts are written to:
 - `dependency-plan.json` records the currently known update candidates before
   any files are changed, including the detected workflow strategy where
   available.
+- `dependency-report.json` and `dependency-report.md` summarize the current
+  inventory and plan into a smaller operator-facing report.
+- at the repository root, those same filenames summarize the proving-path
+  reports into a single repository-level view.
 - `pypi-upgrades.json` records the current and latest Python package versions
   considered by the upgrade workflow.
 - `gradle-dependency-updates.json` records the dependency update report produced

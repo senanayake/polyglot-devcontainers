@@ -30,6 +30,15 @@ task upgrade
 
 when they provide a validated dependency-upgrade workflow.
 
+Some Python and Java proving paths also expose:
+
+```bash
+task deps:report
+```
+
+to turn the existing dependency inventory and plan artifacts into a compact
+JSON and Markdown report for humans and automation.
+
 For Python environments, `uv` and `uv.lock` are now the first-class dependency
 maintenance path in this repository. The maintained Python examples and
 templates now ship with checked-in `uv.lock` files and bootstrap with

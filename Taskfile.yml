@@ -56,6 +56,27 @@ tasks:
       - task -t templates/node-secure/Taskfile.yml format
       - task -t templates/python-node-secure/Taskfile.yml format
 
+  deps:report:
+    desc: Build dependency summary reports across the Python and Java proving paths
+    cmds:
+      - mkdir -p .artifacts/scans
+      - task -t examples/python-image-example/Taskfile.yml deps:report
+      - task -t examples/python-maintenance-example/Taskfile.yml deps:report
+      - task -t templates/python-secure/Taskfile.yml deps:report
+      - task -t examples/java-image-example/Taskfile.yml deps:report
+      - task -t examples/java-maintenance-example/Taskfile.yml deps:report
+      - task -t templates/java-secure/Taskfile.yml deps:report
+      - >
+        python scripts/repository_dependency_report.py
+        --json-output .artifacts/scans/dependency-report.json
+        --markdown-output .artifacts/scans/dependency-report.md
+        examples/python-image-example/.artifacts/scans/dependency-report.json
+        examples/python-maintenance-example/.artifacts/scans/dependency-report.json
+        templates/python-secure/.artifacts/scans/dependency-report.json
+        examples/java-image-example/.artifacts/scans/dependency-report.json
+        examples/java-maintenance-example/.artifacts/scans/dependency-report.json
+        templates/java-secure/.artifacts/scans/dependency-report.json
+
   ci:
     desc: Run the full repository workflow across maintained environments
     cmds:

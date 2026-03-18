@@ -16,6 +16,7 @@ Some repositories may also expose optional helper tasks such as:
 task format
 task deps:inventory
 task deps:plan
+task deps:report
 task upgrade
 ```
 
@@ -30,6 +31,8 @@ These helpers must extend the standard workflow rather than replace it.
 - `ci`: run the full workflow
 - `deps:inventory` (optional): write normalized dependency inventory artifacts
 - `deps:plan` (optional): write normalized dependency update planning artifacts
+- `deps:report` (optional): summarize dependency inventory and plan artifacts
+  into compact JSON and Markdown reports
 - `upgrade` (optional): run a validated dependency-upgrade workflow and
   re-verify the repository
 
