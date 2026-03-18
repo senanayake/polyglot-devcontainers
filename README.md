@@ -73,13 +73,31 @@ and provenance attestations.
 
 Current published images:
 
-- `ghcr.io/senanayake/polyglot-devcontainers-root`
-- `ghcr.io/senanayake/polyglot-devcontainers-java`
-- `ghcr.io/senanayake/polyglot-devcontainers-python-node`
+- [`ghcr.io/senanayake/polyglot-devcontainers-root`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-root)
+- [`ghcr.io/senanayake/polyglot-devcontainers-java`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-java)
+- [`ghcr.io/senanayake/polyglot-devcontainers-python-node`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-python-node)
 
 The root image is now the repository validation image, so it includes the
 Python, Node, and Java toolchains needed to execute the maintained repo task
 contract.
+
+## Choose a starter
+
+- [Templates](./templates/README.md): copy these when you want a new starter
+  repository
+- [Examples](./examples/README.md): open these when you want a documented
+  workspace that teaches the environments and implemented features
+
+Recommended first stops:
+
+- [python-image-example](./examples/python-image-example/README.md): learn the
+  published-image Python path
+- [java-image-example](./examples/java-image-example/README.md): learn the
+  published-image Java path
+- [python-secure](./templates/python-secure/README.md): start a new Python
+  repository
+- [java-secure](./templates/java-secure/README.md): start a new Java
+  repository
 
 ## Documentation
 
@@ -121,11 +139,17 @@ works.
 
 ## Repository Structure
 
-- `examples/python-example`: the validated reference implementation
-- `examples/python-image-example`: a Python workspace that consumes the published GHCR root image directly
-- `examples/python-maintenance-example`: a richer Python proving fixture for dependency evidence and upgrade experiments
-- `examples/java-image-example`: a Java workspace that consumes the published GHCR image directly
-- `examples/java-maintenance-example`: a richer Java proving fixture for dependency evidence and upgrade experiments
+- `examples/`: documented workspaces that teach the validated environments and
+  implemented features
+- `examples/python-example`: the minimal repository-owned Python reference path
+- `examples/python-image-example`: a Python workspace that consumes the
+  published GHCR root image directly
+- `examples/python-maintenance-example`: a richer Python fixture for dependency
+  evidence, reports, and upgrade experiments
+- `examples/java-image-example`: a Java workspace that consumes the published
+  GHCR image directly
+- `examples/java-maintenance-example`: a richer Java fixture for dependency
+  evidence, reports, and upgrade experiments
 - `templates/`: starter repositories built on the task contract
 - `features/`: reusable devcontainer Features
 - `docs/`: Diataxis documentation set
