@@ -68,8 +68,8 @@ Then follow the top-down guide to:
 GitHub Actions validates the same image definition by building
 `.devcontainer/Containerfile` and running `task ci` inside that container.
 
-Validated OCI images are published to GHCR with Trivy scanning, Cosign signing,
-and provenance attestations.
+Validated OCI images are published to GHCR with Trivy vulnerability reports,
+Cosign signing, SBOM generation and attestation, and provenance attestations.
 
 Current published images:
 
