@@ -160,7 +160,7 @@ jobs:
           push-to-registry: true
 
       - name: Scan published image with Trivy (SARIF)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}@${{ steps.push.outputs.digest }}
           scan-type: image
@@ -174,7 +174,7 @@ jobs:
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Scan published image with Trivy (JSON)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}@${{ steps.push.outputs.digest }}
           scan-type: image
