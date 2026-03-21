@@ -20,6 +20,12 @@ jobs:
         run: |
           docker build --file .devcontainer/Containerfile --tag polyglot-devcontainers-root:ci .
 
+      - name: Validate root image devcontainer metadata
+        run: |
+          python3 scripts/validate_devcontainer_metadata.py \
+            --image polyglot-devcontainers-root:ci \
+            --devcontainer-json .devcontainer/devcontainer.json
+
       - name: Run root workflow
         run: |
           docker run --rm \

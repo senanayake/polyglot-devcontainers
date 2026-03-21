@@ -74,6 +74,27 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Validate image devcontainer metadata
+        run: |
+          case "${{ matrix.name }}" in
+            root)
+              devcontainer_json=".devcontainer/devcontainer.json"
+              ;;
+            java)
+              devcontainer_json="templates/java-secure/.devcontainer/devcontainer.json"
+              ;;
+            python-node)
+              devcontainer_json="templates/python-node-secure/.devcontainer/devcontainer.json"
+              ;;
+            *)
+              echo "Unsupported image matrix entry: ${{ matrix.name }}" >&2
+              exit 1
+              ;;
+          esac
+          python3 scripts/validate_devcontainer_metadata.py \
+            --image "${{ matrix.image_name }}:ci" \
+            --devcontainer-json "${devcontainer_json}"
+
       - name: Run task ci inside built image
         run: |
           docker run --rm \

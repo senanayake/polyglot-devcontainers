@@ -282,7 +282,43 @@ The CI pipeline must not contain special logic that bypasses local workflows.
 
 ---
 
-# 10. Agent Workflow Expectations
+# 10. Dev Container Image Compliance
+
+When this repository builds or publishes an OCI image intended for devcontainer
+use, that image must remain compliant with the dev container specification's
+image metadata model.
+
+Agents must ensure:
+
+- built images embed repo-owned devcontainer metadata in the
+  `devcontainer.metadata` image label
+- the embedded metadata matches the source `devcontainer.json` for all
+  image-storable properties used by the repository
+- published images do not rely on downstream repositories to re-declare
+  required defaults like `remoteUser`, lifecycle commands, or editor
+  customizations
+- image validation checks inspect the final built image labels, not only the
+  source JSON files
+- changes to a devcontainer definition are mirrored in the image build path so
+  the image and `devcontainer.json` do not drift apart
+
+At minimum, agents must review whether the image needs to embed values such as:
+
+- `remoteUser`
+- lifecycle commands like `onCreateCommand`, `updateContentCommand`,
+  `postCreateCommand`, `postStartCommand`, and `postAttachCommand`
+- `customizations`
+- `containerEnv` or `remoteEnv` when they define required behavior for image
+  consumers
+- any other devcontainer properties the specification allows to be stored in
+  image metadata and that this repository depends on
+
+If an image is intended to be consumed directly through an `"image"` reference,
+agents must treat missing or stale `devcontainer.metadata` as a correctness bug.
+
+---
+
+# 11. Agent Workflow Expectations
 
 Agents should follow this development loop:
 
@@ -305,7 +341,7 @@ Agents must not declare tasks complete if these fail.
 
 ---
 
-# 11. Repository Layout
+# 12. Repository Layout
 
 Preferred repository layout:
 polyglot-devcontainers
@@ -330,7 +366,7 @@ Do not introduce unnecessary directories.
 
 ---
 
-# 12. What Agents Must Avoid
+# 13. What Agents Must Avoid
 
 Agents must NOT:
 
@@ -345,7 +381,7 @@ The system must remain **simple and maintainable**.
 
 ---
 
-# 13. Development Philosophy
+# 14. Development Philosophy
 
 The project draws inspiration from:
 
@@ -363,7 +399,7 @@ The system must remain:
 
 ---
 
-# 14. Contribution Expectations
+# 15. Contribution Expectations
 
 Changes should:
 
@@ -380,7 +416,7 @@ Avoid changes that:
 
 ---
 
-# 15. Long Term Vision
+# 16. Long Term Vision
 
 The repository may eventually provide:
 

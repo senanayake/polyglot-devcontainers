@@ -1,5 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
 
+LABEL devcontainer.metadata="[{\"postCreateCommand\":\"task init\",\"customizations\":{\"vscode\":{\"settings\":{\"editor.formatOnSave\":true,\"eslint.validate\":[\"javascript\",\"javascriptreact\",\"typescript\",\"typescriptreact\"],\"typescript.tsdk\":\"node_modules/typescript/lib\"},\"extensions\":[\"dbaeumer.vscode-eslint\",\"esbenp.prettier-vscode\",\"vitest.explorer\"]}},\"remoteUser\":\"node\"}]"
+
 USER root
 
 ARG TASK_VERSION=3.49.1

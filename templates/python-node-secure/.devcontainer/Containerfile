@@ -1,5 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
 
+LABEL devcontainer.metadata="[{\"postCreateCommand\":\"task init && pre-commit install\",\"customizations\":{\"vscode\":{\"settings\":{\"editor.formatOnSave\":true,\"python.defaultInterpreterPath\":\"/workspaces/$${localWorkspaceFolderBasename}/.venv/bin/python\",\"python.testing.pytestEnabled\":true,\"python.testing.pytestArgs\":[\"backend/tests\"],\"python.analysis.typeCheckingMode\":\"basic\",\"eslint.validate\":[\"javascript\",\"javascriptreact\",\"typescript\",\"typescriptreact\"],\"typescript.tsdk\":\"frontend/node_modules/typescript/lib\"},\"extensions\":[\"ms-python.python\",\"charliermarsh.ruff\",\"ms-python.mypy-type-checker\",\"dbaeumer.vscode-eslint\",\"esbenp.prettier-vscode\",\"vitest.explorer\"]}},\"remoteUser\":\"vscode\"}]"
+
 USER root
 
 ARG TASK_VERSION=3.49.1

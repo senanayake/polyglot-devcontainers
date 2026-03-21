@@ -4,7 +4,8 @@ FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
 
 LABEL org.opencontainers.image.source="https://github.com/senanayake/polyglot-devcontainers" \
       org.opencontainers.image.description="Reference polyglot engineering container for polyglot-devcontainers." \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="MIT" \
+      devcontainer.metadata="[{\"postCreateCommand\":\"bash scripts/install_runtime_docs.sh man/man7 && task init && pre-commit install\",\"customizations\":{\"vscode\":{\"settings\":{\"editor.formatOnSave\":true,\"python.defaultInterpreterPath\":\"/workspaces/polyglot-devcontainers/examples/python-example/.venv/bin/python\",\"python.testing.pytestEnabled\":true,\"python.testing.pytestArgs\":[\"examples/python-example/tests\"],\"python.analysis.typeCheckingMode\":\"basic\"},\"extensions\":[\"ms-python.python\",\"charliermarsh.ruff\",\"ms-python.mypy-type-checker\",\"editorconfig.editorconfig\"]}},\"remoteUser\":\"vscode\"}]"
 
 USER root
 
