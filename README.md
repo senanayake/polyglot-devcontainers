@@ -81,6 +81,15 @@ The maintainer image is published for working on this repository and for CI
 parity. It is intentionally broader than the starter images and is not the
 recommended downstream base for new projects.
 
+<!-- recent-releases:start -->
+## Recent Releases
+
+Recent published release notes are available here:
+
+No GitHub Releases published yet. See [tags](https://github.com/senanayake/polyglot-devcontainers/tags) until the first release notes are published.
+
+<!-- recent-releases:end -->
+
 ## Choose a starter
 
 - [Templates](./templates/README.md): copy these when you want a new starter
