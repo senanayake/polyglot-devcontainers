@@ -73,13 +73,13 @@ Cosign signing, SBOM generation and attestation, and provenance attestations.
 
 Current published images:
 
-- [`ghcr.io/senanayake/polyglot-devcontainers-root`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-root)
+- [`ghcr.io/senanayake/polyglot-devcontainers-maintainer`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-maintainer)
 - [`ghcr.io/senanayake/polyglot-devcontainers-java`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-java)
 - [`ghcr.io/senanayake/polyglot-devcontainers-python-node`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-python-node)
 
-The root image is now the repository validation image, so it includes the
-Python, Node, and Java toolchains needed to execute the maintained repo task
-contract.
+The maintainer image is published for working on this repository and for CI
+parity. It is intentionally broader than the starter images and is not the
+recommended downstream base for new projects.
 
 ## Choose a starter
 
@@ -91,7 +91,7 @@ contract.
 Recommended first stops:
 
 - [python-image-example](./examples/python-image-example/README.md): learn the
-  published-image Python path
+  published Python path backed by the focused Python and Node image
 - [java-image-example](./examples/java-image-example/README.md): learn the
   published-image Java path
 - [python-secure](./templates/python-secure/README.md): start a new Python
@@ -143,7 +143,7 @@ works.
   implemented features
 - `examples/python-example`: the minimal repository-owned Python reference path
 - `examples/python-image-example`: a Python workspace that consumes the
-  published GHCR root image directly
+  published GHCR Python and Node image directly
 - `examples/python-maintenance-example`: a richer Python fixture for dependency
   evidence, reports, and upgrade experiments
 - `examples/java-image-example`: a Java workspace that consumes the published

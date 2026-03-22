@@ -5,9 +5,13 @@ template immediately.
 
 ## Initial images
 
-- `ghcr.io/<owner>/polyglot-devcontainers-root`
+- `ghcr.io/<owner>/polyglot-devcontainers-maintainer`
 - `ghcr.io/<owner>/polyglot-devcontainers-java`
 - `ghcr.io/<owner>/polyglot-devcontainers-python-node`
+
+The maintainer image is published so repository contributors can consume the
+same environment that CI validates. It is intentionally broader than the
+starter images and is not part of the recommended downstream starter catalog.
 
 ## Tag policy
 

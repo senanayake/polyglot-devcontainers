@@ -34,7 +34,7 @@ Use these paths for practical starts:
 - `templates/java-secure`
   Preferred Java starter template.
 - `examples/python-image-example`
-  Use when you want to validate the published root image consumption path.
+  Use when you want to validate the published Python image consumption path.
 - `examples/java-image-example`
   Use when you want to validate the published Java image consumption path.
 

@@ -11,7 +11,7 @@ by having an agent operate against a prewired workspace.
 - [python-example](./python-example/README.md): the smallest repository-owned
   Python reference path
 - [python-image-example](./python-image-example/README.md): consume the
-  published root image directly for Python work
+  published Python and Node image directly for Python work
 - [python-maintenance-example](./python-maintenance-example/README.md): richer
   Python dependency-maintenance fixture
 - [java-image-example](./java-image-example/README.md): consume the published

@@ -22,12 +22,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: root
-            image_name: polyglot-devcontainers-root
+          - name: maintainer
+            image_name: polyglot-devcontainers-maintainer
             dockerfile: .devcontainer/Containerfile
             context: .
             workdir: /workspaces/polyglot-devcontainers
-            description: Reference polyglot engineering container for polyglot-devcontainers.
+            description: Maintainer and CI validation container for polyglot-devcontainers.
           - name: java
             image_name: polyglot-devcontainers-java
             dockerfile: templates/java-secure/.devcontainer/Containerfile
@@ -77,7 +77,7 @@ jobs:
       - name: Validate image devcontainer metadata
         run: |
           case "${{ matrix.name }}" in
-            root)
+            maintainer)
               devcontainer_json=".devcontainer/devcontainer.json"
               ;;
             java)

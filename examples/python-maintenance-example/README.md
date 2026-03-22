@@ -1,7 +1,7 @@
 # python-maintenance-example
 
 `python-maintenance-example` is a slightly richer Python workspace that consumes
-the published image `ghcr.io/senanayake/polyglot-devcontainers-root:main`
+the published image `ghcr.io/senanayake/polyglot-devcontainers-python-node:main`
 directly.
 
 It exists to pressure-test the Phase 9b dependency evidence and planning flow on

@@ -18,12 +18,12 @@ jobs:
 
       - name: Build root image
         run: |
-          docker build --file .devcontainer/Containerfile --tag polyglot-devcontainers-root:ci .
+          docker build --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:ci .
 
       - name: Validate root image devcontainer metadata
         run: |
           python3 scripts/validate_devcontainer_metadata.py \
-            --image polyglot-devcontainers-root:ci \
+            --image polyglot-devcontainers-maintainer:ci \
             --devcontainer-json .devcontainer/devcontainer.json
 
       - name: Run root workflow
@@ -32,5 +32,5 @@ jobs:
             -u root \
             -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" \
             -w /workspaces/polyglot-devcontainers \
-            polyglot-devcontainers-root:ci \
+            polyglot-devcontainers-maintainer:ci \
             bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"

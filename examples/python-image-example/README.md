@@ -1,7 +1,7 @@
 # python-image-example
 
 `python-image-example` is a minimal Python workspace that consumes the
-published image `ghcr.io/senanayake/polyglot-devcontainers-root:main`
+published image `ghcr.io/senanayake/polyglot-devcontainers-python-node:main`
 directly.
 
 Use it when you want to validate the stable Python image-consumption path in VS
@@ -12,7 +12,7 @@ environment bootstrap.
 
 What it teaches:
 
-- consuming the published root image directly in VS Code
+- consuming the published Python and Node image directly in VS Code
 - the standard Python task contract
 - `uv` and `uv.lock` as the default Python workflow
 - runtime guidance through `man`

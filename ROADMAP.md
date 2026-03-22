@@ -364,13 +364,15 @@ Delivered:
 
 Published images:
 
-- `ghcr.io/senanayake/polyglot-devcontainers-root`
+- `ghcr.io/senanayake/polyglot-devcontainers-maintainer`
 - `ghcr.io/senanayake/polyglot-devcontainers-java`
 - `ghcr.io/senanayake/polyglot-devcontainers-python-node`
 
 Outcome:
 
-Secure development environment artifacts.
+Secure development environment artifacts, including a published maintainer
+image for repository work and focused starter images for downstream
+consumption.
 
 ## Phase 7 - Java Engineering Environment
 

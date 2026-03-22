@@ -1,6 +1,6 @@
 {
   "name": "python-maintenance-example",
-  "image": "ghcr.io/senanayake/polyglot-devcontainers-root:main",
+  "image": "ghcr.io/senanayake/polyglot-devcontainers-python-node:main",
   "postCreateCommand": "bash ../../scripts/install_runtime_docs.sh ../../man/man7 && task init && pre-commit install",
   "customizations": {
     "vscode": {

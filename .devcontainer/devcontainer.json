@@ -1,5 +1,5 @@
 {
-  "name": "polyglot-devcontainers-root",
+  "name": "polyglot-devcontainers-maintainer",
   "build": {
     "dockerfile": "Containerfile",
     "context": ".."

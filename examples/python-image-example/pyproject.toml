@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "python-image-example"
 version = "0.1.0"
-description = "Minimal Python example that consumes the published root image."
+description = "Minimal Python example that consumes the published Python and Node image."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
