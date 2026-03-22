@@ -45,6 +45,29 @@ For each published image, the workflow:
 4. pushes the image to GHCR
 5. signs the image with Cosign
 6. attaches build provenance
+7. uploads release security assets and adds a `Security Status` section to the GitHub Release
+
+## Find release security status
+
+After a tag-triggered release succeeds, open the GitHub Release page for that
+tag.
+
+The release notes now include a generated `Security Status` section with:
+
+- per-image Critical / High / Total counts
+- direct links to the per-image summary Markdown and JSON assets
+- direct links to the per-image SBOM assets
+- a release-level residual-risk report for critical findings that remain in the
+  latest upstream-supported third-party binaries
+
+The release also publishes these assets directly:
+
+- `release-security-overview.md`
+- `release-security-<image>-summary.md`
+- `release-security-<image>-summary.json`
+- `release-security-<image>-sbom.spdx.json`
+- `release-security-residual-risk.md`
+- `release-security-residual-risk.json`
 
 ## Maintain published image bases
 

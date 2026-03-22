@@ -192,161 +192,14 @@ jobs:
       - name: Summarize release security results
         if: ${{ always() && hashFiles(format('trivy-{0}.json', matrix.name)) != '' }}
         run: |
-          python3 - <<'PY'
-          import json
-          import textwrap
-          import os
-          from pathlib import Path
-
-          matrix_name = os.environ["MATRIX_NAME"]
-          image_name = os.environ["IMAGE_NAME"]
-          image_digest = os.environ["IMAGE_DIGEST"]
-          image_ref = f"ghcr.io/{os.environ['GITHUB_REPOSITORY_OWNER']}/{image_name}@{image_digest}"
-          report_path = Path(f"trivy-{matrix_name}.json")
-          report = json.loads(report_path.read_text(encoding="utf-8"))
-
-          critical = 0
-          high = 0
-          medium = 0
-          low = 0
-          unfixed = 0
-          fixable = 0
-          total = 0
-          by_type = {}
-          package_counts = {}
-          critical_rows = []
-
-          for result in report.get("Results", []):
-              result_type = result.get("Type", "unknown")
-              for vulnerability in result.get("Vulnerabilities", []) or []:
-                  total += 1
-                  severity = vulnerability.get("Severity", "").upper()
-                  if severity == "CRITICAL":
-                      critical += 1
-                  elif severity == "HIGH":
-                      high += 1
-                  elif severity == "MEDIUM":
-                      medium += 1
-                  elif severity == "LOW":
-                      low += 1
-                  package_name = vulnerability.get("PkgName") or vulnerability.get("PkgID") or "unknown"
-                  package_counts[package_name] = package_counts.get(package_name, 0) + 1
-                  by_type[result_type] = by_type.get(
-                      result_type,
-                      {"total": 0, "critical": 0, "high": 0, "fixable": 0},
-                  )
-                  by_type[result_type]["total"] += 1
-                  if severity == "CRITICAL":
-                      by_type[result_type]["critical"] += 1
-                  elif severity == "HIGH":
-                      by_type[result_type]["high"] += 1
-
-                  fixed_version = vulnerability.get("FixedVersion")
-                  if not fixed_version:
-                      unfixed += 1
-                  else:
-                      fixable += 1
-
-                  if severity == "CRITICAL":
-                      critical_rows.append(
-                          {
-                              "vulnerability_id": vulnerability.get("VulnerabilityID", "unknown"),
-                              "package_name": package_name,
-                              "installed_version": vulnerability.get("InstalledVersion", "unknown"),
-                              "fixed_version": fixed_version or "none",
-                              "type": result_type,
-                              "title": (vulnerability.get("Title") or "").strip(),
-                          }
-                      )
-
-          top_packages = sorted(package_counts.items(), key=lambda item: (-item[1], item[0]))[:10]
-          critical_rows = sorted(
-              critical_rows,
-              key=lambda item: (item["fixed_version"] == "none", item["package_name"], item["vulnerability_id"]),
-          )
-          summary_markdown = Path(f"trivy-{matrix_name}-summary.md")
-
-          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
-          with summary.open("a", encoding="utf-8") as handle, summary_markdown.open("w", encoding="utf-8") as report_handle:
-              def write(line: str = "") -> None:
-                  handle.write(line + "\n")
-                  report_handle.write(line + "\n")
-
-              write(f"### Release Security Summary: {matrix_name}")
-              write("")
-              write(f"- Image: `{image_ref}`")
-              write(f"- SBOM: `sbom-{matrix_name}.spdx.json`")
-              write(f"- Trivy SARIF: `trivy-{matrix_name}.sarif`")
-              write(f"- Trivy JSON: `trivy-{matrix_name}.json`")
-              write("")
-              write("| Severity | Count |")
-              write("| --- | ---: |")
-              write(f"| Critical | {critical} |")
-              write(f"| High | {high} |")
-              write(f"| Medium | {medium} |")
-              write(f"| Low | {low} |")
-              write(f"| Fixable | {fixable} |")
-              write(f"| Unfixed | {unfixed} |")
-              write(f"| Total | {total} |")
-              write("")
-
-              write("#### By Ecosystem / Scanner Type")
-              write("")
-              write("| Type | Total | Critical | High | Fixable |")
-              write("| --- | ---: | ---: | ---: | ---: |")
-              for result_type in sorted(by_type):
-                  entry = by_type[result_type]
-                  write(
-                      f"| `{result_type}` | {entry['total']} | {entry['critical']} | {entry['high']} | {entry['fixable']} |"
-                  )
-              write("")
-
-              write("#### Top Packages By Finding Count")
-              write("")
-              write("| Package | Findings |")
-              write("| --- | ---: |")
-              for package_name, count in top_packages:
-                  write(f"| `{package_name}` | {count} |")
-              write("")
-
-              write("#### Critical CVEs")
-              write("")
-              if critical_rows:
-                  write("| CVE | Package | Installed | Fixed | Type |")
-                  write("| --- | --- | --- | --- | --- |")
-                  for row in critical_rows:
-                      write(
-                          f"| `{row['vulnerability_id']}` | `{row['package_name']}` | `{row['installed_version']}` | `{row['fixed_version']}` | `{row['type']}` |"
-                      )
-                  write("")
-              else:
-                  write("No critical CVEs found.")
-                  write("")
-
-              remediation_notes = []
-              if by_type.get("os-pkgs", {}).get("critical", 0) or by_type.get("os-pkgs", {}).get("high", 0):
-                  remediation_notes.append(
-                      "Refresh the base image and reduce ad-hoc apt installs first; OS package findings dominate this image."
-                  )
-              if any(pkg in package_counts for pkg in ("nodejs", "openssl", "libssl3", "glibc", "zlib", "curl")):
-                  remediation_notes.append(
-                      "Review high-volume core packages such as `nodejs`, `openssl`/`libssl`, `glibc`, `zlib`, and `curl`; these usually move with base image or distro package updates."
-                  )
-              if critical_rows and any(row["fixed_version"] != "none" for row in critical_rows):
-                  remediation_notes.append(
-                      "Prioritize critical findings with a non-empty fixed version; those are the fastest path to measurable risk reduction."
-                  )
-              if not remediation_notes:
-                  remediation_notes.append(
-                      "Use the top-package and critical-CVE tables above to decide whether the next fix should be a base image refresh, package removal, or language dependency update."
-                  )
-
-              write("#### Suggested Remediation Path")
-              write("")
-              for note in remediation_notes:
-                  write(f"- {textwrap.shorten(note, width=180, placeholder='...')}")
-              write("")
-          PY
+          python3 scripts/summarize_trivy_report.py \
+            --report "trivy-${MATRIX_NAME}.json" \
+            --image-name "${MATRIX_NAME}" \
+            --image-ref "ghcr.io/${GITHUB_REPOSITORY_OWNER}/${IMAGE_NAME}@${IMAGE_DIGEST}" \
+            --json-output "trivy-${MATRIX_NAME}-summary.json" \
+            --markdown-output "trivy-${MATRIX_NAME}-summary.md"
+          cat "trivy-${MATRIX_NAME}-summary.md" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
         env:
           MATRIX_NAME: ${{ matrix.name }}
           IMAGE_NAME: ${{ matrix.image_name }}
@@ -360,6 +213,7 @@ jobs:
           path: |
             trivy-${{ matrix.name }}.sarif
             trivy-${{ matrix.name }}.json
+            trivy-${{ matrix.name }}-summary.json
             trivy-${{ matrix.name }}-summary.md
             sbom-${{ matrix.name }}.spdx.json
           if-no-files-found: error
@@ -384,9 +238,88 @@ jobs:
               --target "${GITHUB_SHA}"
           fi
 
+  publish-release-security:
+    runs-on: ubuntu-latest
+    needs:
+      - publish
+      - publish-release-notes
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Download release security artifacts
+        uses: actions/download-artifact@v5
+        with:
+          pattern: release-security-*
+          path: .artifacts/release-assets
+          merge-multiple: true
+
+      - name: Build release security reports
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          python3 scripts/build_residual_risk_report.py \
+            --report maintainer=.artifacts/release-assets/trivy-maintainer.json \
+            --report java=.artifacts/release-assets/trivy-java.json \
+            --report python-node=.artifacts/release-assets/trivy-python-node.json \
+            --json-output .artifacts/release-assets/release-security-residual-risk.json \
+            --markdown-output .artifacts/release-assets/release-security-residual-risk.md
+          gh release view "${TAG_NAME}" --json body --jq .body > .artifacts/release-assets/release-notes-existing.md
+          python3 scripts/build_release_security_summary.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --tag "${TAG_NAME}" \
+            --summary maintainer=.artifacts/release-assets/trivy-maintainer-summary.json \
+            --summary java=.artifacts/release-assets/trivy-java-summary.json \
+            --summary python-node=.artifacts/release-assets/trivy-python-node-summary.json \
+            --residual-risk-markdown .artifacts/release-assets/release-security-residual-risk.md \
+            --overview-output .artifacts/release-assets/release-security-overview.md \
+            --notes-fragment-output .artifacts/release-assets/release-security-notes.md \
+            --existing-notes .artifacts/release-assets/release-notes-existing.md \
+            --release-notes-output .artifacts/release-assets/release-notes-updated.md
+
+      - name: Stage release security assets
+        run: |
+          mkdir -p .artifacts/release-assets/upload
+          cp .artifacts/release-assets/trivy-maintainer-summary.md .artifacts/release-assets/upload/release-security-maintainer-summary.md
+          cp .artifacts/release-assets/trivy-maintainer-summary.json .artifacts/release-assets/upload/release-security-maintainer-summary.json
+          cp .artifacts/release-assets/sbom-maintainer.spdx.json .artifacts/release-assets/upload/release-security-maintainer-sbom.spdx.json
+          cp .artifacts/release-assets/trivy-java-summary.md .artifacts/release-assets/upload/release-security-java-summary.md
+          cp .artifacts/release-assets/trivy-java-summary.json .artifacts/release-assets/upload/release-security-java-summary.json
+          cp .artifacts/release-assets/sbom-java.spdx.json .artifacts/release-assets/upload/release-security-java-sbom.spdx.json
+          cp .artifacts/release-assets/trivy-python-node-summary.md .artifacts/release-assets/upload/release-security-python-node-summary.md
+          cp .artifacts/release-assets/trivy-python-node-summary.json .artifacts/release-assets/upload/release-security-python-node-summary.json
+          cp .artifacts/release-assets/sbom-python-node.spdx.json .artifacts/release-assets/upload/release-security-python-node-sbom.spdx.json
+          cp .artifacts/release-assets/release-security-overview.md .artifacts/release-assets/upload/release-security-overview.md
+          cp .artifacts/release-assets/release-security-residual-risk.md .artifacts/release-assets/upload/release-security-residual-risk.md
+          cp .artifacts/release-assets/release-security-residual-risk.json .artifacts/release-assets/upload/release-security-residual-risk.json
+
+      - name: Upload release security assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          gh release upload "${TAG_NAME}" .artifacts/release-assets/upload/* --clobber
+
+      - name: Update release notes with security status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          gh release edit "${TAG_NAME}" --notes-file .artifacts/release-assets/release-notes-updated.md
+
   update-readme-recent-releases:
     runs-on: ubuntu-latest
-    needs: publish-release-notes
+    needs: publish-release-security
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
     steps:
       - name: Check out default branch
