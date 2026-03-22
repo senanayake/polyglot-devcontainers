@@ -1,0 +1,112 @@
+name: maintainer-image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".devcontainer/**"
+      - "features/**"
+      - "scripts/**"
+      - "Taskfile.yml"
+      - ".github/workflows/maintainer-image.yml"
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+  attestations: write
+
+jobs:
+  publish-maintainer:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      IMAGE_NAME: polyglot-devcontainers-maintainer
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=raw,value=main,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=Maintainer and CI validation container for polyglot-devcontainers.
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+
+      - name: Build maintainer image for validation
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .devcontainer/Containerfile
+          pull: true
+          load: true
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Validate maintainer devcontainer metadata
+        run: |
+          python3 scripts/validate_devcontainer_metadata.py \
+            --image "${IMAGE_NAME}:ci" \
+            --devcontainer-json .devcontainer/devcontainer.json
+
+      - name: Run maintainer workflow
+        run: |
+          docker run --rm \
+            --privileged \
+            -u root \
+            -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" \
+            -w /workspaces/polyglot-devcontainers \
+            "${IMAGE_NAME}:ci" \
+            bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push maintainer image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .devcontainer/Containerfile
+          pull: true
+          push: true
+          sbom: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign maintainer image
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          cosign sign --yes "ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}@${{ steps.push.outputs.digest }}"
+
+      - name: Attest maintainer build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true

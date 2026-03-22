@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -27,12 +28,19 @@ def run(command: list[str]) -> None:
     subprocess.run(command, cwd=ROOT, check=True, text=True, env=env)
 
 
+def reset_invalid_venv() -> None:
+    if VENV_DIR.exists() and not PYTHON.exists():
+        shutil.rmtree(VENV_DIR)
+
+
 def init() -> None:
+    reset_invalid_venv()
     run([UV, "sync", "--frozen", "--extra", "dev"])
     run(PNPM + ["install", "--frozen-lockfile", "--force"])
 
 
 def lint() -> None:
+    reset_invalid_venv()
     if not PYTHON.exists():
         init()
     python_paths = [str(BACKEND_DIR / "src"), str(BACKEND_DIR / "tests"), "tasks.py"]
@@ -45,6 +53,7 @@ def lint() -> None:
 
 
 def format_code() -> None:
+    reset_invalid_venv()
     if not PYTHON.exists():
         init()
     python_paths = [str(BACKEND_DIR / "src"), str(BACKEND_DIR / "tests"), "tasks.py"]
@@ -54,6 +63,7 @@ def format_code() -> None:
 
 
 def test() -> None:
+    reset_invalid_venv()
     if not PYTHON.exists():
         init()
     run([str(PYTHON), "-m", "pytest", "-q", "-s"])
@@ -61,6 +71,7 @@ def test() -> None:
 
 
 def scan() -> None:
+    reset_invalid_venv()
     if not PYTHON.exists():
         init()
     run(

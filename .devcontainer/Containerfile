@@ -9,13 +9,15 @@ LABEL org.opencontainers.image.source="https://github.com/senanayake/polyglot-de
 
 USER root
 
+ENV POLYGLOT_CONTAINER_ROLE=maintainer
+
 COPY --from=java_base /usr/lib/jvm/msopenjdk-current /usr/lib/jvm/msopenjdk-current
 
 COPY features /tmp/features
 
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl git gnupg less man-db \
+    && apt-get install -y --no-install-recommends ca-certificates curl docker.io git gnupg less man-db \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
     | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
@@ -25,6 +27,7 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get install -y --no-install-recommends nodejs \
     && ln -sf /usr/lib/jvm/msopenjdk-current/bin/java /usr/local/bin/java \
     && ln -sf /usr/lib/jvm/msopenjdk-current/bin/javac /usr/local/bin/javac \
+    && usermod -aG docker vscode \
     && rm -rf /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
 
 RUN bash /tmp/features/security-baseline/install.sh \

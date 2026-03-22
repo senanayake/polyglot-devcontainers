@@ -14,6 +14,10 @@ ROOT = Path(__file__).resolve().parent
 TMP_DIR = ROOT / ".tmp"
 ARTIFACTS_DIR = ROOT / ".artifacts"
 SCANS_DIR = ARTIFACTS_DIR / "scans"
+REPO_ROOT = next(
+    parent for parent in Path(__file__).resolve().parents if (parent / "AGENTS.md").exists()
+)
+RUNTIME_GUARD = REPO_ROOT / "scripts" / "require_maintainer_container.py"
 VENV_DIR = ROOT / ".venv"
 PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 UV = "uv.exe" if os.name == "nt" else "uv"
@@ -49,6 +53,10 @@ def run(command: list[str], *, capture_output: bool = False) -> subprocess.Compl
     return subprocess.run(
         command, cwd=ROOT, check=True, text=True, env=env, capture_output=capture_output
     )
+
+
+def require_maintainer() -> None:
+    subprocess.run([sys.executable, str(RUNTIME_GUARD)], cwd=ROOT, check=True)
 
 
 def read_project_metadata() -> dict[str, Any]:
@@ -821,6 +829,7 @@ def main() -> int:
     if len(sys.argv) != 2 or sys.argv[1] not in COMMANDS:
         print(f"usage: {Path(sys.argv[0]).name} [{'|'.join(COMMANDS)}]")
         return 1
+    require_maintainer()
     COMMANDS[sys.argv[1]]()
     return 0
 

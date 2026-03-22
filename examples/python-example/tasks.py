@@ -10,6 +10,10 @@ TMP_DIR = ROOT / ".tmp"
 VENV_DIR = ROOT / ".venv"
 ARTIFACTS_DIR = ROOT / ".artifacts"
 SCANS_DIR = ARTIFACTS_DIR / "scans"
+REPO_ROOT = next(
+    parent for parent in Path(__file__).resolve().parents if (parent / "AGENTS.md").exists()
+)
+RUNTIME_GUARD = REPO_ROOT / "scripts" / "require_maintainer_container.py"
 PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 UV = "uv.exe" if os.name == "nt" else "uv"
 
@@ -29,6 +33,10 @@ def run(command: list[str], *, capture_output: bool = False) -> subprocess.Compl
         capture_output=capture_output,
         env=env,
     )
+
+
+def require_maintainer() -> None:
+    subprocess.run([sys.executable, str(RUNTIME_GUARD)], cwd=ROOT, check=True)
 
 
 def init() -> None:
@@ -86,6 +94,7 @@ def main() -> int:
         print(f"usage: {Path(sys.argv[0]).name} [{'|'.join(COMMANDS)}]")
         return 1
 
+    require_maintainer()
     COMMANDS[sys.argv[1]]()
     return 0
 

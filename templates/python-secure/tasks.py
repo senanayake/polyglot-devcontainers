@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -49,6 +50,11 @@ def run(command: list[str], *, capture_output: bool = False) -> subprocess.Compl
     return subprocess.run(
         command, cwd=ROOT, check=True, text=True, env=env, capture_output=capture_output
     )
+
+
+def reset_invalid_venv() -> None:
+    if VENV_DIR.exists() and not PYTHON.exists():
+        shutil.rmtree(VENV_DIR)
 
 
 def read_project_metadata() -> dict[str, Any]:
@@ -268,6 +274,7 @@ def build_uv_plan_dependencies() -> tuple[list[dict[str, Any]], dict[str, Any] |
 
 
 def ensure_venv() -> None:
+    reset_invalid_venv()
     if not PYTHON.exists():
         run([UV, "sync", "--frozen", "--extra", "dev"])
 
@@ -535,6 +542,7 @@ def build_plan_artifact() -> dict[str, Any]:
 
 
 def init() -> None:
+    reset_invalid_venv()
     run([UV, "sync", "--frozen", "--extra", "dev"])
 
 

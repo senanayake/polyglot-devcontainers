@@ -1,32 +1,44 @@
 version: "3"
 
 tasks:
+  _require_maintainer:
+    internal: true
+    cmds:
+      - python ../../scripts/require_maintainer_container.py
+
   init:
+    deps: [_require_maintainer]
     cmds:
       - python tasks.py init
 
   lint:
+    deps: [_require_maintainer]
     cmds:
       - python tasks.py lint
 
   test:
+    deps: [_require_maintainer]
     cmds:
       - python tasks.py test
 
   scan:
+    deps: [_require_maintainer]
     cmds:
       - python tasks.py scan
       - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
 
   deps:inventory:
+    deps: [_require_maintainer]
     cmds:
       - python tasks.py inventory
 
   deps:plan:
+    deps: [_require_maintainer]
     cmds:
       - python tasks.py plan
 
   deps:report:
+    deps: [_require_maintainer]
     cmds:
       - task deps:inventory
       - task deps:plan
@@ -38,10 +50,12 @@ tasks:
         --markdown-output .artifacts/scans/dependency-report.md
 
   format:
+    deps: [_require_maintainer]
     cmds:
       - python tasks.py format
 
   upgrade:
+    deps: [_require_maintainer]
     cmds:
       - task deps:inventory
       - task deps:plan
@@ -49,6 +63,7 @@ tasks:
       - task ci
 
   ci:
+    deps: [_require_maintainer]
     cmds:
       - task init
       - task lint

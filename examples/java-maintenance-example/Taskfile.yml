@@ -1,20 +1,29 @@
 version: "3"
 
 tasks:
+  _require_maintainer:
+    internal: true
+    cmds:
+      - python ../../scripts/require_maintainer_container.py
+
   init:
+    deps: [_require_maintainer]
     cmds:
       - mkdir -p .artifacts/scans
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --write-locks testClasses
 
   lint:
+    deps: [_require_maintainer]
     cmds:
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon spotlessCheck spotbugsMain spotbugsTest
 
   test:
+    deps: [_require_maintainer]
     cmds:
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon test
 
   scan:
+    deps: [_require_maintainer]
     cmds:
       - mkdir -p .artifacts/scans
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon testClasses
@@ -22,6 +31,7 @@ tasks:
       - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
 
   deps:inventory:
+    deps: [_require_maintainer]
     cmds:
       - mkdir -p .artifacts/scans
       - >
@@ -36,6 +46,7 @@ tasks:
         gradle.lockfile > .artifacts/scans/dependency-inventory.json
 
   deps:plan:
+    deps: [_require_maintainer]
     cmds:
       - mkdir -p .artifacts/scans
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --no-parallel dependencyUpdates -Drevision=release -DoutputFormatter=json -DoutputDir=.artifacts/scans -DreportfileName=gradle-dependency-updates
@@ -72,6 +83,7 @@ tasks:
         .artifacts/scans/dependency-plan.json
 
   deps:report:
+    deps: [_require_maintainer]
     cmds:
       - task deps:inventory
       - task deps:plan
@@ -83,10 +95,12 @@ tasks:
         --markdown-output .artifacts/scans/dependency-report.md
 
   format:
+    deps: [_require_maintainer]
     cmds:
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon spotlessApply
 
   upgrade:
+    deps: [_require_maintainer]
     cmds:
       - task deps:inventory
       - task deps:plan
@@ -97,6 +111,7 @@ tasks:
       - task scan
 
   ci:
+    deps: [_require_maintainer]
     cmds:
       - task init
       - task lint

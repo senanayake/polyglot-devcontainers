@@ -1,9 +1,7 @@
 {
   "name": "polyglot-devcontainers-maintainer",
-  "build": {
-    "dockerfile": "Containerfile",
-    "context": ".."
-  },
+  "image": "ghcr.io/senanayake/polyglot-devcontainers-maintainer:main",
+  "runArgs": ["--privileged"],
   "postCreateCommand": "bash scripts/install_runtime_docs.sh man/man7 && task init && pre-commit install",
   "customizations": {
     "vscode": {
