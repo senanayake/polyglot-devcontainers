@@ -184,7 +184,63 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         if: ${{ always() && hashFiles(format('trivy-{0}.sarif', matrix.name)) != '' }}
         with:
+          category: trivy-${{ matrix.name }}
           sarif_file: trivy-${{ matrix.name }}.sarif
+
+      - name: Summarize release security results
+        if: ${{ always() && hashFiles(format('trivy-{0}.json', matrix.name)) != '' }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          matrix_name = os.environ["MATRIX_NAME"]
+          image_name = os.environ["IMAGE_NAME"]
+          image_digest = os.environ["IMAGE_DIGEST"]
+          image_ref = f"ghcr.io/{os.environ['GITHUB_REPOSITORY_OWNER']}/{image_name}@{image_digest}"
+          report_path = Path(f"trivy-{matrix_name}.json")
+          report = json.loads(report_path.read_text(encoding="utf-8"))
+
+          critical = 0
+          high = 0
+          medium = 0
+          low = 0
+          unfixed = 0
+
+          for result in report.get("Results", []):
+              for vulnerability in result.get("Vulnerabilities", []) or []:
+                  severity = vulnerability.get("Severity", "").upper()
+                  if severity == "CRITICAL":
+                      critical += 1
+                  elif severity == "HIGH":
+                      high += 1
+                  elif severity == "MEDIUM":
+                      medium += 1
+                  elif severity == "LOW":
+                      low += 1
+                  if not vulnerability.get("FixedVersion"):
+                      unfixed += 1
+
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          with summary.open("a", encoding="utf-8") as handle:
+              handle.write(f"### Release Security Summary: {matrix_name}\n\n")
+              handle.write(f"- Image: `{image_ref}`\n")
+              handle.write(f"- SBOM: `sbom-{matrix_name}.spdx.json`\n")
+              handle.write(f"- Trivy SARIF: `trivy-{matrix_name}.sarif`\n")
+              handle.write(f"- Trivy JSON: `trivy-{matrix_name}.json`\n\n")
+              handle.write("| Severity | Count |\n")
+              handle.write("| --- | ---: |\n")
+              handle.write(f"| Critical | {critical} |\n")
+              handle.write(f"| High | {high} |\n")
+              handle.write(f"| Medium | {medium} |\n")
+              handle.write(f"| Low | {low} |\n")
+              handle.write(f"| Unfixed | {unfixed} |\n\n")
+          PY
+        env:
+          MATRIX_NAME: ${{ matrix.name }}
+          IMAGE_NAME: ${{ matrix.image_name }}
+          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
 
       - name: Upload release security artifacts
         uses: actions/upload-artifact@v4
