@@ -88,6 +88,7 @@ Recent published release notes are available here:
 
 | Version | Date | Release Notes |
 | --- | --- | --- |
+| `v0.0.10` | 2026-03-22 | [v0.0.10](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.10) |
 | `v0.0.9` | 2026-03-22 | [v0.0.9](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.9) |
 
 <!-- recent-releases:end -->
