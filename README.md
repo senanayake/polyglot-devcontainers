@@ -86,7 +86,9 @@ recommended downstream base for new projects.
 
 Recent published release notes are available here:
 
-No GitHub Releases published yet. See [tags](https://github.com/senanayake/polyglot-devcontainers/tags) until the first release notes are published.
+| Version | Date | Release Notes |
+| --- | --- | --- |
+| `v0.0.9` | 2026-03-22 | [v0.0.9](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.9) |
 
 <!-- recent-releases:end -->
 
