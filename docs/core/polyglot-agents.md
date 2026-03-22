@@ -41,7 +41,11 @@ Agent defaults:
 5. use `task image:discover` before changing published image base references
 6. use an explicit write step such as `task image:pin -- --write`
 7. verify the published images with `task image:verify`
-8. use the smallest change that solves the real problem
+8. classify critical published-image findings as either `repo-fixable` or
+   `upstream residual`
+9. prefer the latest upstream-supported binary release for third-party tools
+   and do not self-build vendor tools only to suppress scanner output
+10. use the smallest change that solves the real problem
 
 # OUTPUTS / ARTIFACTS
 
@@ -52,6 +56,8 @@ Published image maintenance also writes evidence under:
 - `base-image-report.json`
 - `base-image-report.md`
 - `image-security/`
+- `image-security/residual-risk.json`
+- `image-security/residual-risk.md`
 
 # COMMON FAILURES
 
@@ -63,6 +69,8 @@ Published image maintenance also writes evidence under:
 - ignoring generated artifacts after dependency or security tasks
 - editing published image base references without an explicit discovery report
 - changing pins without a deliberate write step
+- treating the latest upstream-supported vendor binary as repository-owned code
+  that should be privately rebuilt to hide a scanner finding
 
 # GUIDANCE
 
@@ -73,6 +81,11 @@ Published image maintenance also writes evidence under:
 - treat the published images as a separate maintenance lane: discover, pin, verify, then scan
 - use `task maintainer:pull` and `task maintainer:task -- ...` when you need to enter the maintainer lane from the host
 - if the maintainer container cannot execute the workflow, fix the maintainer container rather than falling back to the host
+- for published-image CVEs, fix repo-owned causes first: stale base images,
+  stale distro packages, stale pinned versions, and missing verification
+- if a critical remains in the latest upstream-supported release of a managed
+  binary such as `trivy`, `gitleaks`, or `task`, record it as upstream residual
+  risk and keep the upstream artifact
 
 # SEE ALSO
 

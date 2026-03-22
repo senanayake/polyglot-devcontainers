@@ -163,7 +163,7 @@ Definitions:
 | scan | run security checks |
 | ci | run lint + test + scan |
 
-Agents should consider a task complete only when: 
+Agents should consider a task complete only when:
 ```bash
 task ci
 ```
@@ -258,6 +258,23 @@ Security tooling must be:
 - well maintained
 - compatible with CI pipelines
 
+For third-party security or maintenance tools that this repository installs as
+released binaries, agents must stay on the latest upstream-supported release
+that is available through the repository workflow.
+
+Agents must NOT:
+
+- self-build, fork, patch, or privately repackage third-party tools such as
+  `trivy`, `gitleaks`, or `task` only to suppress scanner findings unless a
+  human explicitly directs that work
+- replace an upstream-supported release artifact with a repository-specific
+  derivative build as an automatic remediation step
+
+When image scans still report findings in the latest upstream-supported binary
+release, agents must classify those findings as upstream residual risk,
+document them in the generated security artifacts, and wait for a new upstream
+release rather than leaving the monitored ecosystem.
+
 ---
 
 # 8. Code Quality Tooling
@@ -340,13 +357,13 @@ agents must treat missing or stale `devcontainer.metadata` as a correctness bug.
 
 Agents should follow this development loop:
 
-1. understand task  
-2. modify code  
-3. run lint  
-4. run tests  
-5. run security scans  
-6. fix failures  
-7. repeat  
+1. understand task
+2. modify code
+3. run lint
+4. run tests
+5. run security scans
+6. fix failures
+7. repeat
 
 Example loop:
 ```bash
@@ -447,7 +464,7 @@ The repository may eventually provide:
 - standardized DevSecOps workflows
 - AI-agent-compatible development environments
 
-But the system must evolve **incrementally** from the 
+But the system must evolve **incrementally** from the
 
 simplest working implementation.
 simple → working → evolved → complex

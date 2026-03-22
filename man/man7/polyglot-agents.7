@@ -14,6 +14,11 @@ Read this page before making changes or declaring work complete.
 .EX
 man polyglot
 man polyglot\-task\-contract
+task maintainer:pull
+task maintainer:task -- ci
+task image:discover
+task image:pin -- --write
+task image:verify
 task ci
 .EE
 .SH WORKFLOW
@@ -21,25 +26,64 @@ Agent defaults:
 .IP "1." 3
 gather context from local runtime docs and the workspace
 .IP "2." 3
-prefer container\-first execution
+pull and use the published maintainer container as the only valid agent
+execution environment
 .IP "3." 3
 follow the task contract
 .IP "4." 3
 inspect artifacts when doing security or dependency work
 .IP "5." 3
+use \f[CR]task image:discover\f[R] before changing published image base
+references
+.IP "6." 3
+use an explicit write step such as \f[CR]task image:pin -- --write\f[R]
+.IP "7." 3
+verify the published images with \f[CR]task image:verify\f[R]
+.IP "8." 3
+classify critical published-image findings as either \f[CR]repo-fixable\f[R]
+or \f[CR]upstream residual\f[R]
+.IP "9." 3
+prefer the latest upstream-supported binary release for third-party tools
+and do not self-build vendor tools only to suppress scanner output
+.IP "10." 3
 use the smallest change that solves the real problem
 .SH OUTPUTS / ARTIFACTS
 Agents should treat \f[CR].artifacts/scans/\f[R] as a first\-class
 source of evidence.
+Published image maintenance also writes evidence under:
+.IP \(bu 2
+\f[CR]base-image-report.json\f[R]
+.IP \(bu 2
+\f[CR]base-image-report.md\f[R]
+.IP \(bu 2
+\f[CR]image-security/\f[R]
+.IP \(bu 2
+\f[CR]image-security/residual-risk.json\f[R]
+.IP \(bu 2
+\f[CR]image-security/residual-risk.md\f[R]
 .SH COMMON FAILURES
 .IP \(bu 2
 relying on memory instead of reading the local contract
 .IP \(bu 2
 using host tooling as proof of success
 .IP \(bu 2
+rebuilding the maintainer container on the host when the published GHCR
+image is sufficient
+.IP \(bu 2
+running repository workflows on the host instead of the maintainer
+container
+.IP \(bu 2
 skipping \f[CR]task ci\f[R]
 .IP \(bu 2
 ignoring generated artifacts after dependency or security tasks
+.IP \(bu 2
+editing published image base references without an explicit discovery
+report
+.IP \(bu 2
+changing pins without a deliberate write step
+.IP \(bu 2
+treating the latest upstream-supported vendor binary as repository-owned
+code that should be privately rebuilt to hide a scanner finding
 .SH GUIDANCE
 .IP \(bu 2
 start with \f[CR]man polyglot\f[R]
@@ -49,6 +93,23 @@ prefer validated starter workflows over improvised ones
 keep changes aligned with the repository\(cqs security\-first posture
 .IP \(bu 2
 use the Knowledge layer when judgment is needed, not just mechanics
+.IP \(bu 2
+treat the published images as a separate maintenance lane: discover,
+pin, verify, then scan
+.IP \(bu 2
+use \f[CR]task maintainer:pull\f[R] and \f[CR]task maintainer:task -- ...\f[R]
+when you need to enter the maintainer lane from the host
+.IP \(bu 2
+if the maintainer container cannot execute the workflow, fix the
+maintainer container rather than falling back to the host
+.IP \(bu 2
+for published-image CVEs, fix repo-owned causes first: stale base
+images, stale distro packages, stale pinned versions, and missing
+verification
+.IP \(bu 2
+if a critical remains in the latest upstream-supported release of a
+managed binary such as \f[CR]trivy\f[R], \f[CR]gitleaks\f[R], or \f[CR]task\f[R],
+record it as upstream residual risk and keep the upstream artifact
 .SH SEE ALSO
 .IP \(bu 2
 \f[CR]polyglot(7)\f[R]

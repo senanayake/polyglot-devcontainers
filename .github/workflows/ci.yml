@@ -16,9 +16,27 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      - name: Report published image base pin status
+        run: |
+          mkdir -p .artifacts/scans
+          python3 scripts/update_base_image_pins.py \
+            --json-output .artifacts/scans/base-image-report.json \
+            --markdown-output .artifacts/scans/base-image-report.md \
+            --annotation-level warning
+
+      - name: Upload base image pin report
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: base-image-pin-report
+          path: |
+            .artifacts/scans/base-image-report.json
+            .artifacts/scans/base-image-report.md
+          if-no-files-found: error
+
       - name: Build root image
         run: |
-          docker build --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:ci .
+          docker build --pull --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:ci .
 
       - name: Validate root image devcontainer metadata
         run: |

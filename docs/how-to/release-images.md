@@ -71,6 +71,36 @@ The discovery and scan steps write evidence under:
 - `.artifacts/scans/base-image-report.json`
 - `.artifacts/scans/base-image-report.md`
 - `.artifacts/scans/image-security/`
+- `.artifacts/scans/image-security/residual-risk.json`
+- `.artifacts/scans/image-security/residual-risk.md`
+
+## Classify remaining findings
+
+When published-image scans still report critical findings after a refresh,
+agents should classify them in this order:
+
+1. `repo-fixable`
+2. `upstream residual`
+
+`repo-fixable` findings include:
+
+- stale published-image base digests
+- stale distro packages that clear with a rebuild and security upgrade
+- stale pinned tool versions in repository-owned install logic
+- missing verification for downloaded archives or signing keys
+
+`upstream residual` findings are findings that remain in the latest
+upstream-supported binary release for third-party tools such as `trivy`,
+`gitleaks`, or `task`.
+
+For upstream residual findings:
+
+- keep the upstream release artifact
+- record the finding in the residual-risk report
+- wait for a new upstream release
+
+Agents should not privately rebuild or patch those third-party tools only to
+silence scanner output unless a human explicitly asks for that exception.
 
 ## Initial published image set
 

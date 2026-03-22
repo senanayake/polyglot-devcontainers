@@ -1,34 +1,52 @@
-FROM mcr.microsoft.com/devcontainers/java:1-21-bookworm
+FROM mcr.microsoft.com/devcontainers/java:1-21-bookworm@sha256:0af991049cded4b8d5a90d2614289ceec390779ad6a3e4b70957e2b4f3bb1230
 
 LABEL devcontainer.metadata="[{\"postCreateCommand\":\"bash scripts/install_runtime_docs.sh man/man7 && task init\",\"customizations\":{\"vscode\":{\"settings\":{\"editor.formatOnSave\":true,\"java.configuration.updateBuildConfiguration\":\"automatic\",\"java.import.gradle.enabled\":true,\"[java]\":{\"editor.defaultFormatter\":\"redhat.java\"}},\"extensions\":[\"vscjava.vscode-java-pack\",\"vscjava.vscode-gradle\"]}},\"remoteUser\":\"vscode\"}]"
 
 USER root
 
 ARG TASK_VERSION=3.49.1
-ARG GITLEAKS_VERSION=8.30.0
+ARG GITLEAKS_VERSION=8.30.1
 ARG GRADLE_VERSION=9.1.0
+ARG TRIVY_KEY_SHA256=51ca5d1384095c462099add67e46b028e0df0ff741c0f95ad30f561c4fad1ad4 # gitleaks:allow
 
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get update \
+    && apt-get -y dist-upgrade \
     && apt-get install -y --no-install-recommends ca-certificates curl git gnupg jq less man-db ripgrep shellcheck tar unzip \
     && rm -rf /var/lib/apt/lists/* \
-    && curl -sSL https://taskfile.dev/install.sh | sh -s -- -d -b /usr/local/bin "v${TASK_VERSION}" \
-    && curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
-    | tar -xz -C /usr/local/bin gitleaks \
+    && arch="$(dpkg --print-architecture)" \
+    && case "${arch}" in \
+        amd64) task_archive="task_linux_amd64.tar.gz"; gitleaks_archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" ;; \
+        arm64) task_archive="task_linux_arm64.tar.gz"; gitleaks_archive="gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" ;; \
+        *) echo "Unsupported architecture: ${arch}" >&2; exit 1 ;; \
+      esac \
+    && tmpdir="$(mktemp -d)" \
+    && curl -fsSLo "${tmpdir}/${task_archive}" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/${task_archive}" \
+    && curl -fsSLo "${tmpdir}/task_checksums.txt" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_checksums.txt" \
+    && sed -n "s#  ${task_archive}\$#  ${tmpdir}/${task_archive}#p" "${tmpdir}/task_checksums.txt" | sha256sum -c - \
+    && tar -xzf "${tmpdir}/${task_archive}" -C /usr/local/bin task \
+    && curl -fsSLo "${tmpdir}/${gitleaks_archive}" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${gitleaks_archive}" \
+    && curl -fsSLo "${tmpdir}/gitleaks_checksums.txt" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt" \
+    && sed -n "s#  ${gitleaks_archive}\$#  ${tmpdir}/${gitleaks_archive}#p" "${tmpdir}/gitleaks_checksums.txt" | sha256sum -c - \
+    && tar -xzf "${tmpdir}/${gitleaks_archive}" -C /usr/local/bin gitleaks \
     && chmod +x /usr/local/bin/gitleaks \
-    && curl -fsSL "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -o /tmp/gradle.zip \
+    && curl -fsSLo /tmp/gradle.zip "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
+    && curl -fsSLo /tmp/gradle.zip.sha256 "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip.sha256" \
+    && echo "$(cat /tmp/gradle.zip.sha256)  /tmp/gradle.zip" | sha256sum -c - \
     && rm -rf "/opt/gradle-${GRADLE_VERSION}" \
     && unzip -q /tmp/gradle.zip -d /opt \
     && ln -sf "/opt/gradle-${GRADLE_VERSION}/bin/gradle" /usr/local/bin/gradle \
-    && rm -f /tmp/gradle.zip \
+    && rm -f /tmp/gradle.zip /tmp/gradle.zip.sha256 \
     && mkdir -p /usr/share/keyrings \
-    && curl -fsSL https://get.trivy.dev/deb/public.key \
-    | gpg --dearmor -o /usr/share/keyrings/trivy.gpg \
+    && curl -fsSLo /tmp/trivy.key https://get.trivy.dev/deb/public.key \
+    && echo "${TRIVY_KEY_SHA256}  /tmp/trivy.key" | sha256sum -c - \
+    && gpg --dearmor -o /usr/share/keyrings/trivy.gpg /tmp/trivy.key \
     && echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://get.trivy.dev/deb generic main" \
     > /etc/apt/sources.list.d/trivy.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends trivy \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -sf /usr/bin/fdfind /usr/local/bin/fd
+    && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
+    && rm -rf "${tmpdir}" /tmp/trivy.key
 
 USER vscode

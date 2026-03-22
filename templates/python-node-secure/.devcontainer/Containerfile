@@ -1,33 +1,48 @@
-FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
+FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm@sha256:7876580dc67fd460fd962f004cbeb480027e9bbc0657096f1087db11f9eaff39
 
 LABEL devcontainer.metadata="[{\"postCreateCommand\":\"task init && pre-commit install\",\"customizations\":{\"vscode\":{\"settings\":{\"editor.formatOnSave\":true,\"python.defaultInterpreterPath\":\"/workspaces/\u0024{localWorkspaceFolderBasename}/.venv/bin/python\",\"python.testing.pytestEnabled\":true,\"python.testing.pytestArgs\":[\"backend/tests\"],\"python.analysis.typeCheckingMode\":\"basic\",\"eslint.validate\":[\"javascript\",\"javascriptreact\",\"typescript\",\"typescriptreact\"],\"typescript.tsdk\":\"frontend/node_modules/typescript/lib\"},\"extensions\":[\"ms-python.python\",\"charliermarsh.ruff\",\"ms-python.mypy-type-checker\",\"dbaeumer.vscode-eslint\",\"esbenp.prettier-vscode\",\"vitest.explorer\"]}},\"remoteUser\":\"vscode\"}]"
 
 USER root
 
 ARG TASK_VERSION=3.49.1
-ARG GITLEAKS_VERSION=8.30.0
+ARG GITLEAKS_VERSION=8.30.1
 ARG PRE_COMMIT_VERSION=4.2.0
 ARG UV_VERSION=0.8.13
 ARG PNPM_VERSION=10.7.0
+ARG NODESOURCE_KEY_SHA256=b42e0321dabdc24e892115da705cf061167eac12a317f23d329862d0aa0a271d # gitleaks:allow
 
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get update \
+    && apt-get -y dist-upgrade \
     && apt-get install -y --no-install-recommends ca-certificates curl git gnupg jq ripgrep shellcheck tar unzip \
     && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
-    | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && curl -fsSLo /tmp/nodesource.key https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+    && echo "${NODESOURCE_KEY_SHA256}  /tmp/nodesource.key" | sha256sum -c - \
+    && gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource.key \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
     > /etc/apt/sources.list.d/nodesource.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends nodejs \
-    && curl -sSL https://taskfile.dev/install.sh | sh -s -- -d -b /usr/local/bin "v${TASK_VERSION}" \
-    && curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
-    | tar -xz -C /usr/local/bin gitleaks \
+    && arch="$(dpkg --print-architecture)" \
+    && case "${arch}" in \
+        amd64) task_archive="task_linux_amd64.tar.gz"; gitleaks_archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" ;; \
+        arm64) task_archive="task_linux_arm64.tar.gz"; gitleaks_archive="gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" ;; \
+        *) echo "Unsupported architecture: ${arch}" >&2; exit 1 ;; \
+      esac \
+    && tmpdir="$(mktemp -d)" \
+    && curl -fsSLo "${tmpdir}/${task_archive}" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/${task_archive}" \
+    && curl -fsSLo "${tmpdir}/task_checksums.txt" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_checksums.txt" \
+    && sed -n "s#  ${task_archive}\$#  ${tmpdir}/${task_archive}#p" "${tmpdir}/task_checksums.txt" | sha256sum -c - \
+    && tar -xzf "${tmpdir}/${task_archive}" -C /usr/local/bin task \
+    && curl -fsSLo "${tmpdir}/${gitleaks_archive}" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${gitleaks_archive}" \
+    && curl -fsSLo "${tmpdir}/gitleaks_checksums.txt" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt" \
+    && sed -n "s#  ${gitleaks_archive}\$#  ${tmpdir}/${gitleaks_archive}#p" "${tmpdir}/gitleaks_checksums.txt" | sha256sum -c - \
+    && tar -xzf "${tmpdir}/${gitleaks_archive}" -C /usr/local/bin gitleaks \
     && chmod +x /usr/local/bin/gitleaks \
     && python3 -m pip install --no-cache-dir "pre-commit==${PRE_COMMIT_VERSION}" "uv==${UV_VERSION}" \
     && corepack enable \
     && corepack prepare "pnpm@${PNPM_VERSION}" --activate \
     && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
-    && rm -rf /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
+    && rm -rf "${tmpdir}" /tmp/nodesource.key /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
 
 USER vscode

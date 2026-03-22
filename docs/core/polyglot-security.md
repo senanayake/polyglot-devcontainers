@@ -59,6 +59,8 @@ Common artifacts:
 - `image-security/trivy-maintainer.json`
 - `image-security/trivy-java.json`
 - `image-security/trivy-python-node.json`
+- `image-security/residual-risk.json`
+- `image-security/residual-risk.md`
 
 # COMMON FAILURES
 
@@ -76,6 +78,17 @@ Common artifacts:
 - Prefer the published GHCR maintainer image over rebuilding the maintainer image on the host.
 - For published images, resolve and pin base digests before rebuilding and
   rescanning the published image set.
+- Classify published-image scan findings into two buckets:
+  - `repo-fixable`: stale base images, stale distro packages, stale pinned
+    tool versions, or missing checksum and refresh behavior
+  - `upstream residual`: findings that remain in the latest upstream-supported
+    released binary for a third-party tool the repository installs
+- Fix all `repo-fixable` findings first.
+- Record `upstream residual` findings in the residual-risk artifacts and keep
+  the upstream vendor binary rather than privately rebuilding it only to clear
+  the scanner output.
+- Treat a private rebuild of a third-party security tool as an exception that
+  requires explicit human direction.
 
 # SEE ALSO
 

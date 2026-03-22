@@ -1,6 +1,6 @@
-FROM mcr.microsoft.com/devcontainers/java:1-21-bookworm AS java_base
+FROM mcr.microsoft.com/devcontainers/java:1-21-bookworm@sha256:0af991049cded4b8d5a90d2614289ceec390779ad6a3e4b70957e2b4f3bb1230 AS java_base
 
-FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
+FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm@sha256:7876580dc67fd460fd962f004cbeb480027e9bbc0657096f1087db11f9eaff39
 
 LABEL org.opencontainers.image.source="https://github.com/senanayake/polyglot-devcontainers" \
       org.opencontainers.image.description="Maintainer and CI validation container for polyglot-devcontainers." \
@@ -15,12 +15,16 @@ COPY --from=java_base /usr/lib/jvm/msopenjdk-current /usr/lib/jvm/msopenjdk-curr
 
 COPY features /tmp/features
 
+ARG NODESOURCE_KEY_SHA256=b42e0321dabdc24e892115da705cf061167eac12a317f23d329862d0aa0a271d # gitleaks:allow
+
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get update \
+    && apt-get -y dist-upgrade \
     && apt-get install -y --no-install-recommends ca-certificates curl docker.io git gnupg less man-db \
     && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
-    | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && curl -fsSLo /tmp/nodesource.key https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+    && echo "${NODESOURCE_KEY_SHA256}  /tmp/nodesource.key" | sha256sum -c - \
+    && gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource.key \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
     > /etc/apt/sources.list.d/nodesource.list \
     && apt-get update \
@@ -28,7 +32,7 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && ln -sf /usr/lib/jvm/msopenjdk-current/bin/java /usr/local/bin/java \
     && ln -sf /usr/lib/jvm/msopenjdk-current/bin/javac /usr/local/bin/javac \
     && usermod -aG docker vscode \
-    && rm -rf /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
+    && rm -rf /tmp/nodesource.key /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
 
 RUN bash /tmp/features/security-baseline/install.sh \
     && bash /tmp/features/python-engineering/install.sh \

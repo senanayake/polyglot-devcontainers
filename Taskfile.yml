@@ -179,11 +179,13 @@ tasks:
     cmds:
       - mkdir -p .artifacts/scans/image-security
       - >
-        docker run --rm -u root
-        -v "$(pwd):/workspaces/polyglot-devcontainers"
-        -w /workspaces/polyglot-devcontainers
-        polyglot-devcontainers-maintainer:verify
-        bash -lc "trivy image --input .artifacts/images/maintainer.tar --format json --severity HIGH,CRITICAL --ignore-unfixed --vuln-type os,library --output .artifacts/scans/image-security/trivy-maintainer.json"
+        trivy image
+        --input .artifacts/images/maintainer.tar
+        --format json
+        --severity HIGH,CRITICAL
+        --ignore-unfixed
+        --vuln-type os,library
+        --output .artifacts/scans/image-security/trivy-maintainer.json
       - >
         python scripts/summarize_trivy_report.py
         --report .artifacts/scans/image-security/trivy-maintainer.json
@@ -192,11 +194,13 @@ tasks:
         --json-output .artifacts/scans/image-security/trivy-maintainer-summary.json
         --markdown-output .artifacts/scans/image-security/trivy-maintainer-summary.md
       - >
-        docker run --rm -u root
-        -v "$(pwd):/workspaces/polyglot-devcontainers"
-        -w /workspaces/polyglot-devcontainers
-        polyglot-devcontainers-maintainer:verify
-        bash -lc "trivy image --input .artifacts/images/java.tar --format json --severity HIGH,CRITICAL --ignore-unfixed --vuln-type os,library --output .artifacts/scans/image-security/trivy-java.json"
+        trivy image
+        --input .artifacts/images/java.tar
+        --format json
+        --severity HIGH,CRITICAL
+        --ignore-unfixed
+        --vuln-type os,library
+        --output .artifacts/scans/image-security/trivy-java.json
       - >
         python scripts/summarize_trivy_report.py
         --report .artifacts/scans/image-security/trivy-java.json
@@ -205,11 +209,13 @@ tasks:
         --json-output .artifacts/scans/image-security/trivy-java-summary.json
         --markdown-output .artifacts/scans/image-security/trivy-java-summary.md
       - >
-        docker run --rm -u root
-        -v "$(pwd):/workspaces/polyglot-devcontainers"
-        -w /workspaces/polyglot-devcontainers
-        polyglot-devcontainers-maintainer:verify
-        bash -lc "trivy image --input .artifacts/images/python-node.tar --format json --severity HIGH,CRITICAL --ignore-unfixed --vuln-type os,library --output .artifacts/scans/image-security/trivy-python-node.json"
+        trivy image
+        --input .artifacts/images/python-node.tar
+        --format json
+        --severity HIGH,CRITICAL
+        --ignore-unfixed
+        --vuln-type os,library
+        --output .artifacts/scans/image-security/trivy-python-node.json
       - >
         python scripts/summarize_trivy_report.py
         --report .artifacts/scans/image-security/trivy-python-node.json
@@ -217,6 +223,13 @@ tasks:
         --image-ref polyglot-devcontainers-python-node:verify
         --json-output .artifacts/scans/image-security/trivy-python-node-summary.json
         --markdown-output .artifacts/scans/image-security/trivy-python-node-summary.md
+      - >
+        python scripts/build_residual_risk_report.py
+        --report maintainer=.artifacts/scans/image-security/trivy-maintainer.json
+        --report java=.artifacts/scans/image-security/trivy-java.json
+        --report python-node=.artifacts/scans/image-security/trivy-python-node.json
+        --json-output .artifacts/scans/image-security/residual-risk.json
+        --markdown-output .artifacts/scans/image-security/residual-risk.md
 
   image:maintain:
     desc: Apply published image base pin updates, then verify and scan the refreshed images
