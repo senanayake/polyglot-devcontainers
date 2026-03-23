@@ -101,6 +101,7 @@ jobs:
         run: |
           workspace="$(mktemp -d)"
           mkdir -p "${workspace}/.devcontainer"
+          chmod -R 0777 "${workspace}"
           cat > "${workspace}/.devcontainer/devcontainer.json" <<'EOF'
           {
             "name": "bootstrap-smoke-test"
