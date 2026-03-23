@@ -38,6 +38,10 @@ dependencies into the mounted workspace
 .IP \(bu 2
 this is expected because \f[CR].venv\f[R] and \f[CR]node_modules\f[R]
 belong to the project contract, not the image base layer
+.IP \(bu 2
+when the workspace is not yet a Git repository, the secret scan falls
+back to starter source files instead of scanning dependency directories
+like \f[CR]node_modules\f[R] and \f[CR].venv\f[R]
 .PP
 Safe default workflow:
 .IP "1." 3

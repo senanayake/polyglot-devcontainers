@@ -16,6 +16,25 @@ PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 UV = "uv.exe" if os.name == "nt" else "uv"
 COREPACK = "corepack.cmd" if os.name == "nt" else "corepack"
 PNPM = [COREPACK, "pnpm"]
+GITLEAKS_FALLBACK_PATHS = [
+    BACKEND_DIR,
+    ROOT / "frontend",
+    ROOT / ".devcontainer",
+    ROOT / "Taskfile.yml",
+    ROOT / "tasks.py",
+    ROOT / "pyproject.toml",
+    ROOT / "uv.lock",
+    ROOT / "package.json",
+    ROOT / "pnpm-lock.yaml",
+    ROOT / "tsconfig.json",
+    ROOT / "eslint.config.mjs",
+    ROOT / "prettier.config.mjs",
+    ROOT / "vitest.config.ts",
+    ROOT / ".pre-commit-config.yaml",
+    ROOT / "README.md",
+    ROOT / "man",
+    ROOT / "scripts",
+]
 
 
 def run(command: list[str]) -> None:
@@ -43,6 +62,25 @@ def in_git_repo() -> bool:
         stderr=subprocess.DEVNULL,
     )
     return completed.returncode == 0
+
+
+def prepare_gitleaks_dir_fallback() -> Path:
+    scan_root = TMP_DIR / "gitleaks-source-scan"
+    if scan_root.exists():
+        shutil.rmtree(scan_root)
+    scan_root.mkdir(parents=True)
+
+    for source in GITLEAKS_FALLBACK_PATHS:
+        if not source.exists():
+            continue
+        destination = scan_root / source.relative_to(ROOT)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if source.is_dir():
+            shutil.copytree(source, destination)
+        else:
+            shutil.copy2(source, destination)
+
+    return scan_root
 
 
 def init() -> None:
@@ -106,12 +144,18 @@ def scan() -> None:
             env=os.environ.copy(),
             stdout=report,
         )
-    gitleaks_mode = "git" if in_git_repo() else "dir"
+    if in_git_repo():
+        gitleaks_target = ROOT
+        gitleaks_mode = "git"
+    else:
+        gitleaks_target = prepare_gitleaks_dir_fallback()
+        gitleaks_mode = "dir"
+
     run(
         [
             "gitleaks",
             gitleaks_mode,
-            ".",
+            str(gitleaks_target),
             "--no-banner",
             "--redact",
             "--report-format",

@@ -44,6 +44,9 @@ In the published `python-node` starter image:
   into the mounted workspace
 - this is expected because `.venv` and `node_modules` belong to the project
   contract, not the image base layer
+- when the workspace is not yet a Git repository, the secret scan falls back to
+  starter source files instead of scanning dependency directories like
+  `node_modules` and `.venv`
 
 Safe default workflow:
 
