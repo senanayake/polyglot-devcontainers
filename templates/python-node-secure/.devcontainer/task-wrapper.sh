@@ -23,6 +23,7 @@ print_bootstrap_hint() {
   if [[ -n "${POLYGLOT_BOOTSTRAP_TEMPLATE:-}" ]]; then
     echo "Run 'task init' in an empty workspace to scaffold the ${POLYGLOT_BOOTSTRAP_TEMPLATE} starter." >&2
   fi
+  echo "See 'man polyglot' for the top-level starter workflow." >&2
 }
 
 if find_taskfile; then

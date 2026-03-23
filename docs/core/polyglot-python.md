@@ -36,6 +36,15 @@ In maintained Python paths:
 - `uv.lock` describes the resolved environment
 - `task init` uses `uv sync --frozen --extra dev`
 
+In the published `python-node` starter image:
+
+- the image already contains Python, Node, `uv`, `pnpm`, and the scanner
+  toolchain
+- `task init` still installs the project-local Python and Node dependencies
+  into the mounted workspace
+- this is expected because `.venv` and `node_modules` belong to the project
+  contract, not the image base layer
+
 Safe default workflow:
 
 1. open the container
@@ -66,6 +75,8 @@ Python paths may write:
 # COMMON FAILURES
 
 - Editing dependencies without updating `uv.lock`.
+- Expecting `task init` in a fresh starter workspace to skip local dependency
+  installation.
 - Using a loose `pip install` flow in a maintained `uv` path.
 - Treating compatibility workflows as equal to the `uv-lock` path.
 

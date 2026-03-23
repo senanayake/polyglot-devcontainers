@@ -30,6 +30,14 @@ task deps:report
 
 The current Java path is Gradle-first.
 
+In the published `java` starter image:
+
+- the image already contains Java, Gradle, and the scanner toolchain
+- `task init` still prepares project-local state such as `.gradle`, build
+  outputs, and dependency locks in the mounted workspace
+- this is expected because the image ships the toolchain, while the project
+  workspace owns the resolved build state
+
 Safe default workflow:
 
 1. open the container
@@ -60,6 +68,8 @@ Java paths may write:
 # COMMON FAILURES
 
 - Treating the raw Gradle updates plugin output as the only source of truth.
+- Expecting `task init` in a fresh starter workspace to avoid downloading
+  project-local dependencies.
 - Forgetting to rerun the full task workflow after version changes.
 - Ignoring scan artifacts after a dependency update.
 

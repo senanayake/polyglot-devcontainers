@@ -12,9 +12,16 @@ Included:
 - pinned Python and Node developer tooling
 - a checked-in `uv.lock` file for the Python side of the workspace
 - pre-commit configuration
+- local runtime docs available through `man polyglot` in the published image
 
 After opening the template in a devcontainer, run:
 
 ```bash
+man polyglot
+task init
 task ci
 ```
+
+When consuming the published image directly in an empty workspace, `task init`
+will scaffold the starter files and then install the project-local Python and
+Node dependencies into that workspace.

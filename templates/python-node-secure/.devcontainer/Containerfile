@@ -13,18 +13,21 @@ ARG UV_VERSION=0.8.13
 ARG PNPM_VERSION=10.7.0
 ARG NODESOURCE_KEY_SHA256=b42e0321dabdc24e892115da705cf061167eac12a317f23d329862d0aa0a271d # gitleaks:allow
 
-COPY .devcontainer/post-create.sh /usr/local/share/polyglot-devcontainers/post-create.sh
-COPY .devcontainer/bootstrap-workspace.sh /usr/local/bin/polyglot-bootstrap-workspace
-COPY .devcontainer/task-wrapper.sh /usr/local/bin/task
-COPY . /usr/local/share/polyglot-devcontainers/bootstrap/python-node-secure
+COPY templates/python-node-secure/.devcontainer/post-create.sh /usr/local/share/polyglot-devcontainers/post-create.sh
+COPY templates/python-node-secure/.devcontainer/bootstrap-workspace.sh /usr/local/bin/polyglot-bootstrap-workspace
+COPY templates/python-node-secure/.devcontainer/task-wrapper.sh /usr/local/bin/task
+COPY templates/python-node-secure /usr/local/share/polyglot-devcontainers/bootstrap/python-node-secure
+COPY scripts/install_runtime_docs.sh /tmp/install_runtime_docs.sh
+COPY man/man7 /tmp/runtime-docs
 
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && chmod 0755 /usr/local/share/polyglot-devcontainers/post-create.sh \
     && chmod 0755 /usr/local/bin/polyglot-bootstrap-workspace /usr/local/bin/task \
+    && chmod 0755 /tmp/install_runtime_docs.sh \
     && rm -rf /usr/local/share/polyglot-devcontainers/bootstrap/python-node-secure/.devcontainer \
     && apt-get update \
     && apt-get -y dist-upgrade \
-    && apt-get install -y --no-install-recommends ca-certificates curl git gnupg jq ripgrep shellcheck tar unzip \
+    && apt-get install -y --no-install-recommends ca-certificates curl git gnupg jq less man-db ripgrep shellcheck tar unzip \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSLo /tmp/nodesource.key https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
     && echo "${NODESOURCE_KEY_SHA256}  /tmp/nodesource.key" | sha256sum -c - \
@@ -54,7 +57,8 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && python3 -m pip install --no-cache-dir "pre-commit==${PRE_COMMIT_VERSION}" "uv==${UV_VERSION}" \
     && corepack enable \
     && corepack prepare "pnpm@${PNPM_VERSION}" --activate \
+    && bash /tmp/install_runtime_docs.sh /tmp/runtime-docs \
     && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
-    && rm -rf "${tmpdir}" /tmp/nodesource.key /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
+    && rm -rf "${tmpdir}" /tmp/nodesource.key /tmp/install_runtime_docs.sh /tmp/runtime-docs /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
 
 USER vscode

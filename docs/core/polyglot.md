@@ -17,6 +17,7 @@ polyglot-devcontainers environment.
 Use it to discover:
 
 - which starter or workspace you are in
+- how to bootstrap an empty workspace from a published starter image
 - the task contract
 - where to find Python or Java guidance
 - where security and dependency artifacts are written
@@ -34,20 +35,23 @@ man polyglot-starters
 man polyglot-task-contract
 man polyglot-python
 man polyglot-java
+man polyglot-troubleshooting
 man polyglot-agents
 man polyglot-knowledge
 ```
 
 # WORKFLOW
 
-1. Identify whether you are in the repository root, a Python starter, or a
-   Java starter.
-2. Read the starter-specific page.
-3. Follow the task contract.
-4. Use the security and dependency pages when you need artifacts or upgrade
+1. If you opened a published starter image into an empty workspace, run
+   `task init` to scaffold the starter.
+2. Identify whether you are in the repository root, a Python / Node starter,
+   or a Java starter.
+3. Read the starter-specific page.
+4. Follow the task contract.
+5. Use the security and dependency pages when you need artifacts or upgrade
    guidance.
-5. Use the agents and knowledge pages when you need stronger operating
-   guidance.
+6. Use the troubleshooting, agents, and knowledge pages when you need stronger
+   operating guidance.
 
 # OUTPUTS / ARTIFACTS
 
@@ -70,6 +74,8 @@ Examples include:
 # COMMON FAILURES
 
 - Running on the host instead of inside the container.
+- Expecting starter project dependencies to be baked into the image.
+- Treating an empty non-Git workspace as if it were already a repository.
 - Guessing commands instead of using the task contract.
 - Treating examples, templates, and proving fixtures as the same thing.
 - Ignoring artifacts after a scan or dependency operation.
@@ -77,6 +83,8 @@ Examples include:
 # GUIDANCE
 
 - Prefer container-first execution.
+- In published starter images, use `task init` to materialize the starter into
+  the mounted workspace before expecting `task ci` to work.
 - Treat `task ci` as the completion bar unless you are explicitly doing
   exploratory work.
 - Use the local runtime docs before relying on memory or assumptions.
@@ -91,5 +99,6 @@ Examples include:
 - `polyglot-java(7)`
 - `polyglot-security(7)`
 - `polyglot-deps(7)`
+- `polyglot-troubleshooting(7)`
 - `polyglot-agents(7)`
 - `polyglot-knowledge(7)`

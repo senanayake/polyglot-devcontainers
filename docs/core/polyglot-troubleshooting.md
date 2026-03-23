@@ -27,6 +27,31 @@ Recommended response:
 - inspect the related artifacts under `.artifacts/scans/`
 - fix the real contract failure before widening the scope
 
+## `task` says there is no Taskfile in a published starter image
+
+Recommended response:
+
+- confirm the image is a published starter image and the workspace is mounted
+- if the workspace is empty, run `task init`
+- use `man polyglot` and `man polyglot-starters` before inventing a custom
+  bootstrap path
+
+## `task init` installs many Python or Node packages
+
+Recommended response:
+
+- treat this as expected starter bootstrap behavior
+- distinguish between image-level tooling and project-local dependencies
+- let `task init` finish before evaluating the starter workspace
+
+## `task scan` reports Git repository discovery errors in a fresh workspace
+
+Recommended response:
+
+- use a starter image version that falls back cleanly outside Git repositories
+- initialize Git later if your project needs it
+- treat Git as optional for starter bootstrap, not a prerequisite
+
 ## dependency report output looks incomplete
 
 Recommended response:
@@ -48,6 +73,15 @@ Recommended response:
 
 - move back to the relevant starter template
 - use proving fixtures only when you need the extra maintenance workflow
+
+## `man polyglot` is missing in a starter image
+
+Recommended response:
+
+- use a starter image release that ships runtime docs in the image
+- if you are validating the repository workspace itself, rebuild the docs with
+  `python scripts/build_runtime_docs.py`
+- treat missing runtime docs in a published starter image as a repository bug
 
 # GUIDANCE
 

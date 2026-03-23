@@ -31,13 +31,13 @@ jobs:
           - name: java
             image_name: polyglot-devcontainers-java
             dockerfile: templates/java-secure/.devcontainer/Containerfile
-            context: templates/java-secure
+            context: .
             workdir: /workspaces/polyglot-devcontainers/templates/java-secure
             description: Gradle-first Java engineering container for polyglot-devcontainers.
           - name: python-node
             image_name: polyglot-devcontainers-python-node
             dockerfile: templates/python-node-secure/.devcontainer/Containerfile
-            context: templates/python-node-secure
+            context: .
             workdir: /workspaces/polyglot-devcontainers/templates/python-node-secure
             description: Focused Python and Node / TypeScript polyglot container for polyglot-devcontainers.
 
@@ -113,7 +113,7 @@ jobs:
             -v "${workspace}:/workspaces/project" \
             -w /workspaces/project \
             "${{ matrix.image_name }}:ci" \
-            bash -lc "task init && test -f Taskfile.yml && test -f .polyglot-bootstrap.json && task ci"
+            bash -lc "man polyglot >/dev/null && task init && test -f Taskfile.yml && test -f .polyglot-bootstrap.json && task ci"
 
       - name: Run task ci inside built image
         run: |

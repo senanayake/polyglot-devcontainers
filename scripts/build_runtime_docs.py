@@ -10,10 +10,12 @@ CORE_DIR = ROOT / "docs" / "core"
 MAN_DIR = ROOT / "man" / "man7"
 TEMPLATE_MAN_DIRS = [
     ROOT / "templates" / "python-secure" / "man" / "man7",
+    ROOT / "templates" / "python-node-secure" / "man" / "man7",
     ROOT / "templates" / "java-secure" / "man" / "man7",
 ]
 TEMPLATE_SCRIPT_DIRS = [
     ROOT / "templates" / "python-secure" / "scripts",
+    ROOT / "templates" / "python-node-secure" / "scripts",
     ROOT / "templates" / "java-secure" / "scripts",
 ]
 INSTALL_SCRIPT = ROOT / "scripts" / "install_runtime_docs.sh"

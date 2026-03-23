@@ -11,14 +11,17 @@ ARG GITLEAKS_VERSION=8.30.1
 ARG GRADLE_VERSION=9.1.0
 ARG TRIVY_KEY_SHA256=51ca5d1384095c462099add67e46b028e0df0ff741c0f95ad30f561c4fad1ad4 # gitleaks:allow
 
-COPY .devcontainer/post-create.sh /usr/local/share/polyglot-devcontainers/post-create.sh
-COPY .devcontainer/bootstrap-workspace.sh /usr/local/bin/polyglot-bootstrap-workspace
-COPY .devcontainer/task-wrapper.sh /usr/local/bin/task
-COPY . /usr/local/share/polyglot-devcontainers/bootstrap/java-secure
+COPY templates/java-secure/.devcontainer/post-create.sh /usr/local/share/polyglot-devcontainers/post-create.sh
+COPY templates/java-secure/.devcontainer/bootstrap-workspace.sh /usr/local/bin/polyglot-bootstrap-workspace
+COPY templates/java-secure/.devcontainer/task-wrapper.sh /usr/local/bin/task
+COPY templates/java-secure /usr/local/share/polyglot-devcontainers/bootstrap/java-secure
+COPY scripts/install_runtime_docs.sh /tmp/install_runtime_docs.sh
+COPY man/man7 /tmp/runtime-docs
 
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && chmod 0755 /usr/local/share/polyglot-devcontainers/post-create.sh \
     && chmod 0755 /usr/local/bin/polyglot-bootstrap-workspace /usr/local/bin/task \
+    && chmod 0755 /tmp/install_runtime_docs.sh \
     && rm -rf /usr/local/share/polyglot-devcontainers/bootstrap/java-secure/.devcontainer \
     && apt-get update \
     && apt-get -y dist-upgrade \
@@ -57,8 +60,9 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     > /etc/apt/sources.list.d/trivy.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends trivy \
+    && bash /tmp/install_runtime_docs.sh /tmp/runtime-docs \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
-    && rm -rf "${tmpdir}" /tmp/trivy.key
+    && rm -rf "${tmpdir}" /tmp/trivy.key /tmp/install_runtime_docs.sh /tmp/runtime-docs
 
 USER vscode
