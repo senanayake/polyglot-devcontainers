@@ -4,15 +4,22 @@ LABEL devcontainer.metadata="[{\"postCreateCommand\":\"bash /usr/local/share/pol
 
 USER root
 
+ENV POLYGLOT_BOOTSTRAP_TEMPLATE=java-secure
+
 ARG TASK_VERSION=3.49.1
 ARG GITLEAKS_VERSION=8.30.1
 ARG GRADLE_VERSION=9.1.0
 ARG TRIVY_KEY_SHA256=51ca5d1384095c462099add67e46b028e0df0ff741c0f95ad30f561c4fad1ad4 # gitleaks:allow
 
 COPY .devcontainer/post-create.sh /usr/local/share/polyglot-devcontainers/post-create.sh
+COPY .devcontainer/bootstrap-workspace.sh /usr/local/bin/polyglot-bootstrap-workspace
+COPY .devcontainer/task-wrapper.sh /usr/local/bin/task
+COPY . /usr/local/share/polyglot-devcontainers/bootstrap/java-secure
 
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && chmod 0755 /usr/local/share/polyglot-devcontainers/post-create.sh \
+    && chmod 0755 /usr/local/bin/polyglot-bootstrap-workspace /usr/local/bin/task \
+    && rm -rf /usr/local/share/polyglot-devcontainers/bootstrap/java-secure/.devcontainer \
     && apt-get update \
     && apt-get -y dist-upgrade \
     && apt-get install -y --no-install-recommends ca-certificates curl git gnupg jq less man-db ripgrep shellcheck tar unzip \
@@ -27,7 +34,9 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && curl -fsSLo "${tmpdir}/${task_archive}" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/${task_archive}" \
     && curl -fsSLo "${tmpdir}/task_checksums.txt" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_checksums.txt" \
     && sed -n "s#  ${task_archive}\$#  ${tmpdir}/${task_archive}#p" "${tmpdir}/task_checksums.txt" | sha256sum -c - \
-    && tar -xzf "${tmpdir}/${task_archive}" -C /usr/local/bin task \
+    && mkdir -p /usr/local/libexec/polyglot-devcontainers \
+    && tar -xzf "${tmpdir}/${task_archive}" -C /usr/local/libexec/polyglot-devcontainers task \
+    && mv /usr/local/libexec/polyglot-devcontainers/task /usr/local/libexec/polyglot-devcontainers/task-real \
     && curl -fsSLo "${tmpdir}/${gitleaks_archive}" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${gitleaks_archive}" \
     && curl -fsSLo "${tmpdir}/gitleaks_checksums.txt" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt" \
     && sed -n "s#  ${gitleaks_archive}\$#  ${tmpdir}/${gitleaks_archive}#p" "${tmpdir}/gitleaks_checksums.txt" | sha256sum -c - \

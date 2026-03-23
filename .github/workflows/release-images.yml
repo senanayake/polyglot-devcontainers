@@ -96,6 +96,24 @@ jobs:
             --image "${{ matrix.image_name }}:ci" \
             --devcontainer-json "${devcontainer_json}"
 
+      - name: Bootstrap empty starter workspace
+        if: ${{ matrix.name == 'java' || matrix.name == 'python-node' }}
+        run: |
+          workspace="$(mktemp -d)"
+          mkdir -p "${workspace}/.devcontainer"
+          cat > "${workspace}/.devcontainer/devcontainer.json" <<'EOF'
+          {
+            "name": "bootstrap-smoke-test"
+          }
+          EOF
+
+          docker run --rm \
+            -u vscode \
+            -v "${workspace}:/workspaces/project" \
+            -w /workspaces/project \
+            "${{ matrix.image_name }}:ci" \
+            bash -lc "task init && test -f Taskfile.yml && test -f .polyglot-bootstrap.json && task ci"
+
       - name: Run task ci inside built image
         run: |
           docker run --rm \
