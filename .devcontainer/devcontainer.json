@@ -2,7 +2,7 @@
   "name": "polyglot-devcontainers-maintainer",
   "image": "ghcr.io/senanayake/polyglot-devcontainers-maintainer:main",
   "runArgs": ["--privileged"],
-  "postCreateCommand": "bash scripts/install_runtime_docs.sh man/man7 && task init && pre-commit install",
+  "postCreateCommand": "bash /usr/local/share/polyglot-devcontainers/post-create.sh",
   "customizations": {
     "vscode": {
       "settings": {

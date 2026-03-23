@@ -4,7 +4,7 @@
     "dockerfile": "Containerfile",
     "context": ".."
   },
-  "postCreateCommand": "task init && pre-commit install",
+  "postCreateCommand": "bash /usr/local/share/polyglot-devcontainers/post-create.sh",
   "customizations": {
     "vscode": {
       "settings": {

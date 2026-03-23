@@ -4,7 +4,7 @@
     "dockerfile": "Containerfile",
     "context": ".."
   },
-  "postCreateCommand": "bash scripts/install_runtime_docs.sh man/man7 && task init",
+  "postCreateCommand": "bash /usr/local/share/polyglot-devcontainers/post-create.sh",
   "customizations": {
     "vscode": {
       "settings": {
