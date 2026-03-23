@@ -33,6 +33,18 @@ def reset_invalid_venv() -> None:
         shutil.rmtree(VENV_DIR)
 
 
+def in_git_repo() -> bool:
+    completed = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        cwd=ROOT,
+        check=False,
+        text=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return completed.returncode == 0
+
+
 def init() -> None:
     reset_invalid_venv()
     run([UV, "sync", "--frozen", "--extra", "dev"])
@@ -94,10 +106,11 @@ def scan() -> None:
             env=os.environ.copy(),
             stdout=report,
         )
+    gitleaks_mode = "git" if in_git_repo() else "dir"
     run(
         [
             "gitleaks",
-            "git",
+            gitleaks_mode,
             ".",
             "--no-banner",
             "--redact",
