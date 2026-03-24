@@ -44,6 +44,13 @@ jobs:
             --image polyglot-devcontainers-maintainer:ci \
             --devcontainer-json .devcontainer/devcontainer.json
 
+      - name: Smoke test maintainer Dev Containers CLI control path
+        env:
+          POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
+        run: |
+          python3 scripts/run_in_maintainer_container.py exec -- python scripts/require_maintainer_container.py
+          python3 scripts/run_in_maintainer_container.py git -- status --short --branch
+
       - name: Run root workflow
         run: |
           docker run --rm \

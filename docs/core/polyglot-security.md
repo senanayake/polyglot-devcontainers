@@ -21,8 +21,9 @@ security baseline.
 # PRIMARY COMMANDS
 
 ```bash
-task maintainer:pull
+task maintainer:up
 task maintainer:task -- scan
+task maintainer:git -- status --short --branch
 task scan
 task image:discover
 task image:verify
@@ -75,6 +76,7 @@ Common artifacts:
 - Security checks belong in the normal development loop.
 - Use structured artifacts when available.
 - Prefer the maintainer-container workflow over host-local shortcuts.
+- Prefer the official Dev Containers CLI maintainer lane over raw host shell execution.
 - Prefer the published GHCR maintainer image over rebuilding the maintainer image on the host.
 - For published images, resolve and pin base digests before rebuilding and
   rescanning the published image set.

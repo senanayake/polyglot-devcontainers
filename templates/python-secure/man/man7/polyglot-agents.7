@@ -14,8 +14,9 @@ Read this page before making changes or declaring work complete.
 .EX
 man polyglot
 man polyglot\-task\-contract
-task maintainer:pull
+task maintainer:up
 task maintainer:task \-\- ci
+task maintainer:git \-\- status \-\-short \-\-branch
 task image:discover
 task image:pin \-\- \-\-write
 task image:verify
@@ -29,25 +30,28 @@ gather context from local runtime docs and the workspace
 pull and use the published maintainer container as the only valid agent
 execution environment
 .IP " 3." 4
-follow the task contract
+enter that environment through the official Dev Containers CLI against
+the checked\-in maintainer devcontainer definition
 .IP " 4." 4
-inspect artifacts when doing security or dependency work
+follow the task contract
 .IP " 5." 4
+inspect artifacts when doing security or dependency work
+.IP " 6." 4
 use \f[CR]task image:discover\f[R] before changing published image base
 references
-.IP " 6." 4
+.IP " 7." 4
 use an explicit write step such as
 \f[CR]task image:pin \-\- \-\-write\f[R]
-.IP " 7." 4
-verify the published images with \f[CR]task image:verify\f[R]
 .IP " 8." 4
+verify the published images with \f[CR]task image:verify\f[R]
+.IP " 9." 4
 classify critical published\-image findings as either
 \f[CR]repo\-fixable\f[R] or \f[CR]upstream residual\f[R]
-.IP " 9." 4
+.IP "10." 4
 prefer the latest upstream\-supported binary release for third\-party
 tools and do not self\-build vendor tools only to suppress scanner
 output
-.IP "10." 4
+.IP "11." 4
 use the smallest change that solves the real problem
 .SH OUTPUTS / ARTIFACTS
 Agents should treat \f[CR].artifacts/scans/\f[R] as a first\-class
@@ -101,12 +105,17 @@ use the Knowledge layer when judgment is needed, not just mechanics
 treat the published images as a separate maintenance lane: discover,
 pin, verify, then scan
 .IP \(bu 2
-use \f[CR]task maintainer:pull\f[R] and
-\f[CR]task maintainer:task \-\- ...\f[R] when you need to enter the
+use \f[CR]task maintainer:up\f[R],
+\f[CR]task maintainer:task \-\- ...\f[R], and
+\f[CR]task maintainer:git \-\- ...\f[R] when you need to enter the
 maintainer lane from the host
 .IP \(bu 2
 if the maintainer container cannot execute the workflow, fix the
 maintainer container rather than falling back to the host
+.IP \(bu 2
+on Windows worktrees, use
+\f[CR]git worktree add \-\-relative\-paths\f[R] if you want the Dev
+Containers CLI to mount the Git common dir for container\-side Git
 .IP \(bu 2
 for published\-image CVEs, fix repo\-owned causes first: stale base
 images, stale distro packages, stale pinned versions, and missing

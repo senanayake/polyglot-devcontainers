@@ -1,22 +1,33 @@
 version: "3"
 
 tasks:
-  maintainer:pull:
-    desc: Pull the published maintainer container from GHCR
+  maintainer:up:
+    desc: Start or reuse the maintainer devcontainer through the official Dev Containers CLI
     cmds:
-      - python scripts/run_in_maintainer_container.py pull
+      - python scripts/run_in_maintainer_container.py up
+
+  maintainer:pull:
+    desc: Deprecated alias for task maintainer:up
+    cmds:
+      - task maintainer:up
 
   maintainer:shell:
-    desc: Open an interactive shell inside the published maintainer container
-    deps: [maintainer:pull]
+    desc: Open an interactive shell inside the maintainer devcontainer
+    deps: [maintainer:up]
     cmds:
       - python scripts/run_in_maintainer_container.py shell
 
   maintainer:task:
-    desc: Run a repository task inside the published maintainer container, e.g. task maintainer:task -- ci
-    deps: [maintainer:pull]
+    desc: Run a repository task inside the maintainer devcontainer, e.g. task maintainer:task -- ci
+    deps: [maintainer:up]
     cmds:
       - python scripts/run_in_maintainer_container.py exec -- task {{.CLI_ARGS}}
+
+  maintainer:git:
+    desc: Run git inside the maintainer devcontainer, e.g. task maintainer:git -- status --short --branch
+    deps: [maintainer:up]
+    cmds:
+      - python scripts/run_in_maintainer_container.py git -- {{.CLI_ARGS}}
 
   _require_maintainer:
     internal: true

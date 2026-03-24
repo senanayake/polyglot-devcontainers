@@ -22,8 +22,9 @@ Read this page before making changes or declaring work complete.
 ```bash
 man polyglot
 man polyglot-task-contract
-task maintainer:pull
+task maintainer:up
 task maintainer:task -- ci
+task maintainer:git -- status --short --branch
 task image:discover
 task image:pin -- --write
 task image:verify
@@ -36,16 +37,17 @@ Agent defaults:
 
 1. gather context from local runtime docs and the workspace
 2. pull and use the published maintainer container as the only valid agent execution environment
-3. follow the task contract
-4. inspect artifacts when doing security or dependency work
-5. use `task image:discover` before changing published image base references
-6. use an explicit write step such as `task image:pin -- --write`
-7. verify the published images with `task image:verify`
-8. classify critical published-image findings as either `repo-fixable` or
+3. enter that environment through the official Dev Containers CLI against the checked-in maintainer devcontainer definition
+4. follow the task contract
+5. inspect artifacts when doing security or dependency work
+6. use `task image:discover` before changing published image base references
+7. use an explicit write step such as `task image:pin -- --write`
+8. verify the published images with `task image:verify`
+9. classify critical published-image findings as either `repo-fixable` or
    `upstream residual`
-9. prefer the latest upstream-supported binary release for third-party tools
+10. prefer the latest upstream-supported binary release for third-party tools
    and do not self-build vendor tools only to suppress scanner output
-10. use the smallest change that solves the real problem
+11. use the smallest change that solves the real problem
 
 # OUTPUTS / ARTIFACTS
 
@@ -79,8 +81,9 @@ Published image maintenance also writes evidence under:
 - keep changes aligned with the repository's security-first posture
 - use the Knowledge layer when judgment is needed, not just mechanics
 - treat the published images as a separate maintenance lane: discover, pin, verify, then scan
-- use `task maintainer:pull` and `task maintainer:task -- ...` when you need to enter the maintainer lane from the host
+- use `task maintainer:up`, `task maintainer:task -- ...`, and `task maintainer:git -- ...` when you need to enter the maintainer lane from the host
 - if the maintainer container cannot execute the workflow, fix the maintainer container rather than falling back to the host
+- on Windows worktrees, use `git worktree add --relative-paths` if you want the Dev Containers CLI to mount the Git common dir for container-side Git
 - for published-image CVEs, fix repo-owned causes first: stale base images,
   stale distro packages, stale pinned versions, and missing verification
 - if a critical remains in the latest upstream-supported release of a managed

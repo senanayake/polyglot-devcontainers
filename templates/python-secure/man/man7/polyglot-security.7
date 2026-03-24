@@ -11,8 +11,9 @@ repository security baseline.
 .SH PRIMARY COMMANDS
 .IP
 .EX
-task maintainer:pull
+task maintainer:up
 task maintainer:task \-\- scan
+task maintainer:git \-\- status \-\-short \-\-branch
 task scan
 task image:discover
 task image:verify
@@ -78,6 +79,9 @@ Security checks belong in the normal development loop.
 Use structured artifacts when available.
 .IP \(bu 2
 Prefer the maintainer\-container workflow over host\-local shortcuts.
+.IP \(bu 2
+Prefer the official Dev Containers CLI maintainer lane over raw host
+shell execution.
 .IP \(bu 2
 Prefer the published GHCR maintainer image over rebuilding the
 maintainer image on the host.

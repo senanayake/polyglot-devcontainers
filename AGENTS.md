@@ -124,15 +124,27 @@ Hard constraint:
 - agents must run repository maintenance, validation, image-refresh, security,
   and release-preparation workflows inside the maintainer container
 - agents must not treat host execution as valid proof for this repository
-- the host may only provide the container runtime needed to start or attach to
-  the maintainer container
+- the host may only provide the container runtime and the control entry point
+  needed to start or attach to the maintainer container
 - the default maintainer container entry point for this repository is the
   published GHCR image `ghcr.io/senanayake/polyglot-devcontainers-maintainer:main`
-- agents should prefer pulling and running the published maintainer image over
-  rebuilding the maintainer image on the host
+- the default maintainer control path is the official Dev Containers CLI
+  targeting `.devcontainer/devcontainer.json`
+- when a standalone `devcontainer` binary is unavailable, agents may invoke the
+  pinned `@devcontainers/cli` package through the repository wrapper instead of
+  relying on a host-global install
+- agents should prefer the published maintainer image over rebuilding the
+  maintainer image on the host
 - if a workflow cannot run inside the maintainer container, agents must treat
   that as a repository bug and fix the maintainer environment before relying on
   host-local fallbacks
+- DevPod remains a valid IDE consumption path for downstream image users, but
+  maintainer and agent workflows should use the maintainer devcontainer control
+  path instead of treating DevPod as the automation interface
+- on Windows, container-authoritative Git in worktrees requires
+  `git worktree add --relative-paths` so the Dev Containers CLI can mount the
+  worktree common dir correctly; otherwise agents should use a normal clone or
+  a WSL-backed checkout
 
 On Windows, agents should prefer a **WSL-first** workflow when using VS Code
 and devcontainers.

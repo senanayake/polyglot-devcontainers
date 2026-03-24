@@ -8,4 +8,19 @@ That choice reduces drift across Windows, macOS, and Linux because:
 - CI can mirror local setup more closely
 - host package state does not become part of the contract
 
-The host only needs enough capability to open or run the container workflow.
+The host only needs enough capability to control the container workflow.
+
+For maintainer and agent workflows, this repository now treats the checked-in
+maintainer devcontainer definition as the host-side control plane:
+
+- `.devcontainer/devcontainer.json` defines the maintainer environment
+- the official Dev Containers CLI provides the supported `up` and `exec` path
+- the published GHCR maintainer image remains the default runtime payload
+
+That keeps DevPod available for downstream IDE experiences without making it
+the automation path for repository maintenance.
+
+On Windows, container-authoritative Git is most reliable from WSL-backed
+checkouts or normal clones. Git worktrees can also work when they are created
+with `git worktree add --relative-paths`, which lets the Dev Containers CLI
+mount the worktree common dir for Git operations inside the container.

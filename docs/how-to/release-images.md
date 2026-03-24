@@ -11,11 +11,13 @@ from the host shell.
 The default maintainer execution path is:
 
 ```bash
-task maintainer:pull
+task maintainer:up
 task maintainer:task -- ci
+task maintainer:git -- status --short --branch
 ```
 
-The host should only pull and start the maintainer container. Repository
+The host should only control the maintainer devcontainer through the official
+Dev Containers CLI entrypoint used by the repository wrapper. Repository
 workflow proof still has to happen inside that container.
 
 ## Maintain the maintainer container

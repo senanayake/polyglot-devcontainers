@@ -5,6 +5,8 @@
 .coverage
 .coverage.*
 .artifacts/
+.tmp/
+**/.tmp/
 .pre-commit-cache/
 .pnpm-store/
 .gradle/
