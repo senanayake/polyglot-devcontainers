@@ -17,6 +17,9 @@ task format
 task deps:inventory
 task deps:plan
 task deps:report
+task scenarios:python-maintenance
+task scenarios:java-maintenance
+task scenarios:verify
 task upgrade
 ```
 
@@ -33,6 +36,11 @@ These helpers must extend the standard workflow rather than replace it.
 - `deps:plan` (optional): write normalized dependency update planning artifacts
 - `deps:report` (optional): summarize dependency inventory and plan artifacts
   into compact JSON and Markdown reports
+- `scenarios:python-maintenance` (optional): run the current Python
+  dependency-maintenance scenario and verify its artifacts
+- `scenarios:java-maintenance` (optional): run the current Java
+  dependency-maintenance scenario and verify its artifacts
+- `scenarios:verify` (optional): run the current repo-owned scenario proving set
 - `upgrade` (optional): run a validated dependency-upgrade workflow and
   re-verify the repository
 

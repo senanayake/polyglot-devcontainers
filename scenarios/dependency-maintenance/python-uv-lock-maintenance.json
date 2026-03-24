@@ -1,0 +1,55 @@
+{
+  "name": "python-uv-lock-maintenance",
+  "scenario_set": "dependency-maintenance",
+  "intent": "pattern",
+  "language": "python",
+  "workspace": "examples/python-maintenance-example",
+  "runtime_guidance": [
+    "polyglot",
+    "polyglot-python",
+    "polyglot-deps",
+    "polyglot-scenarios"
+  ],
+  "knowledge_units": [
+    "evidence-before-mutation",
+    "uv-lock-first-class-python-path",
+    "task-contract-reverification"
+  ],
+  "commands": [
+    "task deps:report",
+    "task ci"
+  ],
+  "follow_on_commands": [
+    "task upgrade",
+    "task ci"
+  ],
+  "artifacts": [
+    {
+      "path": ".artifacts/scans/dependency-inventory.json",
+      "json_equals": {
+        "ecosystem": "python",
+        "strategy_detection.strategy": "uv-lock"
+      }
+    },
+    {
+      "path": ".artifacts/scans/dependency-plan.json",
+      "json_equals": {
+        "ecosystem": "python",
+        "strategy_detection.strategy": "uv-lock"
+      }
+    },
+    {
+      "path": ".artifacts/scans/dependency-report.json",
+      "json_equals": {
+        "ecosystem": "python",
+        "strategy_detection.strategy": "uv-lock"
+      },
+      "json_paths_exist": [
+        "plan.planned_update_count"
+      ]
+    },
+    {
+      "path": ".artifacts/scans/dependency-report.md"
+    }
+  ]
+}

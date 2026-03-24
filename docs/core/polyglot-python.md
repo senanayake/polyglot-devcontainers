@@ -63,6 +63,13 @@ Dependency-oriented workflow:
 4. use `task upgrade` only when the path supports it
 5. rerun `task ci`
 
+Repository-owned scenario slice:
+
+- from the repository root, run `task scenarios:python-maintenance`
+- inspect `.artifacts/scenarios/python-uv-lock-maintenance.md`
+- treat `task upgrade` in `examples/python-maintenance-example` as the manual
+  follow-on execution step after reading the evidence
+
 # OUTPUTS / ARTIFACTS
 
 Python paths may write:
@@ -94,5 +101,6 @@ Python paths may write:
 - `polyglot(7)`
 - `polyglot-task-contract(7)`
 - `polyglot-deps(7)`
+- `polyglot-scenarios(7)`
 - `polyglot-security(7)`
 - `polyglot-knowledge(7)`

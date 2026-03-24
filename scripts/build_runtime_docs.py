@@ -29,25 +29,26 @@ def pandoc_command(source: Path, output: Path) -> list[str]:
     if shutil.which("pandoc"):
         return ["pandoc", "--standalone", "--to", "man", str(source), "--output", str(output)]
 
-    if shutil.which("podman"):
-        return [
-            "podman",
-            "run",
-            "--rm",
-            "-v",
-            f"{ROOT}:/data",
-            "-w",
-            "/data",
-            "docker.io/pandoc/core",
-            "--standalone",
-            "--to",
-            "man",
-            str(source.relative_to(ROOT)).replace("\\", "/"),
-            "--output",
-            str(output.relative_to(ROOT)).replace("\\", "/"),
-        ]
+    for runtime in ("podman", "docker"):
+        if shutil.which(runtime):
+            return [
+                runtime,
+                "run",
+                "--rm",
+                "-v",
+                f"{ROOT}:/data",
+                "-w",
+                "/data",
+                "docker.io/pandoc/core",
+                "--standalone",
+                "--to",
+                "man",
+                str(source.relative_to(ROOT)).replace("\\", "/"),
+                "--output",
+                str(output.relative_to(ROOT)).replace("\\", "/"),
+            ]
 
-    raise SystemExit("pandoc or podman is required to build runtime docs")
+    raise SystemExit("pandoc, podman, or docker is required to build runtime docs")
 
 
 def main() -> int:

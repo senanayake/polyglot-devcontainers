@@ -1,0 +1,56 @@
+{
+  "name": "java-gradle-maintenance",
+  "scenario_set": "dependency-maintenance",
+  "intent": "pattern",
+  "language": "java",
+  "workspace": "examples/java-maintenance-example",
+  "runtime_guidance": [
+    "polyglot",
+    "polyglot-java",
+    "polyglot-deps",
+    "polyglot-scenarios"
+  ],
+  "knowledge_units": [
+    "evidence-before-mutation",
+    "gradle-first-dependency-planning",
+    "task-contract-reverification"
+  ],
+  "commands": [
+    "task deps:report",
+    "task ci"
+  ],
+  "follow_on_commands": [
+    "task upgrade",
+    "task ci"
+  ],
+  "artifacts": [
+    {
+      "path": ".artifacts/scans/dependency-inventory.json",
+      "json_equals": {
+        "ecosystem": "java"
+      }
+    },
+    {
+      "path": ".artifacts/scans/dependency-plan.json",
+      "json_equals": {
+        "ecosystem": "java"
+      },
+      "json_paths_exist": [
+        "gradle.current_version"
+      ]
+    },
+    {
+      "path": ".artifacts/scans/dependency-report.json",
+      "json_equals": {
+        "ecosystem": "java"
+      },
+      "json_paths_exist": [
+        "plan.planned_update_count",
+        "plan.gradle.current_version"
+      ]
+    },
+    {
+      "path": ".artifacts/scans/dependency-report.md"
+    }
+  ]
+}

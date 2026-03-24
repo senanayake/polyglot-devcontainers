@@ -10,3 +10,4 @@ repository.
 - [Release Images](./release-images.md)
 - [Run the Security Workflow](./run-the-security-workflow.md)
 - [Run the Python Proving Batches](./run-the-python-proving-batches.md)
+- [Run the Scenario Proving Set](./run-the-scenario-proving-set.md)

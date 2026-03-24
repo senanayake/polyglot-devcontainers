@@ -72,7 +72,7 @@ jobs:
             -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" \
             -w /workspaces/polyglot-devcontainers \
             "${IMAGE_NAME}:ci" \
-            bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && man polyglot >/dev/null && task ci"
+            bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task ci"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3

@@ -111,6 +111,35 @@ tasks:
         examples/java-maintenance-example/.artifacts/scans/dependency-report.json
         templates/java-secure/.artifacts/scans/dependency-report.json
 
+  scenarios:python-maintenance:
+    desc: Run the Python dependency-maintenance scenario and write scenario artifacts
+    deps: [_require_maintainer]
+    cmds:
+      - mkdir -p .artifacts/scenarios
+      - >
+        python scripts/run_scenario.py
+        --scenario scenarios/dependency-maintenance/python-uv-lock-maintenance.json
+        --json-output .artifacts/scenarios/python-uv-lock-maintenance.json
+        --markdown-output .artifacts/scenarios/python-uv-lock-maintenance.md
+
+  scenarios:java-maintenance:
+    desc: Run the Java dependency-maintenance scenario and write scenario artifacts
+    deps: [_require_maintainer]
+    cmds:
+      - mkdir -p .artifacts/scenarios
+      - >
+        python scripts/run_scenario.py
+        --scenario scenarios/dependency-maintenance/java-gradle-maintenance.json
+        --json-output .artifacts/scenarios/java-gradle-maintenance.json
+        --markdown-output .artifacts/scenarios/java-gradle-maintenance.md
+
+  scenarios:verify:
+    desc: Run the current repo-owned scenario proving set
+    deps: [_require_maintainer]
+    cmds:
+      - task scenarios:python-maintenance
+      - task scenarios:java-maintenance
+
   image:discover:
     desc: Resolve upstream digests for published image base references
     deps: [_require_maintainer]
@@ -252,3 +281,4 @@ tasks:
       - task lint
       - task test
       - task scan
+      - task scenarios:verify

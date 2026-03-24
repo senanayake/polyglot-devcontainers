@@ -51,6 +51,7 @@ The documentation system compiles selected Markdown files into:
 - `man/man7/polyglot-task-contract.7`
 - `man/man7/polyglot-python.7`
 - `man/man7/polyglot-java.7`
+- `man/man7/polyglot-scenarios.7`
 - `man/man7/polyglot-security.7`
 - `man/man7/polyglot-deps.7`
 - `man/man7/polyglot-agents.7`
@@ -70,8 +71,9 @@ The minimum intended flow is:
 2. choose a starter path
 3. read the relevant workflow page such as `polyglot-python` or
    `polyglot-java`
-4. read `polyglot-task-contract`
-5. consult `polyglot-security`, `polyglot-deps`, `polyglot-agents`, or
+4. read `polyglot-scenarios` when you want an executable proving path
+5. read `polyglot-task-contract`
+6. consult `polyglot-security`, `polyglot-deps`, `polyglot-agents`, or
    `polyglot-troubleshooting` as needed
 
 The important design rule is that users and agents should not need to know the
@@ -89,6 +91,7 @@ Current source layout:
 - `docs/core/polyglot-task-contract.md`
 - `docs/core/polyglot-python.md`
 - `docs/core/polyglot-java.md`
+- `docs/core/polyglot-scenarios.md`
 - `docs/core/polyglot-security.md`
 - `docs/core/polyglot-deps.md`
 - `docs/core/polyglot-agents.md`
@@ -237,6 +240,12 @@ Phase 3: agent and security guidance
 - add `polyglot-security`
 - add `polyglot-deps`
 - align with the existing artifact and task-reporting workflows
+
+Phase 3b: executable scenario guidance
+
+- add `polyglot-scenarios`
+- connect runtime guidance to the first repo-owned executable scenarios
+- keep the scenario surface aligned with the existing task contract
 
 Phase 4: curated Knowledge layer
 

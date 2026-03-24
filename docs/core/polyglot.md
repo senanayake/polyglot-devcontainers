@@ -35,6 +35,7 @@ man polyglot-starters
 man polyglot-task-contract
 man polyglot-python
 man polyglot-java
+man polyglot-scenarios
 man polyglot-troubleshooting
 man polyglot-agents
 man polyglot-knowledge
@@ -48,9 +49,11 @@ man polyglot-knowledge
    or a Java starter.
 3. Read the starter-specific page.
 4. Follow the task contract.
-5. Use the security and dependency pages when you need artifacts or upgrade
+5. Use the scenarios page when you want a repo-owned executable pattern rather
+   than only read-only guidance.
+6. Use the security and dependency pages when you need artifacts or upgrade
    guidance.
-6. Use the troubleshooting, agents, and knowledge pages when you need stronger
+7. Use the troubleshooting, agents, and knowledge pages when you need stronger
    operating guidance.
 
 # OUTPUTS / ARTIFACTS
@@ -97,6 +100,7 @@ Examples include:
 - `polyglot-task-contract(7)`
 - `polyglot-python(7)`
 - `polyglot-java(7)`
+- `polyglot-scenarios(7)`
 - `polyglot-security(7)`
 - `polyglot-deps(7)`
 - `polyglot-troubleshooting(7)`

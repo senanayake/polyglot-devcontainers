@@ -53,6 +53,13 @@ Dependency-oriented workflow:
 4. use `task upgrade` when you want the validated Gradle update path
 5. rerun `task lint`, `task test`, and `task scan`
 
+Repository-owned scenario slice:
+
+- from the repository root, run `task scenarios:java-maintenance`
+- inspect `.artifacts/scenarios/java-gradle-maintenance.md`
+- treat `task upgrade` in `examples/java-maintenance-example` as the manual
+  follow-on execution step after reading the evidence
+
 # OUTPUTS / ARTIFACTS
 
 Java paths may write:
@@ -85,5 +92,6 @@ Java paths may write:
 - `polyglot(7)`
 - `polyglot-task-contract(7)`
 - `polyglot-deps(7)`
+- `polyglot-scenarios(7)`
 - `polyglot-security(7)`
 - `polyglot-knowledge(7)`

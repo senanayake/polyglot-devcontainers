@@ -16,6 +16,7 @@ task deps:inventory
 task deps:plan
 task deps:report
 task upgrade
+task scenarios:verify
 .EE
 .SH WORKFLOW
 The current helper flow is:
@@ -32,6 +33,12 @@ The current helper flow is:
 .PP
 \f[CR]deps:report\f[R] is the compressed operator\-facing view over the
 underlying inventory and plan artifacts.
+.PP
+The first repo\-owned dependency scenarios build on this flow rather
+than replacing it.
+.PP
+They execute the current Python and Java maintenance patterns and then
+verify the expected artifacts.
 .SH OUTPUTS / ARTIFACTS
 Common files:
 .IP \(bu 2
@@ -50,6 +57,9 @@ aggregate report over the Python and Java proving paths.
 Reading only the raw scanner output and ignoring the normalized report.
 .IP \(bu 2
 Treating \f[CR]upgrade\f[R] as safe without inspecting the plan first.
+.IP \(bu 2
+Treating the scenario tasks as if they replaced the underlying report
+artifacts.
 .SH GUIDANCE
 .IP \(bu 2
 Use \f[CR]deps:report\f[R] when you want the shortest useful view.
@@ -59,6 +69,9 @@ artifact.
 .IP \(bu 2
 Prefer the normalized report over ad hoc interpretation of mixed tool
 output.
+.IP \(bu 2
+Use the scenario tasks when you want the current Python and Java
+maintenance patterns exercised end to end from the repository root.
 .SH SEE ALSO
 .IP \(bu 2
 \f[CR]polyglot\-security(7)\f[R]
@@ -66,5 +79,7 @@ output.
 \f[CR]polyglot\-python(7)\f[R]
 .IP \(bu 2
 \f[CR]polyglot\-java(7)\f[R]
+.IP \(bu 2
+\f[CR]polyglot\-scenarios(7)\f[R]
 .IP \(bu 2
 \f[CR]polyglot\-task\-contract(7)\f[R]
