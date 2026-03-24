@@ -677,9 +677,194 @@ man pages into a first-class delivery format.
 
 ---
 
+## Phase 10 - Executable Knowledge System (Scenarios)
+
+Objective:
+
+Extend the Phase 9b evidence-and-planning work and the Phase 9d runtime
+documentation work into a small executable knowledge system that can be run,
+observed, verified, and improved inside the devcontainer substrate.
+
+The goal is not to introduce a new CLI, a parallel workflow, or an abstract
+documentation layer detached from execution.
+
+The goal is to let the existing environment explain and exercise a few common
+engineering situations in a way that humans and agents can both use from
+inside the container.
+
+This phase should continue to follow Gall's Law:
+
+- start with a few small working scenario slices
+- keep the task contract as the primary interface
+- only add structure that improves real execution and verification
+- avoid promoting scenario machinery beyond what the working system proves
+
+Relationship to earlier phases:
+
+- Phase 9b established the `evidence -> plan -> execution` model and the value
+  of structured artifacts
+- Phase 9d established `runtime_guidance` as an in-container operating surface
+- Phase 10 extends both by making some of that guidance executable in concrete,
+  observable scenarios
+
+Core concept:
+
+Introduce scenarios as the primary executable knowledge unit.
+
+A scenario represents a concrete engineering situation that can be:
+
+- started inside a devcontainer
+- operated through the existing task contract
+- understood through runtime guidance
+- evaluated through evidence artifacts, planning artifacts, tests, scans, and
+  other verification steps
+
+Scenarios should remain grounded in the current system:
+
+- devcontainers remain the execution substrate
+- `task init`, `task lint`, `task test`, `task scan`, and `task ci` remain the
+  primary interaction contract
+- runtime guidance remains the local explanatory surface
+- evidence and planning artifacts remain the observable inputs and outputs
+
+Knowledge model:
+
+The initial model should stay small and practical.
+
+Knowledge units:
+
+- concise reusable explanations, procedures, patterns, anti-patterns, and
+  constraints
+- written to support action inside the container rather than stand alone as a
+  documentation system
+
+Scenarios:
+
+- concrete executable compositions of knowledge units
+- tied to a specific environment, starting state, and verification path
+- intended to show how guidance, evidence, planning, and execution fit
+  together in practice
+
+Scenario sets:
+
+- small groups of related scenarios around one concern
+- useful when multiple approaches or failure modes should be compared without
+  inventing a separate workflow layer
+
+Initial scope:
+
+The initial implementation should focus on a few scenario families only.
+
+Python and Java remain the proving set for this phase.
+
+The first candidates should stay close to already-proven repository work, such
+as:
+
+- dependency evidence and planning interpretation
+- secure dependency upgrade and re-verification flows
+- starter bootstrap and task-contract recovery flows
+- common security or maintenance anti-patterns that can be reproduced and
+  explained inside the container
+
+Non-scope:
+
+- a general scenario engine
+- a separate scenario CLI
+- a second workflow model parallel to the task contract
+- broad multi-language coverage before Python and Java prove the slice
+- a detached knowledge base that does not correspond to runnable environments
+
+### Scenario Discovery and Evolution
+
+Objective:
+
+Grow scenarios out of real repository work and evidence rather than designing a
+large abstract catalog up front.
+
+Discovery sources may include:
+
+- normalized evidence artifacts
+- normalized planning artifacts
+- failed verification runs
+- repeated remediation patterns
+- starter usage failures and recovery paths
+
+Small working slices should come first:
+
+- begin with a few scenario families
+- prefer situations already observed in Python and Java proving paths
+- keep each scenario close to a real repository task flow
+- only generalize after the scenario has been run and proven useful
+
+Scenario sets should allow limited comparison where that comparison helps real
+work, for example:
+
+- two safe ways to interpret and act on dependency evidence
+- a working pattern and a nearby anti-pattern
+- a diagnostic scenario and the verified recovery path
+
+Successful scenarios may later inform:
+
+- improved runtime guidance
+- better starter defaults
+- stronger task documentation
+- clearer planning and evidence artifacts
+- future template and image hardening
+
+Verification model:
+
+A scenario is only useful if it stays executable and observable inside the same
+environment the repository already trusts.
+
+Scenarios should therefore:
+
+- run inside devcontainers and published images
+- use the existing task contract rather than bypassing it
+- produce or consume the same evidence and planning artifacts already used by
+  the repository
+- end in repository verification rather than narrative-only explanation
+
+Success signals:
+
+- humans and agents can begin from runtime guidance and reach a working
+  scenario without external context
+- scenarios improve understanding of evidence, planning, and execution without
+  adding a new mandatory command surface
+- a small Python and Java proving set yields reusable scenario sets that
+  improve starter operation or remediation work
+- runtime guidance and executable scenarios reinforce each other instead of
+  drifting apart
+
+Failure signals:
+
+- scenarios duplicate static documentation without execution value
+- scenario definitions become more complex than the task flows they are meant
+  to clarify
+- the phase introduces a parallel workflow system or detached knowledge layer
+- the repository tries to model too many languages or scenario families before
+  the first slices are proven
+
+Outcome if successful:
+
+The repository gains a small executable knowledge layer in which selected
+engineering situations can be explained, exercised, and verified inside the
+same container-backed environments used for real work.
+
+This would extend the `runtime_guidance` capability from static local guidance
+into a more practical system where humans and agents can recover not only what
+to do, but how that guidance behaves under execution.
+
+Outcome if unsuccessful:
+
+The repository should keep the stronger runtime documentation and structured
+artifact model from Phases 9b and 9d, but avoid promoting scenarios into a
+first-class concept.
+
+---
+
 # Conditional Experiments
 
-## Experiment 10 - Evaluate a Reusable Dependency Planning Core
+## Experiment 11 - Evaluate a Reusable Dependency Planning Core
 
 Hypothesis:
 
@@ -720,7 +905,7 @@ Decision rule:
 Either the project proves a planning core is worth keeping, or it learns that
 lighter-weight task flows are enough.
 
-## Experiment 11 - Integrate Planning into the Existing Task Workflow
+## Experiment 12 - Integrate Planning into the Existing Task Workflow
 
 Objective:
 
@@ -761,7 +946,7 @@ Current monorepo experiment:
 - this is intentionally a report layer over the current evidence model, not a
   new planner or separate CLI
 
-## Experiment 12 - Reduce Input Friction for Proven Planning Workflows
+## Experiment 13 - Reduce Input Friction for Proven Planning Workflows
 
 Objective:
 
@@ -784,7 +969,7 @@ Decision rule:
 Only continue this work if earlier planning experiments are already useful on
 real repositories.
 
-## Experiment 13 - Policy-Aware Prioritization
+## Experiment 14 - Policy-Aware Prioritization
 
 Objective:
 
@@ -808,7 +993,7 @@ Decision rule:
 Only continue this work if policy-aware ranking clearly improves decisions over
 plain scanner output.
 
-## Experiment 14 - Static Security Analysis and CWE Remediation
+## Experiment 15 - Static Security Analysis and CWE Remediation
 
 Objective:
 
@@ -831,7 +1016,7 @@ Decision rule:
 Only continue this work after dependency maintenance and planning are clearly
 useful and stable enough to justify a larger problem space.
 
-## Experiment 15 - Reachability Hooks
+## Experiment 16 - Reachability Hooks
 
 Objective:
 
@@ -851,7 +1036,7 @@ Decision rule:
 Only continue this work if reachability evidence materially reduces false
 positives or meaningfully changes remediation priority.
 
-## Experiment 16 - Explore Stronger Upgrade Planning
+## Experiment 17 - Explore Stronger Upgrade Planning
 
 Objective:
 
