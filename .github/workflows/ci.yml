@@ -51,4 +51,4 @@ jobs:
             -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" \
             -w /workspaces/polyglot-devcontainers \
             polyglot-devcontainers-maintainer:ci \
-            bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
+            bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && man polyglot >/dev/null && task ci"

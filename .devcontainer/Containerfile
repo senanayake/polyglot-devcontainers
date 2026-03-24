@@ -14,6 +14,8 @@ ENV POLYGLOT_CONTAINER_ROLE=maintainer
 COPY --from=java_base /usr/lib/jvm/msopenjdk-current /usr/lib/jvm/msopenjdk-current
 
 COPY .devcontainer/post-create.sh /usr/local/share/polyglot-devcontainers/post-create.sh
+COPY scripts/install_runtime_docs.sh /tmp/install_runtime_docs.sh
+COPY man/man7 /tmp/runtime-docs
 
 COPY features /tmp/features
 
@@ -21,6 +23,7 @@ ARG NODESOURCE_KEY_SHA256=b42e0321dabdc24e892115da705cf061167eac12a317f23d329862
 
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && chmod 0755 /usr/local/share/polyglot-devcontainers/post-create.sh \
+    && chmod 0755 /tmp/install_runtime_docs.sh \
     && apt-get update \
     && apt-get -y dist-upgrade \
     && apt-get install -y --no-install-recommends ca-certificates curl docker.io git gnupg less man-db \
@@ -32,10 +35,11 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     > /etc/apt/sources.list.d/nodesource.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends nodejs \
+    && bash /tmp/install_runtime_docs.sh /tmp/runtime-docs \
     && ln -sf /usr/lib/jvm/msopenjdk-current/bin/java /usr/local/bin/java \
     && ln -sf /usr/lib/jvm/msopenjdk-current/bin/javac /usr/local/bin/javac \
     && usermod -aG docker vscode \
-    && rm -rf /tmp/nodesource.key /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
+    && rm -rf /tmp/nodesource.key /tmp/install_runtime_docs.sh /tmp/runtime-docs /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
 
 RUN bash /tmp/features/security-baseline/install.sh \
     && bash /tmp/features/python-engineering/install.sh \
