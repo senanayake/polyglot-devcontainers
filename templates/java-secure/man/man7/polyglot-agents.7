@@ -110,6 +110,10 @@ use \f[CR]task maintainer:up\f[R],
 \f[CR]task maintainer:git \-\- ...\f[R] when you need to enter the
 maintainer lane from the host
 .IP \(bu 2
+for HTTPS remotes, let \f[CR]task maintainer:git \-\- ...\f[R] bridge
+credentials into a single container\-side Git command instead of pushing
+from the host or persisting secrets in the container
+.IP \(bu 2
 if the maintainer container cannot execute the workflow, fix the
 maintainer container rather than falling back to the host
 .IP \(bu 2

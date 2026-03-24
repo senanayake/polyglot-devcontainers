@@ -135,6 +135,9 @@ Hard constraint:
   relying on a host-global install
 - agents should prefer the published maintainer image over rebuilding the
   maintainer image on the host
+- for HTTPS remotes, container-side Git transport should use the repository
+  wrapper's ephemeral credential bridge rather than storing credentials in the
+  container or falling back to host-side Git commands
 - if a workflow cannot run inside the maintainer container, agents must treat
   that as a repository bug and fix the maintainer environment before relying on
   host-local fallbacks

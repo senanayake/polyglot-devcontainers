@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import shutil
@@ -12,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 DEFAULT_IMAGE = "ghcr.io/senanayake/polyglot-devcontainers-maintainer:main"
@@ -189,6 +191,16 @@ def common_cli_args(override_config: str | None) -> list[str]:
     return args
 
 
+def remote_env_args(environment: dict[str, str] | None) -> list[str]:
+    if not environment:
+        return []
+
+    args: list[str] = []
+    for key, value in environment.items():
+        args.extend(["--remote-env", f"{key}={value}"])
+    return args
+
+
 def up(override_config: str | None) -> int:
     command = [
         *devcontainer_command(),
@@ -269,6 +281,104 @@ def exec_command(argv: list[str], override_config: str | None) -> int:
     return run(command, check=False).returncode
 
 
+def default_remote_name() -> str:
+    try:
+        branch = run_capture(["git", "branch", "--show-current"])
+        if branch:
+            configured = run_capture(["git", "config", f"branch.{branch}.remote"])
+            if configured:
+                return configured
+    except subprocess.CalledProcessError:
+        pass
+    return "origin"
+
+
+def first_positional_argument(argv: list[str]) -> str | None:
+    for value in argv[1:]:
+        if value.startswith("-"):
+            continue
+        return value
+    return None
+
+
+def remote_url_for_git_command(argv: list[str]) -> str | None:
+    if not argv:
+        return None
+
+    operation = argv[0]
+    if operation not in {"push", "fetch", "pull", "ls-remote"}:
+        return None
+
+    remote = first_positional_argument(argv) or default_remote_name()
+    if "://" in remote:
+        return remote
+
+    get_url = ["git", "remote", "get-url"]
+    if operation == "push":
+        get_url.append("--push")
+    get_url.append(remote)
+    try:
+        return run_capture(get_url)
+    except subprocess.CalledProcessError:
+        return None
+
+
+def git_credentials_for_remote(remote_url: str) -> tuple[str, str] | None:
+    parsed = urlparse(remote_url)
+    if parsed.scheme != "https" or not parsed.hostname:
+        return None
+
+    request = [f"protocol={parsed.scheme}", f"host={parsed.hostname}"]
+    if parsed.path:
+        request.append(f"path={parsed.path.lstrip('/')}")
+
+    try:
+        completed = subprocess.run(
+            ["git", "credential", "fill"],
+            input="\n".join([*request, "", ""]),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError:
+        return None
+
+    values: dict[str, str] = {}
+    for line in completed.stdout.splitlines():
+        if "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        values[key] = value
+
+    username = values.get("username")
+    password = values.get("password")
+    if not username or not password:
+        return None
+    return username, password
+
+
+def git_auth_remote_env(argv: list[str]) -> dict[str, str] | None:
+    remote_url = remote_url_for_git_command(argv)
+    if not remote_url:
+        return None
+
+    credentials = git_credentials_for_remote(remote_url)
+    if not credentials:
+        return None
+
+    parsed = urlparse(remote_url)
+    scope = f"{parsed.scheme}://{parsed.netloc}/"
+    token = base64.b64encode(f"{credentials[0]}:{credentials[1]}".encode("utf-8")).decode("ascii")
+    return {
+        "GIT_TERMINAL_PROMPT": "0",
+        "GIT_CONFIG_COUNT": "2",
+        "GIT_CONFIG_KEY_0": "credential.helper",
+        "GIT_CONFIG_VALUE_0": "",
+        "GIT_CONFIG_KEY_1": f"http.{scope}.extraheader",
+        "GIT_CONFIG_VALUE_1": f"AUTHORIZATION: basic {token}",
+    }
+
+
 def git_command(argv: list[str], override_config: str | None) -> int:
     if not argv:
         print("usage: run_in_maintainer_container.py git -- <args...>", file=sys.stderr)
@@ -278,10 +388,13 @@ def git_command(argv: list[str], override_config: str | None) -> int:
     if exit_code != 0:
         return exit_code
 
+    auth_env = git_auth_remote_env(argv)
+
     command = [
         *devcontainer_command(),
         "exec",
         *common_cli_args(override_config),
+        *remote_env_args(auth_env),
         "git",
         "-c",
         "core.autocrlf=input",

@@ -16,6 +16,10 @@ maintainer devcontainer definition as the host-side control plane:
 - `.devcontainer/devcontainer.json` defines the maintainer environment
 - the official Dev Containers CLI provides the supported `up` and `exec` path
 - the published GHCR maintainer image remains the default runtime payload
+- HTTPS Git remotes can be used from inside that container through the
+  repository wrapper's one-command credential bridge, so the Git operation
+  still runs in the maintainer container without writing credentials into the
+  container filesystem
 
 That keeps DevPod available for downstream IDE experiences without making it
 the automation path for repository maintenance.

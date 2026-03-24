@@ -20,6 +20,10 @@ The host should only control the maintainer devcontainer through the official
 Dev Containers CLI entrypoint used by the repository wrapper. Repository
 workflow proof still has to happen inside that container.
 
+For HTTPS remotes, use `task maintainer:git -- ...` for the release commit and
+push path as well. The wrapper can inject credentials into a single
+container-side Git command without persisting them in the container.
+
 ## Maintain the maintainer container
 
 The dedicated maintainer workflow is defined in
