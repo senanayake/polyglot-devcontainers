@@ -1,0 +1,11 @@
+[python_package_audit]
+fail_on_severities = ["CRITICAL"]
+allow_no_fix_advisories = true
+
+# Add entries like the example below if a critical advisory must be accepted
+# temporarily.
+#
+# [[python_package_audit.accepted_advisories]]
+# id = "GHSA-xxxx-xxxx-xxxx"
+# reason = "Accepted temporarily while upstream ships a fix."
+# expires_on = "2026-04-30"

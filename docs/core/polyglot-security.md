@@ -53,6 +53,8 @@ Some paths also include:
 Common artifacts:
 
 - `pip-audit.json`
+- `pip-audit-policy.json`
+- `pip-audit-policy.md`
 - `trivy-java.json`
 - `gitleaks.sarif`
 - `base-image-report.json`
@@ -78,6 +80,11 @@ Common artifacts:
 - Prefer the maintainer-container workflow over host-local shortcuts.
 - Prefer the official Dev Containers CLI maintainer lane over raw host shell execution.
 - Prefer the published GHCR maintainer image over rebuilding the maintainer image on the host.
+- For Python package audits, review `security-scan-policy.toml` before changing
+  failure behavior.
+- Use that policy to decide which severities hard-fail, whether no-fix
+  advisories may continue, and whether a specific advisory has a temporary
+  accepted override.
 - For published images, resolve and pin base digests before rebuilding and
   rescanning the published image set.
 - Classify published-image scan findings into two buckets:

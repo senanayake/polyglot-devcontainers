@@ -273,6 +273,17 @@ Security tooling must be:
 - well maintained
 - compatible with CI pipelines
 
+Python package-audit policy is repository-configured in
+`security-scan-policy.toml`.
+
+That policy should remain declarative and reviewable. For Python package
+audits, agents should:
+
+- hard-fail only on configured severities such as `CRITICAL`
+- allow no-fix advisories to continue only when the policy says so
+- record temporary accepted-advisory overrides explicitly in the policy file
+  with rationale and, when practical, an expiration date
+
 For third-party security or maintenance tools that this repository installs as
 released binaries, agents must stay on the latest upstream-supported release
 that is available through the repository workflow.

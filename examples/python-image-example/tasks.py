@@ -18,6 +18,8 @@ REPO_ROOT = next(
     parent for parent in Path(__file__).resolve().parents if (parent / "AGENTS.md").exists()
 )
 RUNTIME_GUARD = REPO_ROOT / "scripts" / "require_maintainer_container.py"
+PYTHON_AUDIT_POLICY = REPO_ROOT / "security-scan-policy.toml"
+PYTHON_AUDIT_EVALUATOR = REPO_ROOT / "scripts" / "evaluate_python_audit_policy.py"
 VENV_DIR = ROOT / ".venv"
 PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 UV = "uv.exe" if os.name == "nt" else "uv"
@@ -43,7 +45,9 @@ MINIMUM_VERSION_RE = re.compile(r">=\s*(\d+(?:\.\d+)*)")
 PYPI_PACKAGE_INFO_CACHE: dict[str, dict[str, Any]] = {}
 
 
-def run(command: list[str], *, capture_output: bool = False) -> subprocess.CompletedProcess[str]:
+def run(
+    command: list[str], *, capture_output: bool = False, check: bool = True
+) -> subprocess.CompletedProcess[str]:
     TMP_DIR.mkdir(exist_ok=True)
     SCANS_DIR.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
@@ -51,7 +55,7 @@ def run(command: list[str], *, capture_output: bool = False) -> subprocess.Compl
     env["TEMP"] = str(TMP_DIR.resolve())
     env["TMPDIR"] = str(TMP_DIR.resolve())
     return subprocess.run(
-        command, cwd=ROOT, check=True, text=True, env=env, capture_output=capture_output
+        command, cwd=ROOT, check=check, text=True, env=env, capture_output=capture_output
     )
 
 
@@ -570,7 +574,8 @@ def test() -> None:
 def scan() -> None:
     if not PYTHON.exists():
         init()
-    run(
+    audit_report = SCANS_DIR / "pip-audit.json"
+    completed = run(
         [
             str(PYTHON),
             "-m",
@@ -578,7 +583,24 @@ def scan() -> None:
             "--format",
             "json",
             "--output",
-            str(SCANS_DIR / "pip-audit.json"),
+            str(audit_report),
+        ],
+        check=False,
+    )
+    if completed.returncode not in (0, 1):
+        raise subprocess.CalledProcessError(completed.returncode, completed.args)
+    run(
+        [
+            sys.executable,
+            str(PYTHON_AUDIT_EVALUATOR),
+            "--audit-report",
+            str(audit_report),
+            "--policy",
+            str(PYTHON_AUDIT_POLICY),
+            "--json-output",
+            str(SCANS_DIR / "pip-audit-policy.json"),
+            "--markdown-output",
+            str(SCANS_DIR / "pip-audit-policy.md"),
         ]
     )
 

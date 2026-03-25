@@ -46,6 +46,10 @@ Common artifacts:
 .IP \(bu 2
 \f[CR]pip\-audit.json\f[R]
 .IP \(bu 2
+\f[CR]pip\-audit\-policy.json\f[R]
+.IP \(bu 2
+\f[CR]pip\-audit\-policy.md\f[R]
+.IP \(bu 2
 \f[CR]trivy\-java.json\f[R]
 .IP \(bu 2
 \f[CR]gitleaks.sarif\f[R]
@@ -85,6 +89,13 @@ shell execution.
 .IP \(bu 2
 Prefer the published GHCR maintainer image over rebuilding the
 maintainer image on the host.
+.IP \(bu 2
+For Python package audits, review \f[CR]security\-scan\-policy.toml\f[R]
+before changing failure behavior.
+.IP \(bu 2
+Use that policy to decide which severities hard\-fail, whether no\-fix
+advisories may continue, and whether a specific advisory has a temporary
+accepted override.
 .IP \(bu 2
 For published images, resolve and pin base digests before rebuilding and
 rescanning the published image set.
