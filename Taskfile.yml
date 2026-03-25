@@ -133,6 +133,17 @@ tasks:
         --json-output .artifacts/scenarios/python-uv-lock-maintenance.json
         --markdown-output .artifacts/scenarios/python-uv-lock-maintenance.md
 
+  scenarios:python-audit-policy:
+    desc: Run the Python audit-policy scenario and write scenario artifacts
+    deps: [_require_maintainer]
+    cmds:
+      - mkdir -p .artifacts/scenarios
+      - >
+        python scripts/run_scenario.py
+        --scenario scenarios/security-policy/python-audit-policy.json
+        --json-output .artifacts/scenarios/python-audit-policy.json
+        --markdown-output .artifacts/scenarios/python-audit-policy.md
+
   scenarios:java-maintenance:
     desc: Run the Java dependency-maintenance scenario and write scenario artifacts
     deps: [_require_maintainer]
@@ -149,6 +160,7 @@ tasks:
     deps: [_require_maintainer]
     cmds:
       - task scenarios:python-maintenance
+      - task scenarios:python-audit-policy
       - task scenarios:java-maintenance
 
   image:discover:
@@ -181,10 +193,10 @@ tasks:
       - docker build --pull --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-maintainer:verify --devcontainer-json .devcontainer/devcontainer.json
       - docker save --output .artifacts/images/maintainer.tar polyglot-devcontainers-maintainer:verify
-      - docker build --pull --file templates/java-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-java:verify templates/java-secure
+      - docker build --pull --file templates/java-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-java:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-java:verify --devcontainer-json templates/java-secure/.devcontainer/devcontainer.json
       - docker save --output .artifacts/images/java.tar polyglot-devcontainers-java:verify
-      - docker build --pull --file templates/python-node-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-python-node:verify templates/python-node-secure
+      - docker build --pull --file templates/python-node-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-python-node:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-python-node:verify --devcontainer-json templates/python-node-secure/.devcontainer/devcontainer.json
       - docker save --output .artifacts/images/python-node.tar polyglot-devcontainers-python-node:verify
 
@@ -194,6 +206,8 @@ tasks:
     cmds:
       - task image:discover -- --check-pinned
       - task image:build
+      - bash scripts/smoke_test_published_starter.sh --image polyglot-devcontainers-java:verify
+      - bash scripts/smoke_test_published_starter.sh --image polyglot-devcontainers-python-node:verify --run-scenarios
       - >
         docker run --rm -u root
         -v "$(pwd):/workspaces/polyglot-devcontainers"

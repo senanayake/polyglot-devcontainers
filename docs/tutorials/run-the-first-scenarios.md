@@ -7,6 +7,9 @@ This tutorial walks through the first executable scenarios in the repository.
 Run the Python and Java dependency-maintenance scenarios from the repository
 root and inspect the resulting artifacts.
 
+This tutorial focuses on the maintenance scenarios; the separate Python
+audit-policy scenario is covered by the operational how-to.
+
 ## Before you begin
 
 Use the maintainer container for this flow.

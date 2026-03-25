@@ -1,0 +1,58 @@
+{
+  "name": "security-evidence",
+  "intent": "diagnostic",
+  "runtime_guidance": [
+    "polyglot",
+    "polyglot-starters",
+    "polyglot-scenarios",
+    "polyglot-security"
+  ],
+  "knowledge_units": [
+    "policy-driven-security-review",
+    "structured-audit-evidence",
+    "secret-scan-baseline"
+  ],
+  "commands": [
+    "task scan"
+  ],
+  "artifacts": [
+    {
+      "path": ".artifacts/scans/pip-audit.json"
+    },
+    {
+      "path": ".artifacts/scans/pip-audit-policy.json",
+      "json_equals": {
+        "policy.fail_on_severities": [
+          "CRITICAL"
+        ],
+        "policy.allow_no_fix_advisories": true,
+        "policy.accepted_advisories": []
+      },
+      "json_paths_exist": [
+        "finding_count",
+        "violations",
+        "continued_no_fix",
+        "findings"
+      ]
+    },
+    {
+      "path": ".artifacts/scans/pnpm-audit.json",
+      "json_paths_exist": [
+        "metadata.vulnerabilities.high",
+        "metadata.vulnerabilities.critical"
+      ]
+    },
+    {
+      "path": ".artifacts/scans/gitleaks-mode.json",
+      "json_paths_exist": [
+        "mode"
+      ]
+    },
+    {
+      "path": ".artifacts/scans/gitleaks.sarif",
+      "json_paths_exist": [
+        "runs"
+      ]
+    }
+  ]
+}

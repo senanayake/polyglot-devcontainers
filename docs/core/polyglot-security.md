@@ -24,6 +24,9 @@ security baseline.
 task maintainer:up
 task maintainer:task -- scan
 task maintainer:git -- status --short --branch
+task scenarios:python-audit-policy
+task scenarios:security-evidence
+task scenarios:non-git-scan-fallback
 task scan
 task image:discover
 task image:verify
@@ -55,6 +58,7 @@ Common artifacts:
 - `pip-audit.json`
 - `pip-audit-policy.json`
 - `pip-audit-policy.md`
+- `gitleaks-mode.json`
 - `trivy-java.json`
 - `gitleaks.sarif`
 - `base-image-report.json`
@@ -85,6 +89,13 @@ Common artifacts:
 - Use that policy to decide which severities hard-fail, whether no-fix
   advisories may continue, and whether a specific advisory has a temporary
   accepted override.
+- Use `task scenarios:python-audit-policy` when you want the repo-owned
+  executable review path for the Python package-audit policy overlay.
+- In `python-node-secure`, use `task scenarios:security-evidence` when you
+  want the starter-local proof of the security artifact set.
+- In `python-node-secure`, use `task scenarios:non-git-scan-fallback` when you
+  want to verify that secret scanning still works in a workspace without Git
+  metadata.
 - For published images, resolve and pin base digests before rebuilding and
   rescanning the published image set.
 - Classify published-image scan findings into two buckets:

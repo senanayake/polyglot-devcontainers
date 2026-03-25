@@ -22,6 +22,9 @@ starter.
 # PRIMARY COMMANDS
 
 ```bash
+task init
+task ci
+task scenarios:verify
 man polyglot-python
 man polyglot-java
 man polyglot-troubleshooting
@@ -49,6 +52,7 @@ Published starter image workflow:
 3. run `task init`
 4. let the starter scaffold the local project files
 5. run `task ci`
+6. optionally run `task scenarios:verify` for a compact starter proof
 
 Starter image behavior:
 
@@ -58,6 +62,8 @@ Starter image behavior:
 - `task init` may create `.venv`, `node_modules`, `.gradle`, lockfile-backed
   caches, and `.artifacts`
 - the workspace does not need to be a Git repository before `task init`
+- the `python-node-secure` starter also exposes starter-local scenario tasks
+  after bootstrap
 
 Treat these differently:
 
@@ -88,6 +94,9 @@ directories.
 - Use image examples when you are validating the published container path.
 - When consuming a published starter image directly, keep the mounted workspace
   effectively empty until bootstrap completes.
+- In `python-node-secure`, use `task scenarios:verify` when you want a
+  starter-local proof of the task contract, security artifacts, and non-git
+  secret-scan fallback.
 
 # SEE ALSO
 

@@ -18,6 +18,7 @@ task deps:inventory
 task deps:plan
 task deps:report
 task scenarios:python-maintenance
+task scenarios:python-audit-policy
 task scenarios:java-maintenance
 task scenarios:verify
 task upgrade
@@ -38,6 +39,8 @@ These helpers must extend the standard workflow rather than replace it.
   into compact JSON and Markdown reports
 - `scenarios:python-maintenance` (optional): run the current Python
   dependency-maintenance scenario and verify its artifacts
+- `scenarios:python-audit-policy` (optional): run the current Python
+  audit-policy scenario and verify its artifacts
 - `scenarios:java-maintenance` (optional): run the current Java
   dependency-maintenance scenario and verify its artifacts
 - `scenarios:verify` (optional): run the current repo-owned scenario proving set
@@ -64,4 +67,4 @@ In the root repository:
 
 - `lint` runs Ruff and MyPy
 - `test` runs Pytest with coverage
-- `scan` runs `pip-audit` and Gitleaks with artifact output
+- `scan` runs `pip-audit`, policy evaluation, and Gitleaks with artifact output

@@ -21,6 +21,39 @@ tasks:
     cmds:
       - python tasks.py format
 
+  scenarios:starter-health:
+    cmds:
+      - mkdir -p .artifacts/scenarios
+      - >
+        python scripts/run_scenario.py
+        --scenario scenarios/starter-health.json
+        --json-output .artifacts/scenarios/starter-health.json
+        --markdown-output .artifacts/scenarios/starter-health.md
+
+  scenarios:security-evidence:
+    cmds:
+      - mkdir -p .artifacts/scenarios
+      - >
+        python scripts/run_scenario.py
+        --scenario scenarios/security-evidence.json
+        --json-output .artifacts/scenarios/security-evidence.json
+        --markdown-output .artifacts/scenarios/security-evidence.md
+
+  scenarios:non-git-scan-fallback:
+    cmds:
+      - mkdir -p .artifacts/scenarios
+      - >
+        python scripts/run_scenario.py
+        --scenario scenarios/non-git-scan-fallback.json
+        --json-output .artifacts/scenarios/non-git-scan-fallback.json
+        --markdown-output .artifacts/scenarios/non-git-scan-fallback.md
+
+  scenarios:verify:
+    cmds:
+      - task scenarios:starter-health
+      - task scenarios:security-evidence
+      - task scenarios:non-git-scan-fallback
+
   ci:
     cmds:
       - task init

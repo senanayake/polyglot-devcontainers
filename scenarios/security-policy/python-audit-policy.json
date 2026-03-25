@@ -1,0 +1,45 @@
+{
+  "name": "python-audit-policy",
+  "scenario_set": "security-policy",
+  "intent": "diagnostic",
+  "language": "python",
+  "workspace": "examples/python-example",
+  "runtime_guidance": [
+    "polyglot",
+    "polyglot-python",
+    "polyglot-security",
+    "polyglot-scenarios"
+  ],
+  "knowledge_units": [
+    "policy-driven-security-review",
+    "structured-audit-evidence",
+    "no-fix-advisory-classification"
+  ],
+  "commands": [
+    "python tasks.py scan"
+  ],
+  "artifacts": [
+    {
+      "path": ".artifacts/scans/pip-audit.json"
+    },
+    {
+      "path": ".artifacts/scans/pip-audit-policy.json",
+      "json_equals": {
+        "policy.fail_on_severities": [
+          "CRITICAL"
+        ],
+        "policy.allow_no_fix_advisories": true,
+        "policy.accepted_advisories": []
+      },
+      "json_paths_exist": [
+        "finding_count",
+        "violations",
+        "continued_no_fix",
+        "findings"
+      ]
+    },
+    {
+      "path": ".artifacts/scans/pip-audit-policy.md"
+    }
+  ]
+}

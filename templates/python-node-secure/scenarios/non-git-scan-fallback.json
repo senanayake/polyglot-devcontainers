@@ -1,0 +1,68 @@
+{
+  "name": "non-git-scan-fallback",
+  "intent": "recovery",
+  "runtime_guidance": [
+    "polyglot",
+    "polyglot-starters",
+    "polyglot-scenarios",
+    "polyglot-security"
+  ],
+  "knowledge_units": [
+    "gitless-starter-operation",
+    "secret-scan-fallback",
+    "security-artifact-baseline"
+  ],
+  "copy_workspace": true,
+  "remove_git": true,
+  "exclude_from_copy": [
+    ".artifacts",
+    ".coverage",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tmp",
+    ".venv",
+    "__pycache__",
+    "coverage",
+    "node_modules"
+  ],
+  "expect_git_repo": false,
+  "commands": [
+    "task scan"
+  ],
+  "artifacts": [
+    {
+      "path": ".artifacts/scans/pip-audit-policy.json",
+      "json_paths_exist": [
+        "finding_count",
+        "violations"
+      ]
+    },
+    {
+      "path": ".artifacts/scans/pnpm-audit.json",
+      "json_paths_exist": [
+        "metadata.vulnerabilities.high",
+        "metadata.vulnerabilities.critical"
+      ]
+    },
+    {
+      "path": ".artifacts/scans/gitleaks-mode.json",
+      "json_equals": {
+        "mode": "dir"
+      }
+    },
+    {
+      "path": ".artifacts/scans/gitleaks.sarif",
+      "json_paths_exist": [
+        "runs"
+      ]
+    }
+  ],
+  "captured_artifacts": [
+    ".artifacts/scans/pip-audit-policy.json",
+    ".artifacts/scans/pip-audit-policy.md",
+    ".artifacts/scans/pnpm-audit.json",
+    ".artifacts/scans/gitleaks-mode.json",
+    ".artifacts/scans/gitleaks.sarif"
+  ]
+}

@@ -46,12 +46,14 @@ It can run:
 For each published image, the workflow:
 
 1. builds the image
-2. runs `task ci` inside the built image
-3. scans the image with Trivy
-4. pushes the image to GHCR
-5. signs the image with Cosign
-6. attaches build provenance
-7. uploads release security assets and adds a `Security Status` section to the GitHub Release
+2. bootstraps an empty workspace for starter images and verifies `task init`
+   and `task ci` there
+3. runs `task ci` inside the built image
+4. scans the image with Trivy
+5. pushes the image to GHCR
+6. signs the image with Cosign
+7. attaches build provenance
+8. uploads release security assets and adds a `Security Status` section to the GitHub Release
 
 ## Find release security status
 
@@ -86,6 +88,10 @@ task image:pin -- --write
 task image:verify
 task image:scan
 ```
+
+`task image:verify` now mirrors the starter bootstrap smoke path used by the
+release workflow, including `task scenarios:verify` for the published
+`python-node` image.
 
 The initial scope is only the published images:
 

@@ -16,6 +16,7 @@ The runtime docs for this flow are:
 man polyglot
 man polyglot-scenarios
 man polyglot-deps
+man polyglot-security
 ```
 
 ## Run a single scenario
@@ -24,6 +25,12 @@ Python:
 
 ```bash
 task scenarios:python-maintenance
+```
+
+Python audit policy:
+
+```bash
+task scenarios:python-audit-policy
 ```
 
 Java:
@@ -50,11 +57,14 @@ Current result files:
 
 - `python-uv-lock-maintenance.json`
 - `python-uv-lock-maintenance.md`
+- `python-audit-policy.json`
+- `python-audit-policy.md`
 - `java-gradle-maintenance.json`
 - `java-gradle-maintenance.md`
 
 The underlying workspace artifacts remain in the proving paths:
 
+- `examples/python-example/.artifacts/scans/`
 - `examples/python-maintenance-example/.artifacts/scans/`
 - `examples/java-maintenance-example/.artifacts/scans/`
 
@@ -63,6 +73,12 @@ The underlying workspace artifacts remain in the proving paths:
 The scenarios are intentionally evidence-first.
 
 After reading the scenario output, the next manual step is usually:
+
+Python audit policy:
+
+```bash
+cat examples/python-example/.artifacts/scans/pip-audit-policy.md
+```
 
 Python:
 

@@ -1,7 +1,7 @@
 # Executable Scenarios
 
 This page explains why the repository now includes scenarios and why the first
-two are deliberately narrow.
+few are deliberately narrow.
 
 ## Why scenarios exist
 
@@ -37,7 +37,7 @@ That keeps the concept grounded in the current system:
 - evidence and plan artifacts remain the observable state
 - runtime docs remain the explanatory surface
 
-## Why the first scenarios use the maintenance examples
+## Why the current scenarios stay close to real work
 
 The maintenance examples are the strongest proving paths in the repository.
 
@@ -53,9 +53,16 @@ the concept.
 
 It also follows Gall's Law.
 
-The repository starts with two scenarios that are already close to real work:
+The Python audit-policy review path is also close to current repository work.
+
+It exercises the policy overlay added on top of `pip-audit` without inventing a
+synthetic scanner fixture just to prove the scenario machinery.
+
+The repository therefore keeps the current slice to three scenarios that are
+already close to real work:
 
 - Python `uv-lock` maintenance
+- Python audit-policy review
 - Java Gradle-first maintenance
 
 ## Why this is not a parallel workflow
@@ -99,4 +106,4 @@ The concept is failing if:
 
 - the manifests become more complex than the flows they describe
 - the scenario tasks start competing with the main task contract
-- the repository adds many scenario families before the first two prove useful
+- the repository adds many scenario families before the first few prove useful

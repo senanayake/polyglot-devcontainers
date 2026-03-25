@@ -2,28 +2,47 @@
 .\"
 .TH "polyglot\-scenarios" "7" "" "Runtime Documentation" "Polyglot Devcontainers"
 .SH NAME
-polyglot\-scenarios \- repo\-owned executable scenario proving slices
+polyglot\-scenarios \- executable scenario proving slices for the repo
+and starters
 .SH PURPOSE
-This page explains the first executable scenarios shipped in the
-repository.
+This page explains the executable scenarios currently shipped in the
+repository and in the \f[CR]python\-node\-secure\f[R] starter.
 .SH WHEN TO USE
 Read this page when you want a runnable pattern that ties runtime
 guidance, task execution, evidence artifacts, and verification together.
 .SH PRIMARY COMMANDS
 .IP
 .EX
+\f[I]# repository root\f[R]
 task scenarios:python\-maintenance
+task scenarios:python\-audit\-policy
 task scenarios:java\-maintenance
+task scenarios:verify
+
+\f[I]# python\-node\-secure starter\f[R]
+task scenarios:starter\-health
+task scenarios:security\-evidence
+task scenarios:non\-git\-scan\-fallback
 task scenarios:verify
 .EE
 .SH WORKFLOW
-The current scenario slice stays deliberately small.
+The current scenario surface stays deliberately small.
 .PP
-It uses two repo\-owned maintenance examples:
+Repository root proving slices:
 .IP \(bu 2
 Python dependency maintenance with the \f[CR]uv\-lock\f[R] strategy
 .IP \(bu 2
+Python audit\-policy review for structured package\-audit decisions
+.IP \(bu 2
 Java dependency maintenance with the Gradle\-first update path
+.PP
+Starter\-local proving slices in \f[CR]python\-node\-secure\f[R]:
+.IP \(bu 2
+starter health through the standard task contract
+.IP \(bu 2
+security evidence review
+.IP \(bu 2
+non\-git secret\-scan fallback
 .PP
 Each scenario:
 .IP "1." 3
@@ -43,9 +62,25 @@ Scenario run artifacts:
 .IP \(bu 2
 \f[CR].artifacts/scenarios/python\-uv\-lock\-maintenance.md\f[R]
 .IP \(bu 2
+\f[CR].artifacts/scenarios/python\-audit\-policy.json\f[R]
+.IP \(bu 2
+\f[CR].artifacts/scenarios/python\-audit\-policy.md\f[R]
+.IP \(bu 2
 \f[CR].artifacts/scenarios/java\-gradle\-maintenance.json\f[R]
 .IP \(bu 2
 \f[CR].artifacts/scenarios/java\-gradle\-maintenance.md\f[R]
+.IP \(bu 2
+\f[CR].artifacts/scenarios/starter\-health.json\f[R]
+.IP \(bu 2
+\f[CR].artifacts/scenarios/starter\-health.md\f[R]
+.IP \(bu 2
+\f[CR].artifacts/scenarios/security\-evidence.json\f[R]
+.IP \(bu 2
+\f[CR].artifacts/scenarios/security\-evidence.md\f[R]
+.IP \(bu 2
+\f[CR].artifacts/scenarios/non\-git\-scan\-fallback.json\f[R]
+.IP \(bu 2
+\f[CR].artifacts/scenarios/non\-git\-scan\-fallback.md\f[R]
 .PP
 Underlying scenario workspaces still write their normal artifacts under:
 .IP
@@ -61,13 +96,27 @@ Treating scenarios as a replacement for \f[CR]task ci\f[R].
 Expecting the current scenarios to apply to arbitrary downstream repos.
 .IP \(bu 2
 Ignoring the underlying dependency artifacts after the scenario passes.
+.IP \(bu 2
+Hard\-coding a scenario to today\(cqs advisory count instead of stable
+artifact structure.
+.IP \(bu 2
+Treating the non\-git starter scenario as if it proved the repo\-root
+maintainer path.
 .SH GUIDANCE
 .IP \(bu 2
 Use the current scenarios as executable examples of the
 \f[CR]evidence \-> plan \-> execution\f[R] model.
 .IP \(bu 2
-Start with the maintenance examples because they are the current proving
-set.
+Start with the maintenance examples when you are working on the
+repository itself.
+.IP \(bu 2
+Use the Python audit\-policy scenario when you want the repo\-owned
+review path for \f[CR]pip\-audit\-policy.json\f[R] and
+\f[CR]pip\-audit\-policy.md\f[R].
+.IP \(bu 2
+In \f[CR]python\-node\-secure\f[R], use the starter\-local scenarios
+when you want proof inside the user container rather than the maintainer
+repo fixture.
 .IP \(bu 2
 Treat \f[CR]task upgrade\f[R] as the follow\-on execution step after you
 have inspected the scenario evidence.

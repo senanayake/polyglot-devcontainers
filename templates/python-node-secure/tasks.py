@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -11,11 +12,8 @@ BACKEND_DIR = ROOT / "backend"
 TMP_DIR = ROOT / ".tmp"
 ARTIFACTS_DIR = ROOT / ".artifacts"
 SCANS_DIR = ARTIFACTS_DIR / "scans"
-REPO_ROOT = next(
-    parent for parent in Path(__file__).resolve().parents if (parent / "AGENTS.md").exists()
-)
-PYTHON_AUDIT_POLICY = REPO_ROOT / "security-scan-policy.toml"
-PYTHON_AUDIT_EVALUATOR = REPO_ROOT / "scripts" / "evaluate_python_audit_policy.py"
+PYTHON_AUDIT_POLICY = ROOT / "security-scan-policy.toml"
+PYTHON_AUDIT_EVALUATOR = ROOT / "scripts" / "evaluate_python_audit_policy.py"
 VENV_DIR = ROOT / ".venv"
 PYTHON = VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 UV = "uv.exe" if os.name == "nt" else "uv"
@@ -27,6 +25,7 @@ GITLEAKS_FALLBACK_PATHS = [
     ROOT / ".devcontainer",
     ROOT / "Taskfile.yml",
     ROOT / "tasks.py",
+    ROOT / "security-scan-policy.toml",
     ROOT / "pyproject.toml",
     ROOT / "uv.lock",
     ROOT / "package.json",
@@ -38,6 +37,7 @@ GITLEAKS_FALLBACK_PATHS = [
     ROOT / ".pre-commit-config.yaml",
     ROOT / "README.md",
     ROOT / "man",
+    ROOT / "scenarios",
     ROOT / "scripts",
 ]
 
@@ -88,6 +88,11 @@ def prepare_gitleaks_dir_fallback() -> Path:
     return scan_root
 
 
+def write_json_artifact(path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
 def init() -> None:
     reset_invalid_venv()
     run([UV, "sync", "--frozen", "--extra", "dev"])
@@ -98,7 +103,7 @@ def lint() -> None:
     reset_invalid_venv()
     if not PYTHON.exists():
         init()
-    python_paths = [str(BACKEND_DIR / "src"), str(BACKEND_DIR / "tests"), "tasks.py"]
+    python_paths = [str(BACKEND_DIR / "src"), str(BACKEND_DIR / "tests"), "tasks.py", "scripts"]
     run([str(PYTHON), "-m", "ruff", "check", *python_paths])
     run([str(PYTHON), "-m", "ruff", "format", "--check", *python_paths])
     run([str(PYTHON), "-m", "mypy", *python_paths])
@@ -111,7 +116,7 @@ def format_code() -> None:
     reset_invalid_venv()
     if not PYTHON.exists():
         init()
-    python_paths = [str(BACKEND_DIR / "src"), str(BACKEND_DIR / "tests"), "tasks.py"]
+    python_paths = [str(BACKEND_DIR / "src"), str(BACKEND_DIR / "tests"), "tasks.py", "scripts"]
     run([str(PYTHON), "-m", "ruff", "check", "--fix", *python_paths])
     run([str(PYTHON), "-m", "ruff", "format", *python_paths])
     run(PNPM + ["format"])
@@ -173,6 +178,14 @@ def scan() -> None:
     else:
         gitleaks_target = prepare_gitleaks_dir_fallback()
         gitleaks_mode = "dir"
+
+    write_json_artifact(
+        SCANS_DIR / "gitleaks-mode.json",
+        {
+            "mode": gitleaks_mode,
+            "target": str(gitleaks_target),
+        },
+    )
 
     run(
         [

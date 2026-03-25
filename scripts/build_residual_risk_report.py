@@ -22,6 +22,10 @@ UPSTREAM_MANAGED_GOBINARIES = {
         "tool": "task",
         "upstream_release_source": "go-task/task",
     },
+    "usr/local/libexec/polyglot-devcontainers/task-real": {
+        "tool": "task",
+        "upstream_release_source": "go-task/task",
+    },
 }
 
 

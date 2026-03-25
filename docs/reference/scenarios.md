@@ -10,17 +10,19 @@ This page describes the scenario layer as it exists today.
   exercising
 - `scenario set`: a small group of related scenarios
 
-## Current scenario set
+## Current scenario sets
 
-Scenario set directory:
+Scenario set directories:
 
 ```text
 scenarios/dependency-maintenance/
+scenarios/security-policy/
 ```
 
 Current scenarios:
 
 - `python-uv-lock-maintenance`
+- `python-audit-policy`
 - `java-gradle-maintenance`
 
 ## Root tasks
@@ -29,6 +31,7 @@ The repository currently exposes:
 
 ```bash
 task scenarios:python-maintenance
+task scenarios:python-audit-policy
 task scenarios:java-maintenance
 task scenarios:verify
 ```
@@ -84,10 +87,18 @@ Current output files:
 
 - `python-uv-lock-maintenance.json`
 - `python-uv-lock-maintenance.md`
+- `python-audit-policy.json`
+- `python-audit-policy.md`
 - `java-gradle-maintenance.json`
 - `java-gradle-maintenance.md`
 
 ## Current proving workspaces
+
+Python audit-policy scenario workspace:
+
+```text
+examples/python-example/
+```
 
 Python scenario workspace:
 
@@ -118,3 +129,4 @@ Related pages:
 - `man polyglot-python`
 - `man polyglot-java`
 - `man polyglot-deps`
+- `man polyglot-security`

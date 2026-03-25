@@ -20,8 +20,16 @@ After opening the template in a devcontainer, run:
 man polyglot
 task init
 task ci
+task scenarios:verify
 ```
 
 When consuming the published image directly in an empty workspace, `task init`
 will scaffold the starter files and then install the project-local Python and
 Node dependencies into that workspace.
+
+Starter-local scenarios are also available after bootstrap:
+
+- `task scenarios:starter-health`
+- `task scenarios:security-evidence`
+- `task scenarios:non-git-scan-fallback`
+- `task scenarios:verify`

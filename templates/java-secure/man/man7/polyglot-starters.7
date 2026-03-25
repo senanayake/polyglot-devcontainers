@@ -12,6 +12,9 @@ correct starter.
 .SH PRIMARY COMMANDS
 .IP
 .EX
+task init
+task ci
+task scenarios:verify
 man polyglot\-python
 man polyglot\-java
 man polyglot\-troubleshooting
@@ -43,6 +46,9 @@ run \f[CR]task init\f[R]
 let the starter scaffold the local project files
 .IP "5." 3
 run \f[CR]task ci\f[R]
+.IP "6." 3
+optionally run \f[CR]task scenarios:verify\f[R] for a compact starter
+proof
 .PP
 Starter image behavior:
 .IP \(bu 2
@@ -58,6 +64,9 @@ and \f[CR].artifacts\f[R]
 .IP \(bu 2
 the workspace does not need to be a Git repository before
 \f[CR]task init\f[R]
+.IP \(bu 2
+the \f[CR]python\-node\-secure\f[R] starter also exposes starter\-local
+scenario tasks after bootstrap
 .PP
 Treat these differently:
 .IP \(bu 2
@@ -94,6 +103,10 @@ Use image examples when you are validating the published container path.
 .IP \(bu 2
 When consuming a published starter image directly, keep the mounted
 workspace effectively empty until bootstrap completes.
+.IP \(bu 2
+In \f[CR]python\-node\-secure\f[R], use \f[CR]task scenarios:verify\f[R]
+when you want a starter\-local proof of the task contract, security
+artifacts, and non\-git secret\-scan fallback.
 .SH SEE ALSO
 .IP \(bu 2
 \f[CR]polyglot(7)\f[R]
