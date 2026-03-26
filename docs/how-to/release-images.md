@@ -41,6 +41,10 @@ It can run:
 - manually with workflow dispatch
 - on semantic version tags such as `v0.6.0`
 
+Tag-triggered releases also refresh the moving `latest` tag for each published
+image, so downstream consumers can follow the newest released image without
+changing the image reference every time.
+
 ## What the workflow does
 
 For each published image, the workflow:

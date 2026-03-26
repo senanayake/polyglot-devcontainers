@@ -18,6 +18,12 @@ starter images and is not part of the recommended downstream starter catalog.
 - `sha-<commit>` style immutable tags for every published build
 - `main` for the current development line on the default branch
 - semantic version tags such as `v0.6.0` for release builds
+- `latest` for the newest published semantic-version release
+
+Use a semantic version tag when you need an immutable image reference.
+
+Use `latest` when you want a moving stable release channel and do not want to
+edit downstream `devcontainer.json` files for every patch release.
 
 ## Validation contract
 

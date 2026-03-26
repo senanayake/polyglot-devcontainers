@@ -53,9 +53,12 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}
+          flavor: |
+            latest=false
           tags: |
             type=sha
             type=ref,event=tag
+            type=raw,value=latest,enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
             type=raw,value=main,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
