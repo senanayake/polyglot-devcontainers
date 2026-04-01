@@ -156,12 +156,17 @@ tasks:
         --markdown-output .artifacts/scenarios/java-gradle-maintenance.md
 
   scenarios:podman-devpod-macos:
-    desc: Run the Podman+DevPod macOS setup scenario (host-side execution)
+    desc: Run the Podman+DevPod macOS setup scenario (host-side execution, macOS only)
     cmds:
-      - mkdir -p .artifacts/scenarios
-      - bash scripts/setup/setup-podman-devpod-macos.sh --dry-run
-      - echo "Note: This scenario must be run on the macOS host, not inside a container"
-      - echo "To execute: bash scripts/setup/setup-podman-devpod-macos.sh"
+      - |
+        if [[ "$(uname)" == "Darwin" ]]; then
+          mkdir -p .artifacts/scenarios
+          bash scripts/setup/setup-podman-devpod-macos.sh --dry-run
+          echo "Note: This scenario must be run on the macOS host, not inside a container"
+          echo "To execute: bash scripts/setup/setup-podman-devpod-macos.sh"
+        else
+          echo "Skipping Podman+DevPod macOS scenario: requires macOS (detected: $(uname))"
+        fi
 
   scenarios:verify:
     desc: Run the current repo-owned scenario proving set
