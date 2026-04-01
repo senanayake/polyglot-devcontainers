@@ -16,3 +16,4 @@ man polyglot
 - [Create a Java Workspace](./create-a-java-workspace.md)
 - [Create a Polyglot Workspace](./create-a-polyglot-workspace.md)
 - [Run the First Scenarios](./run-the-first-scenarios.md)
+- [Set Up Podman + DevPod on macOS](./podman-devpod-macos.md)

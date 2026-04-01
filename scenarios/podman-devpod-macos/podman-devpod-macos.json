@@ -1,0 +1,160 @@
+{
+  "name": "podman-devpod-macos",
+  "description": "Docker-free development environment setup on macOS using Podman and DevPod",
+  "version": "1.0.0",
+  "platform": "macos",
+  "target_audience": [
+    "macOS users (Intel and Apple Silicon)",
+    "Developers migrating from Docker Desktop",
+    "Teams requiring reproducible environments"
+  ],
+  "prerequisites": {
+    "required": [
+      "macOS operating system",
+      "Podman CLI installed at /opt/podman/bin/podman",
+      "DevPod installed and available on PATH",
+      "Bash shell"
+    ],
+    "optional": [
+      "Docker Desktop (for automatic cleanup)"
+    ]
+  },
+  "objectives": [
+    "Install and configure Podman on macOS",
+    "Set up Podman machine (Linux VM)",
+    "Configure Podman system service for Docker-compatible API",
+    "Integrate DevPod to use Podman instead of Docker",
+    "Validate the complete setup with test containers"
+  ],
+  "execution": {
+    "entry_point": "scripts/setup/setup-podman-devpod-macos.sh",
+    "estimated_duration": "15-20 minutes",
+    "steps": [
+      {
+        "name": "docker_cleanup",
+        "description": "Optionally remove Docker Desktop remnants",
+        "command": "bash scripts/setup/setup-podman-devpod-macos.sh",
+        "optional": true,
+        "flags": ["--remove-docker-remnants true"]
+      },
+      {
+        "name": "environment_setup",
+        "description": "Configure shell environment with PATH and DOCKER_HOST",
+        "automated": true
+      },
+      {
+        "name": "podman_initialization",
+        "description": "Initialize and start Podman machine",
+        "automated": true
+      },
+      {
+        "name": "system_service",
+        "description": "Start Podman system service for Docker-compatible API",
+        "automated": true
+      },
+      {
+        "name": "devpod_configuration",
+        "description": "Configure DevPod docker provider to use Podman",
+        "automated": true
+      },
+      {
+        "name": "validation",
+        "description": "Run test container to verify setup",
+        "command": "podman run --rm alpine:latest echo 'podman works'",
+        "automated": true
+      }
+    ]
+  },
+  "verification": {
+    "commands": [
+      {
+        "name": "check_podman",
+        "command": "which podman",
+        "expected_output": "/opt/podman/bin/podman"
+      },
+      {
+        "name": "podman_version",
+        "command": "podman --version",
+        "expected_pattern": "podman version"
+      },
+      {
+        "name": "podman_info",
+        "command": "podman info",
+        "expected_exit_code": 0
+      },
+      {
+        "name": "devpod_provider",
+        "command": "devpod provider list",
+        "expected_pattern": "docker"
+      },
+      {
+        "name": "test_container",
+        "command": "podman run --rm alpine:latest echo 'test'",
+        "expected_output": "test"
+      }
+    ]
+  },
+  "artifacts": {
+    "configuration": [
+      "~/.bash_profile (updated with PATH and DOCKER_HOST)",
+      "DevPod docker provider configuration"
+    ],
+    "logs": [
+      "/tmp/podman-system-service.log"
+    ],
+    "state": [
+      "Podman machine (VM state)",
+      "Podman system service (background process)"
+    ]
+  },
+  "troubleshooting": {
+    "common_issues": [
+      {
+        "symptom": "podman: command not found",
+        "cause": "PATH not updated",
+        "solution": "export PATH=\"/opt/podman/bin:$PATH\" && source ~/.bash_profile"
+      },
+      {
+        "symptom": "Cannot connect to Podman",
+        "cause": "Podman machine not running",
+        "solution": "podman machine start"
+      },
+      {
+        "symptom": "DevPod cannot create workspace",
+        "cause": "Podman system service not running",
+        "solution": "pkill -f 'podman system service' && podman system service --time=0 &"
+      }
+    ]
+  },
+  "integration": {
+    "polyglot_devcontainers": {
+      "compatible_templates": [
+        "templates/python-secure",
+        "templates/node-secure",
+        "templates/java-secure",
+        "templates/python-node-secure"
+      ],
+      "compatible_images": [
+        "ghcr.io/senanayake/polyglot-devcontainers-maintainer:main",
+        "ghcr.io/senanayake/polyglot-devcontainers-java:main",
+        "ghcr.io/senanayake/polyglot-devcontainers-python-node:main"
+      ],
+      "task_contract": "Fully compatible with task init/lint/test/scan/ci"
+    }
+  },
+  "documentation": {
+    "tutorial": "docs/tutorials/podman-devpod-macos.md",
+    "how_to": "docs/how-to/podman-devpod-macos.md",
+    "explanation": "docs/explanation/podman-devpod-macos.md",
+    "scenario_readme": "scenarios/podman-devpod-macos/README.md"
+  },
+  "tags": [
+    "macos",
+    "podman",
+    "devpod",
+    "docker-alternative",
+    "setup",
+    "infrastructure",
+    "reproducible-environments"
+  ]
+}
