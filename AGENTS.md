@@ -8,6 +8,113 @@ The goal of this repository is to build **polyglot devcontainers that enable sec
 
 ---
 
+# 0. Development Philosophy: Knowledge-Based Product Development
+
+This repository follows **Knowledge-Based Product Development (KBPD)** principles.
+
+Product development is a **knowledge-generation system**, not a task-execution system.
+
+## Core Principles
+
+### Product Development = Learning System
+
+Traditional approach:
+```
+Execute plan → hit milestones → ship
+```
+
+KBPD approach:
+```
+Identify knowledge gaps → run learning cycles → capture knowledge → make evidence-based decisions
+```
+
+### Knowledge Gaps Are First-Class Artifacts
+
+Before implementing, explicitly identify:
+- What is unknown but critical to success
+- What assumptions need validation
+- What limits need discovery
+- What trade-offs need quantification
+
+### Set-Based Concurrent Engineering
+
+Explore multiple viable solutions in parallel, gradually narrowing based on evidence.
+
+Do not prematurely converge on a single approach.
+
+### Evidence Before Commitment
+
+Delay irreversible decisions until sufficient knowledge is available.
+
+Use abstraction layers, interfaces, and feature flags to keep options open.
+
+### Knowledge Briefs (K-Briefs)
+
+Capture learning in **structured, reusable artifacts** called K-Briefs.
+
+K-Briefs are **first-class artifacts**, not optional documentation.
+
+See `.kbriefs/README.md` for complete K-Brief system documentation.
+
+## When to Create K-Briefs
+
+Agents must create K-Briefs when:
+- ✅ A decision is made
+- ✅ An experiment is run
+- ✅ A failure occurs
+- ✅ A performance boundary is discovered
+- ✅ A trade-off is analyzed
+- ✅ A design space is explored
+
+## K-Brief Types
+
+1. **Trade-Off K-Brief** - Relationships between competing variables
+2. **Limit/Boundary K-Brief** - Where something breaks or stops working
+3. **Standard/Best Practice K-Brief** - Proven solutions and patterns
+4. **Design Space K-Brief** - Range of possible solutions
+5. **Failure Mode K-Brief** - How systems fail and prevention
+
+Templates available in `.kbriefs/templates/`
+
+## Agent K-Brief Workflow
+
+### Before Making Decisions
+```bash
+# Search for relevant K-Briefs
+grep -r "tags:.*[relevant-tag]" .kbriefs/
+```
+
+### During Experiments
+Document findings for K-Brief creation:
+- What was tested
+- What was observed
+- What was learned
+- What evidence was collected
+
+### After Learning
+Create K-Brief to capture knowledge:
+```bash
+# Use template
+cp .kbriefs/templates/[type].md .kbriefs/KB-YYYY-NNN-[title].md
+# Fill in structured content
+# Commit as part of work
+```
+
+### When Stuck
+Check if a K-Brief exists for similar situations.
+
+## Knowledge Compounds
+
+Each K-Brief makes future work faster by:
+- Preventing re-learning
+- Accelerating decisions
+- Reducing risk
+- Building institutional memory
+
+**The highest-performing teams don't just build products faster — they learn faster and encode that learning into the system.**
+
+---
+
 # 1. Project Purpose
 
 `polyglot-devcontainers` provides:
