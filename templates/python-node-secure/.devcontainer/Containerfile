@@ -50,7 +50,7 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
          echo "ERROR: Checksum not found for ${task_archive}" >&2; \
          exit 1; \
        fi \
-    && echo "$task_checksum_line" | sha256sum -c - \
+    && (cd "${tmpdir}" && echo "$task_checksum_line" | sha256sum -c -) \
     && mkdir -p /usr/local/libexec/polyglot-devcontainers \
     && tar -xzf "${tmpdir}/${task_archive}" -C /usr/local/libexec/polyglot-devcontainers task \
     && mv /usr/local/libexec/polyglot-devcontainers/task /usr/local/libexec/polyglot-devcontainers/task-real \
@@ -61,7 +61,7 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
          echo "ERROR: Checksum not found for ${gitleaks_archive}" >&2; \
          exit 1; \
        fi \
-    && echo "$gitleaks_checksum_line" | sha256sum -c - \
+    && (cd "${tmpdir}" && echo "$gitleaks_checksum_line" | sha256sum -c -) \
     && tar -xzf "${tmpdir}/${gitleaks_archive}" -C /usr/local/bin gitleaks \
     && chmod +x /usr/local/bin/gitleaks \
     && python3 -m pip install --no-cache-dir "pre-commit==${PRE_COMMIT_VERSION}" "uv==${UV_VERSION}" \

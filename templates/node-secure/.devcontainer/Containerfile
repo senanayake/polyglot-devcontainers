@@ -25,7 +25,7 @@ RUN apt-get update \
          echo "ERROR: Checksum not found for ${task_archive}" >&2; \
          exit 1; \
        fi \
-    && echo "$task_checksum_line" | sha256sum -c - \
+    && (cd "${tmpdir}" && echo "$task_checksum_line" | sha256sum -c -) \
     && tar -xzf "${tmpdir}/${task_archive}" -C /usr/local/bin task \
     && curl -fsSLo "${tmpdir}/${gitleaks_archive}" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${gitleaks_archive}" \
     && curl -fsSLo "${tmpdir}/gitleaks_checksums.txt" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt" \
@@ -34,7 +34,7 @@ RUN apt-get update \
          echo "ERROR: Checksum not found for ${gitleaks_archive}" >&2; \
          exit 1; \
        fi \
-    && echo "$gitleaks_checksum_line" | sha256sum -c - \
+    && (cd "${tmpdir}" && echo "$gitleaks_checksum_line" | sha256sum -c -) \
     && tar -xzf "${tmpdir}/${gitleaks_archive}" -C /usr/local/bin gitleaks \
     && chmod +x /usr/local/bin/gitleaks \
     && corepack enable \
