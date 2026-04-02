@@ -447,6 +447,9 @@ docker build --no-cache -f templates/python-api-secure/.devcontainer/Containerfi
 ## Related Knowledge
 
 - **KB-2026-002**: uv Python standard (similar upstream dependency)
+- **KB-2026-004**: Checksum verification design space exploration
+- **KB-2026-005**: Checksum verification trade-off analysis
+- **KB-2026-006**: sha256sum working directory implementation failure
 - **AGENTS.md Section 0**: KBPD principles (evidence-based decisions)
 - **Security scanning policy**: `security-scan-policy.toml`
 
