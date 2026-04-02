@@ -862,6 +862,63 @@ first-class concept.
 
 ---
 
+**Outcome (April 2026): Partial Success - Pivot Required**
+
+Phase 10 testing revealed that scenarios work well for polyglot-devcontainers
+workspaces but fail on external repositories due to architectural coupling.
+
+**What Succeeded**:
+- Runtime documentation via man pages (`man polyglot`, `man polyglot-scenarios`)
+- Scenario definition format (clear JSON structure)
+- Evidence-based testing methodology
+- Container-first development validation
+
+**What Failed**:
+- Portable scenario execution on arbitrary repositories (0/3 success rate)
+- Testing against httpx, rich, and fastapi revealed tight coupling to workspace
+  structure and task runner implementation
+- Scenarios cannot adapt to different build systems (Poetry, Hatch, PDM, etc.)
+- No abstraction layer between scenario intent and repository-specific tooling
+
+**Root Cause**:
+Scenarios are hardcoded to specific workspace paths and assume target
+repositories use the polyglot-devcontainers task contract. Real-world
+repositories use their own build systems and conventions.
+
+**Decision**:
+Following the "Outcome if unsuccessful" path - keeping runtime documentation
+and structured artifacts, repositioning scenarios as internal patterns for
+polyglot-devcontainers templates and examples rather than universal tools.
+
+**Lessons Learned**:
+- Test portability assumptions early with real-world repositories
+- Follow Gall's Law: prove simple portable version before building complex one
+- Evidence-based testing successfully identified architectural issues
+- Honest assessment is better than forcing broken systems
+
+**Delivered Value**:
+- Runtime documentation system (high value)
+- Scenario definitions for internal workspaces (medium value)
+- Evidence-based evaluation process (high value)
+- Clear understanding of portability requirements for future work
+
+**Not Delivered**:
+- Portable scenario execution for arbitrary repositories
+- Executable knowledge system for external codebases
+- Automation value beyond polyglot-devcontainers workspaces
+
+**Future Direction**:
+Scenarios remain valuable for polyglot-devcontainers templates and examples.
+Portable scenario execution for arbitrary repositories would require significant
+architectural changes (8-12 weeks estimated) and is deferred pending demand
+evidence. Focus shifts to improving templates, published images, and runtime
+documentation.
+
+**Testing Artifacts**: `.phase10-testing/` directory contains detailed findings,
+gap analysis, and decision documentation from real-world repository testing.
+
+---
+
 # Conditional Experiments
 
 ## Experiment 11 - Evaluate a Reusable Dependency Planning Core
