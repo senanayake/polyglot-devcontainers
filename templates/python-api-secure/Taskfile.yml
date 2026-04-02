@@ -1,0 +1,61 @@
+version: "3"
+
+tasks:
+  init:
+    cmds:
+      - python tasks.py init
+
+  lint:
+    cmds:
+      - python tasks.py lint
+
+  test:
+    cmds:
+      - python tasks.py test
+
+  scan:
+    cmds:
+      - python tasks.py scan
+      - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
+
+  deps:inventory:
+    cmds:
+      - python tasks.py inventory
+
+  deps:plan:
+    cmds:
+      - python tasks.py plan
+
+  deps:report:
+    cmds:
+      - task deps:inventory
+      - task deps:plan
+      - >
+        python ../../scripts/dependency_report.py
+        --inventory .artifacts/scans/dependency-inventory.json
+        --plan .artifacts/scans/dependency-plan.json
+        --json-output .artifacts/scans/dependency-report.json
+        --markdown-output .artifacts/scans/dependency-report.md
+
+  format:
+    cmds:
+      - python tasks.py format
+
+  dev:
+    desc: Run FastAPI development server with hot reload
+    cmds:
+      - uvicorn python_api_secure_template.main:app --reload --host 0.0.0.0 --port 8000
+
+  upgrade:
+    cmds:
+      - task deps:inventory
+      - task deps:plan
+      - python tasks.py upgrade
+      - task ci
+
+  ci:
+    cmds:
+      - task init
+      - task lint
+      - task test
+      - task scan

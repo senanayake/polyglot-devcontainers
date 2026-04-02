@@ -1,0 +1,14 @@
+.venv
+.tmp
+.artifacts
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.coverage
+dist
+build
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
