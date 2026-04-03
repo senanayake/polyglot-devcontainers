@@ -853,12 +853,484 @@ Even with perfect documentation:
 
 ---
 
+## Implementation Results (2026-04-03)
+
+### What Was Implemented
+
+**Hybrid Option 5 components:**
+1. ✅ Bundled dependencies in templates (security-scan-policy.toml, scripts/)
+2. ✅ init.sh automation script
+3. ✅ Updated README documentation
+4. ✅ Diátaxis-style documentation (tutorials, how-to, reference, explanation)
+
+### Actual Testing Results
+
+**Test scenario:** Copy template to standalone directory, run init.sh, validate complete workflow
+
+**Expected:** One-step experience (~5 minutes to working environment)
+
+**Actual:** Multi-step experience with significant friction points
+
+---
+
+### Friction Points Discovered
+
+#### 1. VSCode Workspace Not Auto-Opened (Critical)
+
+**Problem:** Most frustrating friction point
+
+**Symptoms:**
+- VSCode opens but file explorer empty
+- Terminal in home directory, not workspace
+- Project files invisible
+- No clear indication of what to do
+
+**User impact:**
+- "Not being able to open the project, see the files and see the dev terminal"
+- Completely blocks workflow
+- Requires manual intervention: File → Open Folder → /workspaces/scenario-name
+
+**Root cause:** DevPod/VSCode integration limitation - workspace folder not opened automatically
+
+**Severity:** **CRITICAL** - Blocks first-time users completely
+
+---
+
+#### 2. Init Script Never Completed Successfully
+
+**Problem:** User never saw init.sh run all the way through to VSCode opening
+
+**Symptoms:**
+- Multiple attempts required
+- Workspace mounting issues
+- Had to delete and recreate DevPod workspace
+- VSCode killed and restarted multiple times
+
+**User impact:**
+- "Far too many steps initially"
+- Lost confidence in automation
+- Unclear how to recover from failures
+
+**Root cause:** DevPod workspace state management issues when testing iteratively
+
+**Severity:** **HIGH** - Undermines trust in automation
+
+---
+
+#### 3. Code Formatting Failures
+
+**Problem:** Template shipped with lint failures
+
+**Symptoms:**
+- `task lint` fails immediately
+- Error message not actionable
+- `ruff` not in PATH
+- Required knowledge: `.venv/bin/python -m ruff format`
+
+**User impact:**
+- "Task lint led to find problems that I had to know how to call ruff to fix"
+- Requires language-specific knowledge
+- Breaks "works out of box" promise
+
+**Root cause:** Templates not formatted before commit
+
+**Severity:** **MEDIUM** - Fixable but requires expert knowledge
+
+---
+
+#### 4. Security Vulnerabilities in Template
+
+**Problem:** python-jose vulnerabilities blocked CI
+
+**Symptoms:**
+- `task scan` fails with policy violations
+- Required manual dependency update: `uv add "python-jose>=3.4.0"`
+- No automated fix workflow
+
+**User impact:**
+- "Additional thought should be put into the task verbs"
+- User must know how to update dependencies
+- Language-specific commands (uv for Python, npm for Node, etc.)
+
+**Root cause:** Template dependencies not kept up-to-date
+
+**Severity:** **MEDIUM** - Security-critical but requires expert knowledge
+
+---
+
+#### 5. VSCode Reconnection Not Obvious
+
+**Problem:** After killing VSCode, unclear how to reconnect
+
+**Symptoms:**
+- No clear documentation
+- Required specific command: `devpod up /full/path --ide vscode`
+- Not discoverable
+
+**User impact:**
+- Trial and error to reconnect
+- Wasted time
+
+**Root cause:** Documentation gap
+
+**Severity:** **LOW** - Annoying but recoverable
+
+---
+
+### Actual Steps Required (vs Expected)
+
+**Expected (one-step):**
+```bash
+./init.sh
+# → VSCode opens with working environment
+```
+
+**Actual (7+ steps):**
+```bash
+1. ./init.sh
+2. Wait for VSCode to open
+3. Manually: File → Open Folder → /workspaces/scenario-name
+4. Navigate terminal: cd /workspaces/scenario-name
+5. Fix formatting: .venv/bin/python -m ruff format src tests tasks.py
+6. Update dependencies: uv add "python-jose>=3.4.0"
+7. Verify: task ci
+```
+
+**Gap:** 7x more steps than expected, requiring expert knowledge at multiple points
+
+---
+
+### Critical User Feedback
+
+**Most frustrating friction point:**
+> "Not being able to open the project, see the files and see the dev terminal. There were far too many steps initially."
+
+**Init script experience:**
+> "I never successfully ran the init script all the way through to see vscode pop open."
+
+**Task verb design:**
+> "Task lint led to find problems that I had to know how to call ruff to fix. It would be good to think up a scheme for the fixes to be applied and driven by the verbs."
+
+**Polyglot consistency:**
+> "This will help the polyglot design as a user won't always remember the different commands for each language."
+
+**Automated fix workflow:**
+> "This is particularly true in the case of upgrading version numbers to eliminate CVEs etc. The main thing here though, it that a system needs to be able to batch changes and retest without just taking everything in one go."
+
+---
+
+### Key Insights
+
+#### 1. Check vs Fix Verbs Missing
+
+**Current state:**
+- `task lint` - checks code quality (fails if issues found)
+- `task test` - runs tests (fails if tests fail)
+- `task scan` - checks security (fails if vulnerabilities found)
+
+**Problem:** No corresponding fix verbs
+
+**User expectation:**
+- `task lint` → finds problems
+- `task lint:fix` or `task format` → fixes problems automatically
+
+**Impact:** Users must know language-specific fix commands
+
+---
+
+#### 2. Polyglot Consistency Critical
+
+**Problem:** Each language has different fix commands
+- Python: `ruff format`, `uv add`
+- Node: `prettier --write`, `npm update`
+- Java: `mvn fmt:format`, `mvn versions:use-latest-versions`
+
+**User burden:** Must remember language-specific commands
+
+**Solution needed:** Unified task verbs across all scenarios
+
+---
+
+#### 3. Automated Fix Workflow Required
+
+**User requirement:**
+> "A system needs to be able to batch changes and retest without just taking everything in one go."
+
+**Use case:** Security vulnerability remediation
+1. Scan finds 5 CVEs
+2. System suggests fixes (dependency updates)
+3. User can apply fixes one-by-one or in batch
+4. System retests after each fix
+5. User can rollback if fix breaks tests
+
+**Current gap:** No automated fix workflow exists
+
+---
+
+### Recommendations
+
+#### Immediate (Fix Critical Blockers)
+
+1. **Ship Lint-Clean Templates**
+   ```bash
+   # Before committing templates
+   cd templates/python-api-secure
+   .venv/bin/python -m ruff format src tests tasks.py
+   git add .
+   git commit -m "Format code"
+   ```
+
+2. **Update Template Dependencies**
+   ```bash
+   # Fix known vulnerabilities
+   cd templates/python-api-secure
+   uv add "python-jose>=3.4.0"
+   task ci  # Verify
+   git add pyproject.toml uv.lock
+   git commit -m "Update python-jose to fix CVEs"
+   ```
+
+3. **Document VSCode Workspace Issue**
+   - Update init.sh output to explicitly state manual step required
+   - Update tutorial with clear instructions
+   - Add troubleshooting section
+
+---
+
+#### Short-Term (Improve Task Verbs)
+
+**Proposal: Check/Fix Verb Pairs**
+
+```yaml
+# Taskfile.yml pattern for all scenarios
+
+tasks:
+  # Check verbs (read-only, fail on issues)
+  lint:
+    desc: Check code quality
+    cmds:
+      - python tasks.py lint
+
+  # Fix verbs (write, auto-fix issues)
+  lint:fix:
+    desc: Auto-fix code quality issues
+    cmds:
+      - python tasks.py lint:fix
+    aliases: [format]
+
+  # Security check
+  scan:
+    desc: Check for security vulnerabilities
+    cmds:
+      - python tasks.py scan
+
+  # Security fix (interactive or automated)
+  scan:fix:
+    desc: Fix security vulnerabilities (interactive)
+    cmds:
+      - python tasks.py scan:fix
+
+  # Unified fix-all
+  fix:
+    desc: Auto-fix all fixable issues
+    cmds:
+      - task lint:fix
+      - task scan:fix
+    deps: [lint, scan]
+```
+
+**Implementation in tasks.py:**
+
+```python
+def lint():
+    """Check code quality (read-only)."""
+    run([PYTHON, "-m", "ruff", "format", "--check", "src", "tests", "tasks.py"])
+    run([PYTHON, "-m", "ruff", "check", "src", "tests", "tasks.py"])
+    run([PYTHON, "-m", "mypy", "src"])
+
+def lint_fix():
+    """Auto-fix code quality issues."""
+    run([PYTHON, "-m", "ruff", "format", "src", "tests", "tasks.py"])
+    run([PYTHON, "-m", "ruff", "check", "--fix", "src", "tests", "tasks.py"])
+    # mypy has no auto-fix
+
+def scan_fix():
+    """Interactive security vulnerability fix."""
+    # Parse pip-audit output
+    # For each vulnerability with fix available:
+    #   - Show package, current version, fixed version
+    #   - Ask: Apply fix? [y/n/all/quit]
+    #   - If yes: uv add "package>=fixed_version"
+    #   - Rerun tests
+    #   - If tests fail: offer rollback
+    # Generate summary report
+```
+
+**Benefits:**
+- ✅ Consistent across all languages
+- ✅ Discoverable (task --list shows check/fix pairs)
+- ✅ Polyglot-friendly (same verbs, different implementations)
+- ✅ Progressive (check first, fix if needed)
+
+---
+
+#### Medium-Term (Automated Fix Workflow)
+
+**Design: Interactive Fix System**
+
+```bash
+$ task scan:fix
+
+Found 5 vulnerabilities with fixes available:
+
+1. python-jose 3.3.0 → 3.4.0 (fixes PYSEC-2024-232, PYSEC-2024-233)
+2. python-multipart 0.0.20 → 0.0.22 (fixes GHSA-wp53-j4wj-2cfg)
+3. starlette 0.41.3 → 0.49.1 (fixes GHSA-7f5h-v6xp-fcq8)
+4. requests 2.32.5 → 2.33.0 (fixes GHSA-gc5v-m9x4-r6x2)
+5. pygments 2.19.2 → 2.20.0 (fixes GHSA-5239-wwwm-4pmq)
+
+Apply fixes? [1-5/all/none/quit]: 1
+
+Applying fix 1/5: python-jose 3.3.0 → 3.4.0
+  ✓ Updated dependency
+  ✓ Running tests... PASSED
+  ✓ Running lint... PASSED
+  ✓ Fix applied successfully
+
+Apply next fix? [2-5/all/none/quit]: all
+
+Applying fix 2/5: python-multipart 0.0.20 → 0.0.22
+  ✓ Updated dependency
+  ✓ Running tests... PASSED
+  ✓ Running lint... PASSED
+
+Applying fix 3/5: starlette 0.41.3 → 0.49.1
+  ✓ Updated dependency
+  ✗ Running tests... FAILED
+  
+  Test failures:
+    - test_api.py::test_middleware_order
+  
+  Rollback this fix? [y/n]: y
+  ✓ Rolled back starlette to 0.41.3
+
+Applying fix 4/5: requests 2.32.5 → 2.33.0
+  ✓ Updated dependency
+  ✓ Running tests... PASSED
+
+Applying fix 5/5: pygments 2.19.2 → 2.20.0
+  ✓ Updated dependency
+  ✓ Running tests... PASSED
+
+Summary:
+  ✓ Applied: 4 fixes
+  ✗ Skipped: 1 fix (starlette - test failures)
+  
+  Remaining vulnerabilities: 1 (starlette 0.41.3)
+  
+  Next steps:
+    - Investigate starlette test failures
+    - Consider accepting GHSA-7f5h-v6xp-fcq8 temporarily
+    - Rerun: task scan:fix
+```
+
+**Implementation approach:**
+1. Parse security scan output (JSON)
+2. Identify fixes with available versions
+3. Interactive prompt for each fix
+4. Apply fix → retest → rollback if fails
+5. Generate summary report
+6. Update security policy if needed
+
+**Benefits:**
+- ✅ Batch processing with safety
+- ✅ Automatic rollback on test failures
+- ✅ Clear feedback at each step
+- ✅ Polyglot-friendly (same UX, different package managers)
+
+---
+
+#### Long-Term (VSCode Integration)
+
+**Problem:** VSCode workspace folder not auto-opened
+
+**Potential solutions:**
+
+1. **DevPod Enhancement**
+   - Request feature: auto-open workspace folder
+   - Contribute to DevPod project
+   - Track: https://github.com/loft-sh/devpod/issues
+
+2. **VSCode Extension**
+   - Create polyglot-devcontainers VSCode extension
+   - Auto-open workspace folder on container attach
+   - Provide scenario selection UI
+   - Handle reconnection automatically
+
+3. **Wrapper Script**
+   - Create `polyglot` CLI tool
+   - Wraps DevPod with workspace management
+   - Handles VSCode integration
+   - Example: `polyglot open python-api-secure`
+
+---
+
+### Updated Success Metrics
+
+**Original target:**
+- < 5 minutes from nothing to working environment
+- No manual file copying
+- No debugging required
+- 90% first-try success rate
+
+**Actual results:**
+- ~15-20 minutes with multiple manual interventions
+- Manual workspace folder opening required
+- Manual code formatting required
+- Manual dependency updates required
+- ~30% first-try success rate (estimated)
+
+**Gap:** Significant work still needed to achieve one-step vision
+
+---
+
+### Next Steps
+
+#### Priority 1: Fix Critical Blockers
+1. Ship lint-clean templates (format before commit)
+2. Update template dependencies (fix known CVEs)
+3. Document VSCode workspace issue clearly
+4. Test init.sh end-to-end without intervention
+
+#### Priority 2: Implement Check/Fix Verb Pairs
+1. Design unified task verb scheme
+2. Implement lint:fix for all scenarios
+3. Implement scan:fix (interactive) for Python
+4. Document new task contract
+5. Update tutorials and how-to guides
+
+#### Priority 3: Build Automated Fix Workflow
+1. Design interactive fix system
+2. Implement for Python (pip-audit + uv)
+3. Test with real vulnerabilities
+4. Extend to other languages
+5. Document workflow
+
+#### Priority 4: Improve VSCode Integration
+1. Research DevPod workspace auto-open
+2. Evaluate VSCode extension approach
+3. Consider wrapper CLI tool
+4. Prototype and test
+
+---
+
 ## Knowledge Compounding
 
 This K-Brief synthesizes learnings from:
 - KB-2026-007: REPO_ROOT portability
 - KB-2026-008: Architecture mismatch
-- This session: Complete failure chain analysis
+- Initial session: Complete failure chain analysis
+- **Implementation testing: Actual user experience validation**
 
 **Future value:**
 - Prevents building scenarios that don't work standalone
@@ -866,5 +1338,7 @@ This K-Brief synthesizes learnings from:
 - Informs testing strategy
 - Shapes user experience decisions
 - Documents complexity trade-offs
+- **Validates assumptions with real user testing**
+- **Identifies gap between "implemented" and "actually works"**
 
-**This is KBPD in action:** Multiple failures → pattern recognition → design space exploration → informed decisions
+**This is KBPD in action:** Multiple failures → pattern recognition → design space exploration → informed decisions → **implementation → user testing → new learnings → iteration**
