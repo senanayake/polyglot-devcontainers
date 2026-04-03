@@ -45,7 +45,31 @@ Use this template when you need to build:
 
 ## Quick Start
 
-### 1. Open in Devcontainer
+### Option A: Automated Setup (Recommended for Standalone Use)
+
+If you copied this template to use as a standalone scenario:
+
+```bash
+./init.sh
+```
+
+This script will:
+- Clean any host artifacts (architecture-specific files)
+- Verify bundled dependencies
+- Initialize git repository (required for pre-commit)
+- Start DevPod with VSCode
+- Set up the complete development environment
+
+**After VSCode opens:**
+1. Open workspace folder: `/workspaces/python-api-secure`
+2. In terminal: `cd /workspaces/python-api-secure`
+3. Verify: `task lint && task test`
+
+### Option B: Manual Setup
+
+If you prefer manual control or are using this within the polyglot-devcontainers repo:
+
+#### 1. Open in Devcontainer
 
 ```bash
 # Using VS Code
@@ -55,7 +79,7 @@ code .
 devpod up .
 ```
 
-### 2. Initialize
+#### 2. Initialize
 
 ```bash
 task init
