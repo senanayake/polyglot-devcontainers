@@ -551,6 +551,26 @@ ls -la scripts/evaluate_python_audit_policy.py
 - Module-level code with external dependencies
 - Repository structure dependencies
 
+**Git Context Requirement:**
+
+**Failure:** pre-commit install fails with "not a Git repository"
+
+**Cause:** pre-commit requires git context to install hooks
+
+**Error:**
+```
+An error has occurred: FatalError: git failed. Is it installed, and are you in a Git repository directory?
+```
+
+**Solution:** Initialize git repository before running pre-commit:
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+```
+
+**Applicability:** Any tool that relies on git hooks or git context (pre-commit, husky, etc.)
+
 **Cascading effects:**
 - If tasks.py fails, no initialization occurs
 - If initialization fails, development environment incomplete
@@ -664,6 +684,7 @@ This script supports two usage modes:
 ## Related Knowledge
 
 - **KB-2026-001**: Scenario portability limits (similar portability issue)
+- **KB-2026-008**: Container architecture mismatch (venv exec format error)
 - **AGENTS.md Section 0**: KBPD principles (failure → learning → knowledge)
 - **AGENTS.md Section 9**: CI Strategy (should mirror local workflow)
 
