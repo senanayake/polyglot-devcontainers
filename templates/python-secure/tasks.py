@@ -15,9 +15,13 @@ ROOT = Path(__file__).resolve().parent
 TMP_DIR = ROOT / ".tmp"
 ARTIFACTS_DIR = ROOT / ".artifacts"
 SCANS_DIR = ARTIFACTS_DIR / "scans"
-REPO_ROOT = next(
-    parent for parent in Path(__file__).resolve().parents if (parent / "AGENTS.md").exists()
-)
+try:
+    REPO_ROOT = next(
+        parent for parent in Path(__file__).resolve().parents if (parent / "AGENTS.md").exists()
+    )
+except StopIteration:
+    # Fallback for standalone usage: use template directory as root
+    REPO_ROOT = ROOT
 PYTHON_AUDIT_POLICY = REPO_ROOT / "security-scan-policy.toml"
 PYTHON_AUDIT_EVALUATOR = REPO_ROOT / "scripts" / "evaluate_python_audit_policy.py"
 VENV_DIR = ROOT / ".venv"
