@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420">
+  <rect width="900" height="420" fill="#0b0f14"></rect>
+
+  <g transform="translate(240 210)">
+    <circle r="110" fill="none" stroke="#2f3a46" stroke-width="2"></circle>
+    <ellipse rx="110" ry="48" fill="none" stroke="#2f3a46" stroke-width="2"></ellipse>
+    <ellipse rx="48" ry="110" fill="none" stroke="#2f3a46" stroke-width="2"></ellipse>
+
+    <path d="M 0 -92 L 84 42 L 56 58 L -28 -72 Z" fill="#9fc0e7"></path>
+    <path d="M -84 42 L 0 -92 L 28 -72 L -56 58 Z" fill="#7fb0e3"></path>
+    <path d="M -84 42 L 84 42 L 64 82 L -64 82 Z" fill="#5f8fc7"></path>
+
+    <path d="M -16 -32 L 16 -32 L 16 8 L 28 22 L 10 36
+             L 0 24 L -10 36 L -28 22 L -16 8 Z" fill="#0b0f14"></path>
+  </g>
+
+  <text x="430" y="230" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="700" fill="#e6edf3">
+    POLYGLOT
+  </text>
+</svg>

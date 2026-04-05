@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#ffffff"></rect>
+
+  <!-- icon -->
+  <g transform="translate(230 315)">
+    <circle r="120" fill="none" stroke="#d3dbe7" stroke-width="3"></circle>
+    <ellipse rx="120" ry="52" fill="none" stroke="#d3dbe7" stroke-width="3"></ellipse>
+    <ellipse rx="52" ry="120" fill="none" stroke="#d3dbe7" stroke-width="3"></ellipse>
+
+    <path d="M 0 -102 L 86 42 L 58 60 L -30 -78 Z" fill="#1f3b5c"></path>
+    <path d="M -86 42 L 0 -102 L 30 -78 L -58 60 Z" fill="#3e6a96"></path>
+    <path d="M -86 42 L 86 42 L 66 82 L -66 82 Z" fill="#7fb0e3"></path>
+
+    <path d="M -16 -32 L 16 -32 L 16 8 L 28 22 L 10 36
+             L 0 24 L -10 36 L -28 22 L -16 8 Z" fill="#ffffff"></path>
+  </g>
+
+  <!-- text block -->
+  <g transform="translate(430 250)">
+    <text x="0" y="0" font-family="Inter, system-ui, sans-serif" font-size="96" font-weight="700" letter-spacing="0.5" fill="#1f3b5c">
+      POLYGLOT
+    </text>
+
+    <text x="0" y="68" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="500" fill="#5a6b7f">
+      Deterministic execution environments
+    </text>
+
+    <text x="0" y="108" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="500" fill="#5a6b7f">
+      for modern software and AI-driven workflows
+    </text>
+  </g>
+</svg>

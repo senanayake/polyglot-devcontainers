@@ -1,19 +1,65 @@
-# polyglot-devcontainers
+# Polyglot Devcontainers
 
-`polyglot-devcontainers` now delivers the roadmap through the initial starter
-runtime-documentation slice:
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/polyglot-primary-dark.svg">
+    <img src="assets/polyglot-primary.svg" alt="Polyglot" width="420">
+  </picture>
+</p>
 
-- a hardened Python baseline
-- reusable Python and Node/TypeScript templates
-- a reusable Java template with a Gradle-first workflow
-- a focused Python and Node/TypeScript polyglot template
-- a composable feature library
-- improved IDE-first devcontainer defaults across the active templates
-- initial dependency upgrade workflows for Python and Java
+<p align="center">
+  Open, scenario-driven execution environments for reproducible software development.
+</p>
+
+Polyglot Devcontainers is an open execution system built from reproducible
+devcontainers, a stable task contract, published images, and runnable scenarios
+for the workflows this repository owns.
+
+It is designed for teams that want:
+
+- deterministic development environments
+- explicit, repeatable engineering workflows
+- container-first validation
+- AI-compatible execution loops
+- reusable starters for Python, Java, Node, and polyglot work
+
+## What This Is
+
+This repository provides:
+
+- starter templates for secure development environments
+- documented example workspaces
+- published OCI images for focused downstream use
+- a maintainer environment for working on the repository itself
+- scenario sets that package repeatable learning and recovery flows
 - in-container runtime documentation available through `man`
-- documentation organized using the Diataxis model
 
-Every environment in this repository follows the same task contract:
+## Why It Exists
+
+Modern software work breaks down when environments drift, workflows vary by
+machine, and operational knowledge lives in chat history instead of the system.
+
+Polyglot reduces that entropy by making the execution surface explicit:
+
+- the container defines the environment
+- the task contract defines the workflow
+- the repository documents what is supported
+- published images and scenarios turn working patterns into reusable assets
+
+## What You Can Do Today
+
+Today, you can use this repository to:
+
+- work on Polyglot itself inside a published maintainer container
+- start a new repository from a secure Python, Java, Node, or polyglot template
+- consume published starter images directly in downstream devcontainers
+- run repo-owned scenarios for dependency maintenance, policy-aware scanning,
+  and Podman plus DevPod setup on macOS
+- use the same task-based workflow locally, in containers, and in CI
+
+## Task Contract
+
+Every maintained environment in this repository centers on the same contract:
 
 ```bash
 task init
@@ -23,53 +69,113 @@ task scan
 task ci
 ```
 
-Some environments also expose an optional:
+This is the main working interface for humans and agents.
+
+Some environments also expose focused extensions such as:
 
 ```bash
 task upgrade
-```
-
-when they provide a validated dependency-upgrade workflow.
-
-Some Python and Java proving paths also expose:
-
-```bash
 task deps:report
 ```
 
-to turn the existing dependency inventory and plan artifacts into a compact
-JSON and Markdown report for humans and automation.
+when that workflow has been explicitly proven for that environment.
 
-For Python environments, `uv` and `uv.lock` are now the first-class dependency
-maintenance path in this repository. The maintained Python examples and
-templates now ship with checked-in `uv.lock` files and bootstrap with
-`uv sync --frozen`. Other Python workflow shapes are still detected so the
-artifacts stay honest, but they are compatibility lanes rather than
-equal-priority upgrade targets.
+## Quick Start
 
-Open the repository in the devcontainer, then run `task ci`.
+### 1. Work On This Repository
 
-The root, Python starter, and Java starter environments also install a local
-runtime help system. Start with:
+1. Open the repository in VS Code.
+2. Reopen it in the devcontainer.
+3. Run:
 
 ```bash
+task ci
 man polyglot
 ```
 
-Then follow the top-down guide to:
+Use this path when you want the full maintainer environment and repository
+validation flow.
 
-- choose the correct starter workflow
-- understand the task contract
-- find dependency and security artifacts
-- recover agent-specific operating guidance
-- read the curated "Knowledge" guidance for stronger engineering and security
-  decisions
+### 2. Start From A Template
 
-GitHub Actions validates the same image definition by building
-`.devcontainer/Containerfile` and running `task ci` inside that container.
+Choose a starter from [templates](./templates/README.md):
 
-Validated OCI images are published to GHCR with Trivy vulnerability reports,
-Cosign signing, SBOM generation and attestation, and provenance attestations.
+- [python-secure](./templates/python-secure/README.md)
+- [python-api-secure](./templates/python-api-secure/README.md)
+- [node-secure](./templates/node-secure/README.md)
+- [python-node-secure](./templates/python-node-secure/README.md)
+- [java-secure](./templates/java-secure/README.md)
+
+Open the copied starter in a devcontainer, then run `task ci`.
+
+### 3. Explore A Working Example Or Scenario
+
+Use [examples](./examples/README.md) when you want a prewired workspace that
+shows the contract, images, and docs in practice.
+
+Use [scenario docs](./docs/scenarios/README.md) when you want guided, runnable
+flows around a specific problem such as dependency maintenance or security
+policy review.
+
+## Core Concepts
+
+### Devcontainers Define The Environment
+
+The container is the source of truth. Tooling, runtimes, scanners, and task
+entry points live inside the environment being validated.
+
+### The Task Contract Defines The Workflow
+
+Polyglot keeps the working surface small and explicit. Validation should happen
+through the contract instead of ad hoc shell sequences.
+
+### Published Images Extend The Contract
+
+The repository publishes focused images for downstream consumption and a
+broader maintainer image for repository work and CI parity.
+
+### Scenarios Package Runnable Knowledge
+
+Scenarios do not replace the task contract. They package repeatable situations
+into runnable, documented flows tied to the environments this repository owns.
+
+### Runtime Documentation Lives In The Container
+
+Key guidance is available inside the environment itself through `man`, so
+operators do not need to recover essential context from external websites or
+chat history.
+
+## Templates, Examples, And Scenarios
+
+### Templates
+
+Use [templates](./templates/README.md) when you want to start a new repository
+with a reproducible execution environment.
+
+### Examples
+
+Use [examples](./examples/README.md) when you want a working environment that
+teaches the system:
+
+- [python-image-example](./examples/python-image-example/README.md)
+- [java-image-example](./examples/java-image-example/README.md)
+- [python-maintenance-example](./examples/python-maintenance-example/README.md)
+- [java-maintenance-example](./examples/java-maintenance-example/README.md)
+
+### Scenarios
+
+Current scenario families include:
+
+- [dependency-maintenance](./scenarios/dependency-maintenance/README.md):
+  repo-owned Python and Java maintenance flows
+- [security-policy](./scenarios/security-policy/README.md): policy-aware Python
+  package audit review
+- [podman-devpod-macos](./scenarios/podman-devpod-macos/README.md): Docker-free
+  Podman plus DevPod setup for macOS
+
+Scenario documentation is collected under [docs/scenarios](./docs/scenarios/README.md).
+
+## Published Images
 
 Current published images:
 
@@ -77,9 +183,11 @@ Current published images:
 - [`ghcr.io/senanayake/polyglot-devcontainers-java`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-java)
 - [`ghcr.io/senanayake/polyglot-devcontainers-python-node`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-python-node)
 
-The maintainer image is published for working on this repository and for CI
-parity. It is intentionally broader than the starter images and is not the
-recommended downstream base for new projects.
+The maintainer image is for working on this repository and preserving CI parity.
+The starter images are the recommended downstream base images.
+
+The recent releases table below is maintained automatically by the release
+workflow.
 
 <!-- recent-releases:start -->
 ## Recent Releases
@@ -96,91 +204,53 @@ Recent published release notes are available here:
 
 <!-- recent-releases:end -->
 
-## Choose a starter
+## Project Principles
 
-- [Templates](./templates/README.md): copy these when you want a new starter
-  repository
-- [Examples](./examples/README.md): open these when you want a documented
-  workspace that teaches the environments and implemented features
+Short version:
 
-Recommended first stops:
+- containers are authoritative
+- workflows should be explicit and deterministic
+- security belongs in the default path
+- composition is preferred over reinvention
+- scope should stay honest and reviewable
+- behavior should remain visible rather than implicit
 
-- [python-image-example](./examples/python-image-example/README.md): learn the
-  published Python path backed by the focused Python and Node image
-- [java-image-example](./examples/java-image-example/README.md): learn the
-  published-image Java path
-- [python-secure](./templates/python-secure/README.md): start a new Python
-  repository
-- [java-secure](./templates/java-secure/README.md): start a new Java
-  repository
+See [PROJECT_PRINCIPLES.md](./PROJECT_PRINCIPLES.md) for the full project
+principles.
 
 ## Documentation
 
-The documentation is organized with the Diataxis approach:
-
+- [Documentation Home](./docs/README.md)
 - [Tutorials](./docs/tutorials/README.md)
-- [How-to guides](./docs/how-to/README.md)
+- [How-To Guides](./docs/how-to/README.md)
 - [Reference](./docs/reference/README.md)
 - [Explanation](./docs/explanation/README.md)
-- [Documentation home](./docs/README.md)
+- [Scenario Docs](./docs/scenarios/README.md)
+- [Vision](./VISION.md)
+- [Project Principles](./PROJECT_PRINCIPLES.md)
 
-## Delivered Phases
+## Contributing
 
-- Phase 1: hardened Python tooling with Ruff formatting, MyPy, pre-commit, and scan artifacts
-- Phase 2: reusable `templates/python-secure`
-- Phase 3: reusable `templates/node-secure`
-- Phase 4: composable features under `features/`
-- Phase 5: reusable `templates/python-node-secure`
-- Phase 6: validated and published OCI images
-- Phase 7: reusable `templates/java-secure`
-- Phase 8: IDE-first devcontainer customizations across active templates
-- Phase 9b: dependency-upgrade proof and container-backed root CI validation
-- Phase 9c: repo-owned Python paths standardized on `uv` and `uv.lock`
-- Phase 9d (runtime-doc MVP): `man`-based runtime guidance installed in the root, Python, and Java starter environments
+Polyglot welcomes contributions across templates, examples, scenarios,
+documentation, release workflows, and repository hardening.
 
-## Machine-Agnostic Contract
+Start here:
 
-This repository is designed to work across Windows, macOS, and Linux by making
-the devcontainer the primary execution environment.
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [COMMUNITY.md](./COMMUNITY.md)
+- [GOVERNANCE.md](./GOVERNANCE.md)
 
-The supported contract is:
+## Community
 
-- the host only needs a container runtime and VS Code support for devcontainers
-- the project tooling lives inside the container
-- `task ci` is validated inside the container, not on the host
+This project is for maintainers, platform teams, open source contributors, and
+AI-assisted engineering workflows that need reproducible execution surfaces.
 
-Host-specific package installs should not be required to prove the workflow
-works.
+Today, collaboration happens primarily through GitHub issues and pull requests.
+See [COMMUNITY.md](./COMMUNITY.md) for participation paths and direction.
 
-## Repository Structure
+## Roadmap
 
-- `examples/`: documented workspaces that teach the validated environments and
-  implemented features
-- `examples/python-example`: the minimal repository-owned Python reference path
-- `examples/python-image-example`: a Python workspace that consumes the
-  published GHCR Python and Node image directly
-- `examples/python-maintenance-example`: a richer Python fixture for dependency
-  evidence, reports, and upgrade experiments
-- `examples/java-image-example`: a Java workspace that consumes the published
-  GHCR image directly
-- `examples/java-maintenance-example`: a richer Java fixture for dependency
-  evidence, reports, and upgrade experiments
-- `templates/`: starter repositories built on the task contract
-- `features/`: reusable devcontainer Features
-- `docs/`: Diataxis documentation set
+The roadmap lives in [ROADMAP.md](./ROADMAP.md).
 
-## Host Guidance
-
-- Linux: open the repository and reopen in container
-- macOS: open the repository and reopen in container
-- Windows: prefer a WSL-based workflow, then reopen in container from VS Code
-
-For Windows, the recommended flow is:
-
-1. clone the repository inside WSL
-2. open the WSL folder in VS Code
-3. use `Dev Containers: Reopen in Container`
-4. run `task ci` inside the container terminal
-
-This avoids common Windows mount and image-store issues with Podman and
-devcontainers.
+It remains important, but it is intentionally below the working identity and
+entry points of the project.
