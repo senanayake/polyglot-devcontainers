@@ -1,32 +1,77 @@
 version: "3"
 
 tasks:
+  # ============================================================================
+  # Core Workflow Tasks
+  # ============================================================================
+
   init:
+    desc: Initialize development environment (install dependencies)
     cmds:
       - python tasks.py init
 
+  # ============================================================================
+  # Check Verbs (read-only, fail on issues)
+  # ============================================================================
+
   lint:
+    desc: Check code quality (format, style, types) - read-only
     cmds:
       - python tasks.py lint
 
   test:
+    desc: Run test suite with coverage
     cmds:
       - python tasks.py test
 
   scan:
+    desc: Check security vulnerabilities (dependencies, secrets) - read-only
     cmds:
       - python tasks.py scan
       - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
 
+  ci:
+    desc: Run all checks (init + lint + test + scan)
+    cmds:
+      - task init
+      - task lint
+      - task test
+      - task scan
+
+  # ============================================================================
+  # Fix Verbs (write, auto-fix issues)
+  # ============================================================================
+
+  format:
+    desc: Auto-fix code formatting and style issues
+    cmds:
+      - python tasks.py format
+
+  # ============================================================================
+  # Development Tasks
+  # ============================================================================
+
+  dev:
+    desc: Run FastAPI development server with hot reload
+    cmds:
+      - .venv/bin/uvicorn python_api_secure_template.main:app --reload --host 0.0.0.0 --port 8000
+
+  # ============================================================================
+  # Dependency Management
+  # ============================================================================
+
   deps:inventory:
+    desc: List all dependencies with current versions
     cmds:
       - python tasks.py inventory
 
   deps:plan:
+    desc: Plan dependency updates (show available upgrades)
     cmds:
       - python tasks.py plan
 
   deps:report:
+    desc: Generate comprehensive dependency report
     cmds:
       - task deps:inventory
       - task deps:plan
@@ -37,25 +82,10 @@ tasks:
         --json-output .artifacts/scans/dependency-report.json
         --markdown-output .artifacts/scans/dependency-report.md
 
-  format:
-    cmds:
-      - python tasks.py format
-
-  dev:
-    desc: Run FastAPI development server with hot reload
-    cmds:
-      - .venv/bin/uvicorn python_api_secure_template.main:app --reload --host 0.0.0.0 --port 8000
-
   upgrade:
+    desc: Upgrade dependencies (interactive) and verify with CI
     cmds:
       - task deps:inventory
       - task deps:plan
       - python tasks.py upgrade
       - task ci
-
-  ci:
-    cmds:
-      - task init
-      - task lint
-      - task test
-      - task scan
