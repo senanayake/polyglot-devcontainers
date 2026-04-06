@@ -873,7 +873,15 @@ Even with perfect documentation:
 
 ---
 
-### Friction Points Discovered
+### Friction Points Discovered (Severity):
+1. CRITICAL: VSCode workspace not auto-opened (blocks first-time users)
+2. HIGH: Init script never completed successfully (undermines trust)
+3. MEDIUM: Code formatting failures (requires expert knowledge)
+4. MEDIUM: Security vulnerabilities in template (requires manual fixes)
+5. MEDIUM: Task dev PATH issue (blocks API development workflow)
+6. LOW: VSCode reconnection not obvious (annoying but recoverable)
+
+---
 
 #### 1. VSCode Workspace Not Auto-Opened (Critical)
 
@@ -974,6 +982,37 @@ Even with perfect documentation:
 **Root cause:** Documentation gap
 
 **Severity:** **LOW** - Annoying but recoverable
+
+---
+
+#### 6. Task Dev PATH Issue
+
+**Problem:** `task dev` fails with "uvicorn: executable file not found in $PATH"
+
+**Symptoms:**
+- Running `task dev` to start development server fails
+- Error: `"uvicorn": executable file not found in $PATH`
+- User must know to run `.venv/bin/uvicorn` directly
+
+**User impact:**
+- Cannot start development server using documented task command
+- Requires knowledge of venv structure
+- Breaks "works out of box" promise for API scenarios
+
+**Root cause:** Taskfile.yml called `uvicorn` directly instead of `.venv/bin/uvicorn`
+
+**Fix applied:**
+```yaml
+# Before (broken)
+- uvicorn python_api_secure_template.main:app --reload --host 0.0.0.0 --port 8000
+
+# After (fixed)
+- .venv/bin/uvicorn python_api_secure_template.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Severity:** **MEDIUM** - Blocks API development workflow, requires expert knowledge
+
+**Learning:** All task commands should use explicit venv paths, not rely on PATH configuration
 
 ---
 
