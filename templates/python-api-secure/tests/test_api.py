@@ -51,9 +51,7 @@ def test_create_item() -> None:
 def test_get_item() -> None:
     """Test getting a specific item."""
     # Create an item first
-    create_response = client.post(
-        "/api/items/", json={"name": "Test Item", "price": 10.99}
-    )
+    create_response = client.post("/api/items/", json={"name": "Test Item", "price": 10.99})
     item_id = create_response.json()["id"]
 
     # Get the item
@@ -71,15 +69,11 @@ def test_get_nonexistent_item() -> None:
 def test_update_item() -> None:
     """Test updating an item."""
     # Create an item first
-    create_response = client.post(
-        "/api/items/", json={"name": "Original", "price": 10.0}
-    )
+    create_response = client.post("/api/items/", json={"name": "Original", "price": 10.0})
     item_id = create_response.json()["id"]
 
     # Update it
-    response = client.put(
-        f"/api/items/{item_id}", json={"name": "Updated", "price": 20.0}
-    )
+    response = client.put(f"/api/items/{item_id}", json={"name": "Updated", "price": 20.0})
     assert response.status_code == 200
     assert response.json()["name"] == "Updated"
     assert response.json()["price"] == 20.0
