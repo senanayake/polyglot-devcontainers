@@ -1363,6 +1363,260 @@ Summary:
 
 ---
 
+## Code Duplication vs Portability Trade-Off
+
+### Problem Statement
+
+**Discovery date:** 2026-04-06
+
+**Issue:** tasks.py contains 866 lines of code duplicated across all Python scenarios.
+
+**Current duplication:**
+- `python-api-secure/tasks.py` - 866 lines
+- `python-secure/tasks.py` - 866 lines
+- **Total:** ~1,732 lines of nearly identical code
+
+**Projected scale:**
+- With 5 Python scenarios: ~4,330 lines
+- With 10 scenarios across languages: ~8,660+ lines
+
+---
+
+### Root Cause
+
+**Hybrid Option 5 design decision:**
+- Bundled all dependencies into scenarios for portability
+- Worked well for small files (security-scan-policy.toml ~20 lines)
+- **Does not scale for large code files** (tasks.py ~866 lines)
+
+**What's duplicated:**
+1. Path constants and utilities
+2. Task implementations (init, lint, test, scan, ci, dev)
+3. Dependency management (inventory, plan, upgrade)
+4. PyPI version fetching
+5. Security policy evaluation
+6. Helper functions
+
+---
+
+### Trade-Off Analysis
+
+#### Current Approach: Full Duplication
+
+**Pros:**
+- ✅ Scenarios are completely self-contained
+- ✅ Work standalone without repository structure
+- ✅ No external dependencies
+- ✅ Easy to copy and distribute
+
+**Cons:**
+- ❌ 866 lines duplicated per scenario
+- ❌ Bug fixes must be applied to all copies
+- ❌ Feature additions require updating all scenarios
+- ❌ Maintenance burden scales linearly with scenario count
+- ❌ High drift risk (scenarios diverge over time)
+- ❌ Blocks unified task verb system implementation
+
+---
+
+### Design Space: Alternative Approaches
+
+#### Option 1: Shared Python Package (DRY)
+
+**Structure:**
+```
+packages/polyglot-tasks/
+├── pyproject.toml
+└── src/polyglot_tasks/
+    ├── python.py      # Python-specific tasks
+    ├── node.py        # Node-specific tasks
+    └── common.py      # Shared utilities
+
+templates/python-api-secure/
+├── tasks.py           # Thin wrapper (~50 lines)
+└── pyproject.toml     # Depends on polyglot-tasks
+```
+
+**Pros:**
+- ✅ Single source of truth
+- ✅ Bug fixes propagate automatically
+- ✅ Enables unified task verb system
+- ✅ Polyglot consistency enforced
+- ✅ Testable in isolation
+
+**Cons:**
+- ❌ Scenarios depend on external package
+- ❌ Breaks standalone portability
+- ❌ Requires package installation
+
+---
+
+#### Option 2: Code Generation
+
+**Structure:**
+```
+scripts/generate_tasks.py    # Generator
+templates/tasks.py.template  # Jinja2 template
+templates/*/tasks.py         # Generated files
+```
+
+**Pros:**
+- ✅ Scenarios remain self-contained
+- ✅ Single source template
+- ✅ Controlled generation
+
+**Cons:**
+- ❌ Still have duplication in repo
+- ❌ Must remember to regenerate
+- ❌ Generated code in version control
+
+---
+
+#### Option 3: Hybrid - Shared + Bundled
+
+**Development:** Use shared package  
+**Distribution:** Bundle into scenario
+
+**Pros:**
+- ✅ DRY during development
+- ✅ Standalone for distribution
+- ✅ Best of both worlds
+
+**Cons:**
+- ❌ Complex build process
+- ❌ Two modes (dev vs release)
+
+---
+
+### Decision: Wait and Refactor Later
+
+**Rationale:**
+
+1. **Current scale is manageable**
+   - Only 2 Python scenarios exist
+   - Premature abstraction is risky
+   - User testing revealed bigger issues (VSCode, task verbs)
+
+2. **Validation phase incomplete**
+   - Still validating scenario concept
+   - Task verb system not yet designed
+   - Interactive fix workflows not implemented
+
+3. **Clear refactoring threshold**
+   - **Trigger:** 5+ scenarios across languages
+   - At that scale, duplication becomes critical
+   - Aligns with task verb unification work
+
+**Accepted technical debt:**
+- Current duplication is acknowledged
+- Will refactor when threshold reached
+- TODO comments added to tasks.py
+
+---
+
+### Future Implementation Plan
+
+**When 5+ scenarios exist:**
+
+1. **Create shared package**
+   ```bash
+   packages/polyglot-tasks/
+   ```
+
+2. **Implement unified task verb system**
+   - Check/fix verb pairs
+   - Interactive fix workflows
+   - Polyglot consistency
+
+3. **Create bundling script**
+   ```bash
+   python scripts/bundle_scenario.py python-api-secure --output dist/
+   # Creates fully bundled standalone scenario
+   ```
+
+4. **Migration strategy**
+   - Migrate existing scenarios incrementally
+   - Maintain backward compatibility
+   - Update documentation
+
+---
+
+### Key Insights
+
+#### Duplication Threshold
+
+**Small files (< 50 lines):** Duplication acceptable
+- Example: security-scan-policy.toml (~20 lines)
+- Low maintenance burden
+- Easy to keep in sync
+
+**Large files (> 500 lines):** Duplication problematic
+- Example: tasks.py (~866 lines)
+- High maintenance burden
+- Drift risk increases
+
+**Threshold:** ~100-200 lines per file
+
+---
+
+#### Portability vs Maintainability
+
+**Portability wins early:**
+- When validating concept
+- When scenario count is low (< 5)
+- When code is stable
+
+**Maintainability wins later:**
+- When scaling to many scenarios
+- When adding features frequently
+- When implementing cross-cutting concerns (task verbs)
+
+**Solution:** Hybrid approach with bundling for distribution
+
+---
+
+### Monitoring
+
+**Watch for these signals:**
+
+1. **Bug fix propagation pain**
+   - Same bug fixed multiple times
+   - Scenarios drift apart
+   - Inconsistent behavior
+
+2. **Feature addition friction**
+   - New features require N updates
+   - Testing becomes expensive
+   - Documentation diverges
+
+3. **Scale threshold**
+   - 5+ scenarios exist
+   - Multiple languages supported
+   - Task verb system needed
+
+**When 2+ signals present:** Time to refactor
+
+---
+
+### Related Work
+
+**Depends on:**
+- Task verb system design (KB-2026-009 Priority 2)
+- Interactive fix workflow (KB-2026-009 Priority 3)
+- Additional scenario implementations
+
+**Blocks:**
+- Unified task verb implementation
+- Cross-language consistency
+- Automated fix workflows
+
+**Enables:**
+- Polyglot task system
+- Shared tooling infrastructure
+- Consistent user experience
+
+---
+
 ## Knowledge Compounding
 
 This K-Brief synthesizes learnings from:

@@ -1,3 +1,32 @@
+"""Task automation for python-secure scenario.
+
+TODO: Code Duplication Technical Debt
+======================================
+This file (~866 lines) is duplicated across all Python scenarios.
+
+Current state:
+- python-api-secure/tasks.py - 866 lines
+- python-secure/tasks.py - 866 lines
+- Total duplication: ~1,732 lines
+
+Decision: Wait until 5+ scenarios exist, then refactor to shared package.
+
+Refactoring plan (when threshold reached):
+1. Create packages/polyglot-tasks/ shared package
+2. Implement unified task verb system (check/fix pairs)
+3. Create bundling script for standalone distribution
+4. Migrate scenarios incrementally
+
+See KB-2026-009 "Code Duplication vs Portability Trade-Off" for full analysis.
+
+Monitoring signals:
+- Bug fixes applied multiple times
+- Feature additions require N updates
+- 5+ scenarios exist
+
+When 2+ signals present: Time to refactor.
+"""
+
 from __future__ import annotations
 
 import json
