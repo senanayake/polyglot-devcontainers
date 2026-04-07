@@ -735,7 +735,10 @@ def scan_fix() -> None:
                 break
             elif response in ("q", "quit"):
                 print("\n🛑 Aborted by user")
-                print(f"\nSummary: {fixed_count} fixed, {skipped_count} skipped, {failed_count} failed")
+                print(
+                    f"\nSummary: {fixed_count} fixed, {skipped_count} skipped, "
+                    f"{failed_count} failed"
+                )
                 return
             else:
                 print("  Invalid input. Please enter y/n/skip/quit")
