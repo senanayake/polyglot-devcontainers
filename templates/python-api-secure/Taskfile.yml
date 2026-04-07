@@ -47,6 +47,11 @@ tasks:
     cmds:
       - python tasks.py format
 
+  scan:fix:
+    desc: Interactive security vulnerability fixes (Phase 1)
+    cmds:
+      - python tasks.py scan_fix
+
   # ============================================================================
   # Development Tasks
   # ============================================================================

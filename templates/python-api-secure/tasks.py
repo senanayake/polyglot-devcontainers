@@ -641,6 +641,173 @@ def scan() -> None:
     )
 
 
+def scan_fix() -> None:
+    """Interactive security vulnerability fix workflow (Phase 1).
+    
+    Human-interactive mode:
+    - Parse pip-audit findings
+    - Prompt human for each fix
+    - Apply fix with uv
+    - Run tests to verify
+    - Rollback on failure
+    """
+    if not PYTHON.exists():
+        init()
+    
+    # Run scan first to get vulnerabilities
+    print("Running security scan...")
+    audit_report = SCANS_DIR / "pip-audit.json"
+    completed = run(
+        [
+            str(PYTHON),
+            "-m",
+            "pip_audit",
+            "--format",
+            "json",
+            "--output",
+            str(audit_report),
+        ],
+        check=False,
+    )
+    
+    if completed.returncode not in (0, 1):
+        raise subprocess.CalledProcessError(completed.returncode, completed.args)
+    
+    # Parse vulnerabilities
+    if not audit_report.exists():
+        print("No audit report found. Scan may have failed.")
+        return
+    
+    with open(audit_report) as f:
+        audit_data = json.load(f)
+    
+    vulnerabilities = audit_data.get("dependencies", [])
+    
+    if not vulnerabilities:
+        print("✅ No vulnerabilities found!")
+        return
+    
+    print(f"\n🔍 Found {len(vulnerabilities)} package(s) with vulnerabilities\n")
+    
+    # Track results
+    fixed_count = 0
+    skipped_count = 0
+    failed_count = 0
+    
+    # Process each vulnerable package
+    for idx, vuln_pkg in enumerate(vulnerabilities, 1):
+        package_name = vuln_pkg.get("name", "unknown")
+        current_version = vuln_pkg.get("version", "unknown")
+        vulns = vuln_pkg.get("vulns", [])
+        
+        if not vulns:
+            continue
+        
+        # Get fix version (use first vulnerability's fix version)
+        fix_version = None
+        cve_ids = []
+        for vuln in vulns:
+            cve_ids.append(vuln.get("id", "unknown"))
+            fixed_versions = vuln.get("fix_versions", [])
+            if fixed_versions:
+                fix_version = fixed_versions[0]
+                break
+        
+        if not fix_version:
+            print(f"[{idx}/{len(vulnerabilities)}] ❌ {package_name} {current_version}")
+            print(f"  CVEs: {', '.join(cve_ids)}")
+            print(f"  ⚠️  No fix version available\n")
+            skipped_count += 1
+            continue
+        
+        # Display vulnerability info
+        print(f"[{idx}/{len(vulnerabilities)}] 📦 {package_name} {current_version} → {fix_version}")
+        print(f"  CVEs: {', '.join(cve_ids)}")
+        
+        # Prompt user
+        while True:
+            response = input("  Apply fix? [y/n/skip/quit]: ").strip().lower()
+            if response in ("y", "yes"):
+                break
+            elif response in ("n", "no", "skip"):
+                print("  ⏭️  Skipped\n")
+                skipped_count += 1
+                break
+            elif response in ("q", "quit"):
+                print("\n🛑 Aborted by user")
+                print(f"\nSummary: {fixed_count} fixed, {skipped_count} skipped, {failed_count} failed")
+                return
+            else:
+                print("  Invalid input. Please enter y/n/skip/quit")
+        
+        if response not in ("y", "yes"):
+            continue
+        
+        # Save current lockfile for rollback
+        lockfile = ROOT / "uv.lock"
+        lockfile_backup = None
+        if lockfile.exists():
+            lockfile_backup = ROOT / ".uv.lock.backup"
+            shutil.copy2(lockfile, lockfile_backup)
+        
+        try:
+            # Apply fix
+            print(f"  🔧 Applying fix...")
+            run([UV, "add", f"{package_name}>={fix_version}"], check=True)
+            
+            # Run tests
+            print(f"  🧪 Running tests...")
+            test_result = run(
+                [str(PYTHON), "-m", "pytest", "-q", "-x"],
+                check=False,
+                capture_output=True,
+            )
+            
+            if test_result.returncode == 0:
+                print(f"  ✅ Tests passed\n")
+                fixed_count += 1
+                # Remove backup
+                if lockfile_backup and lockfile_backup.exists():
+                    lockfile_backup.unlink()
+            else:
+                print(f"  ❌ Tests failed")
+                print(f"  🔄 Rolling back...")
+                
+                # Rollback
+                if lockfile_backup and lockfile_backup.exists():
+                    shutil.copy2(lockfile_backup, lockfile)
+                    lockfile_backup.unlink()
+                    # Reinstall from rolled-back lockfile
+                    run([UV, "sync", "--frozen"], check=True)
+                
+                print(f"  ⚠️  Fix reverted due to test failures\n")
+                failed_count += 1
+        
+        except subprocess.CalledProcessError as e:
+            print(f"  ❌ Fix failed: {e}")
+            print(f"  🔄 Rolling back...")
+            
+            # Rollback
+            if lockfile_backup and lockfile_backup.exists():
+                shutil.copy2(lockfile_backup, lockfile)
+                lockfile_backup.unlink()
+                run([UV, "sync", "--frozen"], check=False)
+            
+            print(f"  ⚠️  Fix reverted\n")
+            failed_count += 1
+    
+    # Summary
+    print(f"\n{'='*60}")
+    print(f"Summary:")
+    print(f"  ✅ Fixed: {fixed_count}")
+    print(f"  ⏭️  Skipped: {skipped_count}")
+    print(f"  ❌ Failed: {failed_count}")
+    print(f"{'='*60}\n")
+    
+    if fixed_count > 0:
+        print("💡 Tip: Run 'task ci' to verify all checks pass")
+
+
 def latest_pypi_version(package_name: str) -> str:
     return str(fetch_pypi_package_info(package_name)["info"]["version"])
 
