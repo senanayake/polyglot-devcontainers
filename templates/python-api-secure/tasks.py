@@ -716,7 +716,7 @@ def scan_fix() -> None:
         if not fix_version:
             print(f"[{idx}/{len(vulnerabilities)}] ❌ {package_name} {current_version}")
             print(f"  CVEs: {', '.join(cve_ids)}")
-            print(f"  ⚠️  No fix version available\n")
+            print("  ⚠️  No fix version available\n")
             skipped_count += 1
             continue
         
@@ -752,11 +752,11 @@ def scan_fix() -> None:
         
         try:
             # Apply fix
-            print(f"  🔧 Applying fix...")
+            print("  🔧 Applying fix...")
             run([UV, "add", f"{package_name}>={fix_version}"], check=True)
             
             # Run tests
-            print(f"  🧪 Running tests...")
+            print("  🧪 Running tests...")
             test_result = run(
                 [str(PYTHON), "-m", "pytest", "-q", "-x"],
                 check=False,
@@ -764,14 +764,14 @@ def scan_fix() -> None:
             )
             
             if test_result.returncode == 0:
-                print(f"  ✅ Tests passed\n")
+                print("  ✅ Tests passed\n")
                 fixed_count += 1
                 # Remove backup
                 if lockfile_backup and lockfile_backup.exists():
                     lockfile_backup.unlink()
             else:
-                print(f"  ❌ Tests failed")
-                print(f"  🔄 Rolling back...")
+                print("  ❌ Tests failed")
+                print("  🔄 Rolling back...")
                 
                 # Rollback
                 if lockfile_backup and lockfile_backup.exists():
@@ -780,12 +780,12 @@ def scan_fix() -> None:
                     # Reinstall from rolled-back lockfile
                     run([UV, "sync", "--frozen"], check=True)
                 
-                print(f"  ⚠️  Fix reverted due to test failures\n")
+                print("  ⚠️  Fix reverted due to test failures\n")
                 failed_count += 1
         
         except subprocess.CalledProcessError as e:
             print(f"  ❌ Fix failed: {e}")
-            print(f"  🔄 Rolling back...")
+            print("  🔄 Rolling back...")
             
             # Rollback
             if lockfile_backup and lockfile_backup.exists():
@@ -793,12 +793,12 @@ def scan_fix() -> None:
                 lockfile_backup.unlink()
                 run([UV, "sync", "--frozen"], check=False)
             
-            print(f"  ⚠️  Fix reverted\n")
+            print("  ⚠️  Fix reverted\n")
             failed_count += 1
     
     # Summary
     print(f"\n{'='*60}")
-    print(f"Summary:")
+    print("Summary:")
     print(f"  ✅ Fixed: {fixed_count}")
     print(f"  ⏭️  Skipped: {skipped_count}")
     print(f"  ❌ Failed: {failed_count}")
