@@ -9,3 +9,17 @@ allow_no_fix_advisories = true
 # id = "GHSA-xxxx-xxxx-xxxx"
 # reason = "Accepted temporarily while upstream ships a fix."
 # expires_on = "2026-04-30"
+
+[python_package_remediation]
+allowed_scopes = ["runtime", "dev"]
+maximum_update_type = "minor"
+allow_exact_pin_updates = true
+allow_transitive_parent_remediation = true
+
+[python_package_remediation.pr]
+branch_prefix = "codex/scan-remediation"
+commit_message = "chore(deps): automate Python CVE remediation"
+push_branch = false
+open_pull_request = false
+base_branch = "main"
+pull_request_title = "chore(deps): automated Python CVE remediation"

@@ -122,6 +122,13 @@ tasks:
         examples/java-maintenance-example/.artifacts/scans/dependency-report.json
         templates/java-secure/.artifacts/scans/dependency-report.json
 
+  scan:auto:fixtures:
+    desc: Materialize and validate the Python scan:auto fixture matrix
+    deps: [_require_maintainer]
+    cmds:
+      - mkdir -p .artifacts/scans
+      - python scripts/run_python_scan_auto_fixtures.py
+
   scenarios:python-maintenance:
     desc: Run the Python dependency-maintenance scenario and write scenario artifacts
     deps: [_require_maintainer]
@@ -319,4 +326,5 @@ tasks:
       - task lint
       - task test
       - task scan
+      - task scan:auto:fixtures
       - task scenarios:verify

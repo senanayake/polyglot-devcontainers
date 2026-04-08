@@ -76,6 +76,9 @@ Some environments also expose focused extensions such as:
 ```bash
 task upgrade
 task deps:report
+task scan:plan
+task scan:auto
+task scan:pr
 ```
 
 when that workflow has been explicitly proven for that environment.

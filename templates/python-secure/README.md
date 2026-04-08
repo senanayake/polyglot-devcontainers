@@ -47,3 +47,16 @@ devpod up .
 # After container starts, run:
 task ci
 ```
+
+## Security Remediation
+
+The Python task runner also exposes a policy-aware remediation loop:
+
+```bash
+task scan:plan   # Inspect the automated remediation candidates
+task scan:fix    # Review fixes interactively
+task scan:auto   # Apply policy-allowed fixes with rollback and reporting
+task scan:pr     # Create a remediation branch and commit accepted fixes
+```
+
+The behavior is controlled by `security-scan-policy.toml`.

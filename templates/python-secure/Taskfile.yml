@@ -52,6 +52,21 @@ tasks:
     cmds:
       - python tasks.py scan_fix
 
+  scan:plan:
+    desc: Build a policy-aware automated remediation plan
+    cmds:
+      - python tasks.py scan_plan
+
+  scan:auto:
+    desc: Apply automated dependency remediation with rollback and reporting
+    cmds:
+      - python tasks.py scan_auto
+
+  scan:pr:
+    desc: Create a remediation branch and commit accepted dependency fixes
+    cmds:
+      - python tasks.py scan_pr
+
   # ============================================================================
   # Dependency Management
   # ============================================================================
