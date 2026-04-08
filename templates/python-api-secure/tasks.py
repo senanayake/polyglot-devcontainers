@@ -73,8 +73,10 @@ IGNORED_SEARCH_PARTS = {
 }
 DEPENDENCY_NAME_RE = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)")
 EXACT_PIN_RE = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)(?:\[[^\]]+\])?\s*==\s*([^,;\s]+)")
+DECLARED_REQUIREMENT_RE = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*(?:\[[^\]]+\])?)")
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 MINIMUM_VERSION_RE = re.compile(r">=\s*(\d+(?:\.\d+)*)")
+NORMALIZED_NAME_RE = re.compile(r"[-_.]+")
 PYPI_PACKAGE_INFO_CACHE: dict[str, dict[str, Any]] = {}
 
 
@@ -142,16 +144,20 @@ def iter_declared_dependencies() -> list[dict[str, str]]:
     dependencies: list[dict[str, str]] = []
 
     for dependency in project.get("dependencies", []):
-        dependencies.append({"scope": "runtime", "specifier": dependency})
+        dependencies.append({"scope": "runtime", "specifier": dependency, "declaration": "runtime"})
 
     for scope, scoped_dependencies in project.get("optional-dependencies", {}).items():
         for dependency in scoped_dependencies:
-            dependencies.append({"scope": scope, "specifier": dependency})
+            dependencies.append(
+                {"scope": scope, "specifier": dependency, "declaration": "optional"}
+            )
 
     for scope, scoped_dependencies in metadata.get("dependency-groups", {}).items():
         for dependency in scoped_dependencies:
             if isinstance(dependency, str):
-                dependencies.append({"scope": scope, "specifier": dependency})
+                dependencies.append(
+                    {"scope": scope, "specifier": dependency, "declaration": "group"}
+                )
 
     return dependencies
 
@@ -166,6 +172,46 @@ def parse_exact_pin(specifier: str) -> tuple[str, str | None]:
         return name_match.group(1), None
 
     return specifier.strip(), None
+
+
+def normalize_dependency_name(name: str) -> str:
+    return NORMALIZED_NAME_RE.sub("-", name).lower()
+
+
+def build_declared_dependency_index() -> dict[str, list[dict[str, str]]]:
+    dependency_index: dict[str, list[dict[str, str]]] = {}
+    for dependency in iter_declared_dependencies():
+        name, _ = parse_exact_pin(dependency["specifier"])
+        normalized_name = normalize_dependency_name(name)
+        dependency_index.setdefault(normalized_name, []).append(dependency)
+    return dependency_index
+
+
+def build_fix_requirement(specifier: str, fix_version: str) -> str:
+    base_specifier, separator, marker = specifier.partition(";")
+    match = DECLARED_REQUIREMENT_RE.match(base_specifier)
+    if not match:
+        raise ValueError(f"Unsupported dependency specifier: {specifier}")
+
+    _, exact_pin = parse_exact_pin(base_specifier)
+    operator = "==" if exact_pin is not None else ">="
+    updated_specifier = f"{match.group(1)}{operator}{fix_version}"
+
+    if separator and marker.strip():
+        return f"{updated_specifier}; {marker.strip()}"
+    return updated_specifier
+
+
+def build_uv_add_command(dependency: dict[str, str], requirement: str) -> list[str]:
+    command = [UV, "add"]
+    declaration = dependency.get("declaration")
+    scope = dependency.get("scope")
+    if declaration == "optional" and scope:
+        command.extend(["--optional", scope])
+    elif declaration == "group" and scope:
+        command.extend(["--group", scope])
+    command.append(requirement)
+    return command
 
 
 def write_json_artifact(path: Path, payload: dict[str, Any]) -> None:
@@ -581,9 +627,82 @@ def build_plan_artifact() -> dict[str, Any]:
     }
 
 
+def sync_dev_environment() -> None:
+    run([UV, "sync", "--frozen", "--extra", "dev"])
+
+
+def run_pip_audit() -> Path:
+    audit_report = SCANS_DIR / "pip-audit.json"
+    audit_report.unlink(missing_ok=True)
+    completed = run(
+        [
+            str(PYTHON),
+            "-m",
+            "pip_audit",
+            "--format",
+            "json",
+            "--output",
+            str(audit_report),
+        ],
+        check=False,
+    )
+    if completed.returncode not in (0, 1):
+        raise subprocess.CalledProcessError(completed.returncode, completed.args)
+    if not audit_report.exists():
+        raise RuntimeError(
+            "pip-audit did not produce a report. Re-run `task init` to restore the dev environment."
+        )
+    return audit_report
+
+
+def load_audit_dependencies() -> tuple[Path, list[dict[str, Any]]]:
+    audit_report = run_pip_audit()
+    with audit_report.open(encoding="utf-8") as handle:
+        audit_data = json.load(handle)
+    return audit_report, list(audit_data.get("dependencies", []))
+
+
+def backup_project_state() -> dict[Path, Path]:
+    backups: dict[Path, Path] = {}
+    for path in (PYPROJECT, UV_LOCK):
+        if not path.exists():
+            continue
+        backup_path = ROOT / f".{path.name}.scan-fix.backup"
+        shutil.copy2(path, backup_path)
+        backups[path] = backup_path
+    return backups
+
+
+def cleanup_project_backups(backups: dict[Path, Path]) -> None:
+    for backup_path in backups.values():
+        backup_path.unlink(missing_ok=True)
+
+
+def restore_project_state(backups: dict[Path, Path]) -> None:
+    for original_path, backup_path in backups.items():
+        if backup_path.exists():
+            shutil.copy2(backup_path, original_path)
+    cleanup_project_backups(backups)
+    sync_dev_environment()
+
+
+def run_verification_tests() -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env.pop("TMP", None)
+    env.pop("TEMP", None)
+    env.pop("TMPDIR", None)
+    return subprocess.run(
+        [str(PYTHON), "-m", "pytest", "-q", "-x"],
+        cwd=ROOT,
+        check=False,
+        text=True,
+        env=env,
+    )
+
+
 def init() -> None:
     reset_invalid_venv()
-    run([UV, "sync", "--frozen", "--extra", "dev"])
+    sync_dev_environment()
 
 
 def lint() -> None:
@@ -610,21 +729,7 @@ def test() -> None:
 def scan() -> None:
     if not PYTHON.exists():
         init()
-    audit_report = SCANS_DIR / "pip-audit.json"
-    completed = run(
-        [
-            str(PYTHON),
-            "-m",
-            "pip_audit",
-            "--format",
-            "json",
-            "--output",
-            str(audit_report),
-        ],
-        check=False,
-    )
-    if completed.returncode not in (0, 1):
-        raise subprocess.CalledProcessError(completed.returncode, completed.args)
+    audit_report = run_pip_audit()
     run(
         [
             sys.executable,
@@ -656,38 +761,17 @@ def scan_fix() -> None:
 
     # Run scan first to get vulnerabilities
     print("Running security scan...")
-    audit_report = SCANS_DIR / "pip-audit.json"
-    completed = run(
-        [
-            str(PYTHON),
-            "-m",
-            "pip_audit",
-            "--format",
-            "json",
-            "--output",
-            str(audit_report),
-        ],
-        check=False,
-    )
-
-    if completed.returncode not in (0, 1):
-        raise subprocess.CalledProcessError(completed.returncode, completed.args)
-
-    # Parse vulnerabilities
-    if not audit_report.exists():
-        print("No audit report found. Scan may have failed.")
-        return
-
-    with open(audit_report) as f:
-        audit_data = json.load(f)
-
-    vulnerabilities = audit_data.get("dependencies", [])
+    _, audit_dependencies = load_audit_dependencies()
+    vulnerabilities = [item for item in audit_dependencies if item.get("vulns")]
 
     if not vulnerabilities:
-        print("✅ No vulnerabilities found!")
+        print("No vulnerabilities found.")
         return
 
-    print(f"\n🔍 Found {len(vulnerabilities)} package(s) with vulnerabilities\n")
+    declared_dependency_index = build_declared_dependency_index()
+    total_vulnerabilities = len(vulnerabilities)
+
+    print(f"\nFound {total_vulnerabilities} vulnerable package(s)\n")
 
     # Track results
     fixed_count = 0
@@ -700,9 +784,6 @@ def scan_fix() -> None:
         current_version = vuln_pkg.get("version", "unknown")
         vulns = vuln_pkg.get("vulns", [])
 
-        if not vulns:
-            continue
-
         # Get fix version (use first vulnerability's fix version)
         fix_version = None
         cve_ids = []
@@ -713,15 +794,45 @@ def scan_fix() -> None:
                 fix_version = fixed_versions[0]
                 break
 
-        if not fix_version:
-            print(f"[{idx}/{len(vulnerabilities)}] ❌ {package_name} {current_version}")
+        declared_matches = declared_dependency_index.get(
+            normalize_dependency_name(package_name), []
+        )
+
+        if not declared_matches:
+            print(f"[{idx}/{total_vulnerabilities}] Skipped {package_name} {current_version}")
             print(f"  CVEs: {', '.join(cve_ids)}")
-            print("  ⚠️  No fix version available\n")
+            print("  Indirect dependency. Phase 1 scan:fix only updates declared dependencies.\n")
+            skipped_count += 1
+            continue
+
+        if len(declared_matches) > 1:
+            print(f"[{idx}/{total_vulnerabilities}] Skipped {package_name} {current_version}")
+            print(f"  CVEs: {', '.join(cve_ids)}")
+            print("  Multiple declarations found. Resolve manually to avoid ambiguous edits.\n")
+            skipped_count += 1
+            continue
+
+        declared_dependency = declared_matches[0]
+
+        if not fix_version:
+            print(f"[{idx}/{total_vulnerabilities}] Skipped {package_name} {current_version}")
+            print(f"  CVEs: {', '.join(cve_ids)}")
+            print("  No fix version available.\n")
+            skipped_count += 1
+            continue
+
+        try:
+            fix_requirement = build_fix_requirement(declared_dependency["specifier"], fix_version)
+        except ValueError as error:
+            print(f"[{idx}/{total_vulnerabilities}] Skipped {package_name} {current_version}")
+            print(f"  CVEs: {', '.join(cve_ids)}")
+            print(f"  {error}\n")
             skipped_count += 1
             continue
 
         # Display vulnerability info
-        print(f"[{idx}/{len(vulnerabilities)}] 📦 {package_name} {current_version} → {fix_version}")
+        print(f"[{idx}/{total_vulnerabilities}] {package_name} {current_version} -> {fix_version}")
+        print(f"  Declared as: {declared_dependency['specifier']} ({declared_dependency['scope']})")
         print(f"  CVEs: {', '.join(cve_ids)}")
 
         # Prompt user
@@ -746,42 +857,28 @@ def scan_fix() -> None:
         if response not in ("y", "yes"):
             continue
 
-        # Save current lockfile for rollback
-        lockfile = ROOT / "uv.lock"
-        lockfile_backup = None
-        if lockfile.exists():
-            lockfile_backup = ROOT / ".uv.lock.backup"
-            shutil.copy2(lockfile, lockfile_backup)
+        backups = backup_project_state()
 
         try:
             # Apply fix
-            print("  🔧 Applying fix...")
-            run([UV, "add", f"{package_name}>={fix_version}"], check=True)
+            print("  Applying fix...")
+            run(build_uv_add_command(declared_dependency, fix_requirement), check=True)
+            sync_dev_environment()
 
             # Run tests
             print("  🧪 Running tests...")
-            test_result = run(
-                [str(PYTHON), "-m", "pytest", "-q", "-x"],
-                check=False,
-                capture_output=True,
-            )
+            test_result = run_verification_tests()
 
             if test_result.returncode == 0:
                 print("  ✅ Tests passed\n")
                 fixed_count += 1
-                # Remove backup
-                if lockfile_backup and lockfile_backup.exists():
-                    lockfile_backup.unlink()
+                cleanup_project_backups(backups)
             else:
                 print("  ❌ Tests failed")
                 print("  🔄 Rolling back...")
 
                 # Rollback
-                if lockfile_backup and lockfile_backup.exists():
-                    shutil.copy2(lockfile_backup, lockfile)
-                    lockfile_backup.unlink()
-                    # Reinstall from rolled-back lockfile
-                    run([UV, "sync", "--frozen"], check=True)
+                restore_project_state(backups)
 
                 print("  ⚠️  Fix reverted due to test failures\n")
                 failed_count += 1
@@ -791,10 +888,7 @@ def scan_fix() -> None:
             print("  🔄 Rolling back...")
 
             # Rollback
-            if lockfile_backup and lockfile_backup.exists():
-                shutil.copy2(lockfile_backup, lockfile)
-                lockfile_backup.unlink()
-                run([UV, "sync", "--frozen"], check=False)
+            restore_project_state(backups)
 
             print("  ⚠️  Fix reverted\n")
             failed_count += 1
@@ -1048,6 +1142,7 @@ COMMANDS = {
     "lint": lint,
     "plan": plan,
     "scan": scan,
+    "scan_fix": scan_fix,
     "test": test,
     "upgrade": upgrade,
 }
