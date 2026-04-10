@@ -193,9 +193,10 @@ The recent releases table below is maintained automatically by the release
 workflow.
 
 Use the GitHub Actions `cut-release` workflow to create a tagged release from
-the UI. Manual runs of `release-images` are for validation and manual image
-publish only, and do not update GitHub Release notes, release security assets,
-or this table.
+the UI. It computes the next `major`, `minor`, or `patch` tag from the
+repository tags and then triggers the tag-based release flow. Manual runs of
+`release-images` are for validation and manual image publish only, and do not
+update GitHub Release notes, release security assets, or this table.
 
 <!-- recent-releases:start -->
 ## Recent Releases

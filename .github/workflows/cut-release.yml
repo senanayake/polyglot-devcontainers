@@ -1,14 +1,19 @@
 name: cut-release
 
-run-name: cut-release ${{ inputs.version }} from ${{ inputs.target_ref }}
+run-name: cut-release ${{ inputs.increment }} from ${{ inputs.target_ref }}
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: Semantic version tag to create, for example v0.6.0
+      increment:
+        description: Semantic version increment to apply to the latest tag
         required: true
-        type: string
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
       target_ref:
         description: Branch, tag, or commit to tag. Default is main.
         required: true
@@ -19,7 +24,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: cut-release-${{ inputs.version }}
+  group: cut-release
   cancel-in-progress: false
 
 jobs:
@@ -35,29 +40,80 @@ jobs:
       - name: Validate release request
         id: validate
         env:
-          VERSION: ${{ inputs.version }}
+          INCREMENT: ${{ inputs.increment }}
           TARGET_REF: ${{ inputs.target_ref }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
 
-          if [[ ! "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Version must match vMAJOR.MINOR.PATCH, got: ${VERSION}" >&2
-            exit 1
+          case "${INCREMENT}" in
+            patch|minor|major)
+              ;;
+            *)
+              echo "Unsupported increment: ${INCREMENT}" >&2
+              exit 1
+              ;;
+          esac
+
+          git fetch --force --tags origin
+
+          previous_tag="$(git tag --list 'v*.*.*' --sort=-version:refname | head -n 1)"
+
+          if [[ -z "${previous_tag}" ]]; then
+            current_major=0
+            current_minor=0
+            current_patch=0
+          else
+            if [[ ! "${previous_tag}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              echo "Latest tag does not match vMAJOR.MINOR.PATCH: ${previous_tag}" >&2
+              exit 1
+            fi
+
+            current_major="${BASH_REMATCH[1]}"
+            current_minor="${BASH_REMATCH[2]}"
+            current_patch="${BASH_REMATCH[3]}"
           fi
 
-          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null 2>&1; then
-            echo "Tag ${VERSION} already exists on origin." >&2
+          case "${INCREMENT}" in
+            patch)
+              next_major="${current_major}"
+              next_minor="${current_minor}"
+              next_patch="$((current_patch + 1))"
+              ;;
+            minor)
+              next_major="${current_major}"
+              next_minor="$((current_minor + 1))"
+              next_patch=0
+              ;;
+            major)
+              next_major="$((current_major + 1))"
+              next_minor=0
+              next_patch=0
+              ;;
+          esac
+
+          next_tag="v${next_major}.${next_minor}.${next_patch}"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/${next_tag}" >/dev/null 2>&1; then
+            echo "Computed next tag already exists on origin: ${next_tag}" >&2
             exit 1
           fi
 
           target_sha="$(git rev-parse HEAD)"
+          echo "previous_tag=${previous_tag}" >> "${GITHUB_OUTPUT}"
+          echo "next_tag=${next_tag}" >> "${GITHUB_OUTPUT}"
           echo "target_sha=${target_sha}" >> "${GITHUB_OUTPUT}"
 
           {
             echo "### Release tag request"
             echo ""
-            echo "- Version: \`${VERSION}\`"
+            if [[ -n "${previous_tag}" ]]; then
+              echo "- Previous tag: \`${previous_tag}\`"
+            else
+              echo "- Previous tag: none"
+            fi
+            echo "- Increment: \`${INCREMENT}\`"
+            echo "- Next tag: \`${next_tag}\`"
             echo "- Target ref: \`${TARGET_REF}\`"
             echo "- Target commit: \`${target_sha}\`"
             echo "- Default branch: \`${DEFAULT_BRANCH}\`"
@@ -72,7 +128,7 @@ jobs:
 
       - name: Create and push annotated tag
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.validate.outputs.next_tag }}
           TARGET_SHA: ${{ steps.validate.outputs.target_sha }}
         run: |
           set -euo pipefail
@@ -83,7 +139,7 @@ jobs:
 
       - name: Summarize release handoff
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.validate.outputs.next_tag }}
         run: |
           {
             echo ""
