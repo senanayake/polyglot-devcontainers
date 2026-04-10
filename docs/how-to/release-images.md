@@ -37,8 +37,8 @@ artifact instead of rebuilding the maintainer image on the host.
 The release path is split into two workflows:
 
 - `.github/workflows/cut-release.yml` is the GitHub UI entry point. It
-  validates a version such as `v0.6.0`, tags the chosen ref, and pushes that
-  tag.
+  computes the next semantic version from the existing tags, tags the chosen
+  ref, and pushes that tag.
 - `.github/workflows/release-images.yml` is the tag-driven publisher. It can
   still run manually, but that path is for validation and manual image publish
   only.
@@ -47,18 +47,24 @@ Use `cut-release` when you want the full release flow from the GitHub UI:
 
 1. Open `Actions`.
 2. Select `cut-release`.
-3. Enter a semantic version such as `v0.6.0`.
+3. Choose `patch`, `minor`, or `major`.
 4. Leave `target_ref` on `main` unless you intentionally want to tag a
    different ref.
 5. Run the workflow.
 
-That workflow pushes the tag and lets `release-images` run automatically on the
-tag push.
+That workflow looks at the highest existing `vMAJOR.MINOR.PATCH` tag, computes
+the next tag from your selected increment, pushes it, and lets
+`release-images` run automatically on the tag push.
 
 `release-images` can run:
 
 - manually with workflow dispatch for validation and manual image publish
 - on semantic version tags such as `v0.6.0` for a full release
+
+The `Recent Releases` section in `README.md` reflects successful GitHub
+Releases, not every tag in the repository. The tag set is authoritative for
+version selection, which is why `cut-release` computes the next tag from Git
+tags directly instead of asking you to enter the version manually.
 
 Tag-triggered releases also refresh the moving `latest` tag for each published
 image, so downstream consumers can follow the newest released image without
