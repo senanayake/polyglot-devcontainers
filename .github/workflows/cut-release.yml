@@ -1,0 +1,93 @@
+name: cut-release
+
+run-name: cut-release ${{ inputs.version }} from ${{ inputs.target_ref }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semantic version tag to create, for example v0.6.0
+        required: true
+        type: string
+      target_ref:
+        description: Branch, tag, or commit to tag. Default is main.
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cut-release-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  tag-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out target ref
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.target_ref }}
+          fetch-depth: 0
+
+      - name: Validate release request
+        id: validate
+        env:
+          VERSION: ${{ inputs.version }}
+          TARGET_REF: ${{ inputs.target_ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must match vMAJOR.MINOR.PATCH, got: ${VERSION}" >&2
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null 2>&1; then
+            echo "Tag ${VERSION} already exists on origin." >&2
+            exit 1
+          fi
+
+          target_sha="$(git rev-parse HEAD)"
+          echo "target_sha=${target_sha}" >> "${GITHUB_OUTPUT}"
+
+          {
+            echo "### Release tag request"
+            echo ""
+            echo "- Version: \`${VERSION}\`"
+            echo "- Target ref: \`${TARGET_REF}\`"
+            echo "- Target commit: \`${target_sha}\`"
+            echo "- Default branch: \`${DEFAULT_BRANCH}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          if [[ "${TARGET_REF}" != "${DEFAULT_BRANCH}" ]]; then
+            {
+              echo ""
+              echo "This run is tagging a ref other than the default branch."
+            } >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Create and push annotated tag
+        env:
+          VERSION: ${{ inputs.version }}
+          TARGET_SHA: ${{ steps.validate.outputs.target_sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${VERSION}" "${TARGET_SHA}" -m "Release ${VERSION}"
+          git push origin "refs/tags/${VERSION}"
+
+      - name: Summarize release handoff
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          {
+            echo ""
+            echo "Pushed \`${VERSION}\`."
+            echo ""
+            echo "The existing \`release-images\` workflow will now run automatically on the tag push to publish images, generate release notes, attach release security assets, and refresh the README recent releases table."
+          } >> "${GITHUB_STEP_SUMMARY}"
