@@ -14,6 +14,20 @@ permissions:
   attestations: write
 
 jobs:
+  manual-dispatch-summary:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Explain manual dispatch scope
+        run: |
+          {
+            echo "### Manual release-images run"
+            echo ""
+            echo "- This path validates and publishes images for the selected ref."
+            echo "- GitHub Release notes, release security assets, and the README recent releases table only run on pushed version tags."
+            echo "- Use the \`cut-release\` workflow to create a tag such as \`v0.6.0\` from the GitHub UI."
+          } >> "${GITHUB_STEP_SUMMARY}"
+
   publish:
     runs-on: ubuntu-latest
     env:

@@ -192,6 +192,11 @@ The starter images are the recommended downstream base images.
 The recent releases table below is maintained automatically by the release
 workflow.
 
+Use the GitHub Actions `cut-release` workflow to create a tagged release from
+the UI. Manual runs of `release-images` are for validation and manual image
+publish only, and do not update GitHub Release notes, release security assets,
+or this table.
+
 <!-- recent-releases:start -->
 ## Recent Releases
 

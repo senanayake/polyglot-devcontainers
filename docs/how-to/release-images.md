@@ -34,12 +34,31 @@ artifact instead of rebuilding the maintainer image on the host.
 
 ## Trigger the release workflow
 
-The release workflow is defined in `.github/workflows/release-images.yml`.
+The release path is split into two workflows:
 
-It can run:
+- `.github/workflows/cut-release.yml` is the GitHub UI entry point. It
+  validates a version such as `v0.6.0`, tags the chosen ref, and pushes that
+  tag.
+- `.github/workflows/release-images.yml` is the tag-driven publisher. It can
+  still run manually, but that path is for validation and manual image publish
+  only.
 
-- manually with workflow dispatch
-- on semantic version tags such as `v0.6.0`
+Use `cut-release` when you want the full release flow from the GitHub UI:
+
+1. Open `Actions`.
+2. Select `cut-release`.
+3. Enter a semantic version such as `v0.6.0`.
+4. Leave `target_ref` on `main` unless you intentionally want to tag a
+   different ref.
+5. Run the workflow.
+
+That workflow pushes the tag and lets `release-images` run automatically on the
+tag push.
+
+`release-images` can run:
+
+- manually with workflow dispatch for validation and manual image publish
+- on semantic version tags such as `v0.6.0` for a full release
 
 Tag-triggered releases also refresh the moving `latest` tag for each published
 image, so downstream consumers can follow the newest released image without
@@ -47,7 +66,7 @@ changing the image reference every time.
 
 ## What the workflow does
 
-For each published image, the workflow:
+For each published image, `release-images`:
 
 1. builds the image
 2. bootstraps an empty workspace for starter images and verifies `task init`
@@ -57,7 +76,13 @@ For each published image, the workflow:
 5. pushes the image to GHCR
 6. signs the image with Cosign
 7. attaches build provenance
-8. uploads release security assets and adds a `Security Status` section to the GitHub Release
+
+When the workflow runs from a pushed version tag, it also:
+
+1. creates or updates the GitHub Release notes
+2. uploads release security assets and adds a `Security Status` section to the
+   GitHub Release
+3. refreshes the `Recent Releases` table in `README.md`
 
 ## Find release security status
 
