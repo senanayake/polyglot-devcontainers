@@ -14,6 +14,7 @@ The default maintainer execution path is:
 task maintainer:up
 task maintainer:task -- ci
 task maintainer:git -- status --short --branch
+task maintainer:gh -- run view 24285030079
 ```
 
 The host should only control the maintainer devcontainer through the official
@@ -23,6 +24,10 @@ workflow proof still has to happen inside that container.
 For HTTPS remotes, use `task maintainer:git -- ...` for the release commit and
 push path as well. The wrapper can inject credentials into a single
 container-side Git command without persisting them in the container.
+
+For GitHub API and Actions operations, use `task maintainer:gh -- ...`. That
+path uses the same container-first model with ephemeral token injection instead
+of a persistent `gh auth login` inside the container.
 
 ## Maintain the maintainer container
 

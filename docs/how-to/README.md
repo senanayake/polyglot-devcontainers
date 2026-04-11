@@ -6,6 +6,7 @@ repository.
 - [Use the Templates](./use-the-templates.md)
 - [Use the Published Java Image](./use-the-published-java-image.md)
 - [Work Effectively in IDEs](./work-effectively-in-ides.md)
+- [Use GitHub CLI In The Maintainer Container](./use-github-cli-in-maintainer.md)
 - [Compose Features](./compose-features.md)
 - [Release Images](./release-images.md)
 - [Run the Security Workflow](./run-the-security-workflow.md)

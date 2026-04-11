@@ -29,6 +29,12 @@ tasks:
     cmds:
       - python scripts/run_in_maintainer_container.py git -- {{.CLI_ARGS}}
 
+  maintainer:gh:
+    desc: Run gh inside the maintainer devcontainer, e.g. task maintainer:gh -- run view 123456789
+    deps: [maintainer:up]
+    cmds:
+      - python scripts/run_in_maintainer_container.py gh -- {{.CLI_ARGS}}
+
   _require_maintainer:
     internal: true
     cmds:

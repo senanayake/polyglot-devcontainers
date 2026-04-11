@@ -20,6 +20,8 @@ COPY man/man7 /tmp/runtime-docs
 COPY features /tmp/features
 
 ARG NODESOURCE_KEY_SHA256=b42e0321dabdc24e892115da705cf061167eac12a317f23d329862d0aa0a271d # gitleaks:allow
+ARG GH_CLI_KEY_FINGERPRINT_0=2C6106201985B60E6C7AC87323F3D4EA75716059
+ARG GH_CLI_KEY_FINGERPRINT_1=7F38BBB59D064DBCB3D84D725612B36462313325
 
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && chmod 0755 /usr/local/share/polyglot-devcontainers/post-create.sh \
@@ -33,13 +35,20 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource.key \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
     > /etc/apt/sources.list.d/nodesource.list \
+    && curl -fsSLo /etc/apt/keyrings/githubcli-archive-keyring.gpg https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+    && gpg --batch --show-keys --with-colons /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    | awk -F: '$1 == "fpr" { print $10 }' > /tmp/githubcli-fingerprints.txt \
+    && grep -Fx "${GH_CLI_KEY_FINGERPRINT_0}" /tmp/githubcli-fingerprints.txt >/dev/null \
+    && grep -Fx "${GH_CLI_KEY_FINGERPRINT_1}" /tmp/githubcli-fingerprints.txt >/dev/null \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+    > /etc/apt/sources.list.d/github-cli.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get install -y --no-install-recommends gh nodejs \
     && bash /tmp/install_runtime_docs.sh /tmp/runtime-docs \
     && ln -sf /usr/lib/jvm/msopenjdk-current/bin/java /usr/local/bin/java \
     && ln -sf /usr/lib/jvm/msopenjdk-current/bin/javac /usr/local/bin/javac \
     && usermod -aG docker vscode \
-    && rm -rf /tmp/nodesource.key /tmp/install_runtime_docs.sh /tmp/runtime-docs /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
+    && rm -rf /tmp/nodesource.key /tmp/githubcli-fingerprints.txt /tmp/install_runtime_docs.sh /tmp/runtime-docs /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list /etc/apt/sources.list.d/github-cli.list
 
 RUN bash /tmp/features/security-baseline/install.sh \
     && bash /tmp/features/python-engineering/install.sh \
