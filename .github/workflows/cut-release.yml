@@ -196,6 +196,7 @@ jobs:
             --head-sha "${EXPECTED_SHA}" \
             --requested-after "${REQUESTED_AT}" \
             --server-url "${GH_SERVER_URL}" \
+            --timeout-seconds 2400 \
             --github-output "${GITHUB_OUTPUT}"
 
       - name: Summarize downstream release workflow
