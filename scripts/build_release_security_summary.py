@@ -5,18 +5,25 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Any
 
 
 START_MARKER = "<!-- release-security:start -->"
 END_MARKER = "<!-- release-security:end -->"
+IMAGE_REF_PATTERN = re.compile(r"^ghcr\.io/(?P<owner>[^/]+)/(?P<package>[^@:]+)(?:[:@].+)?$")
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", required=True, help="GitHub repository in owner/name form")
     parser.add_argument("--tag", required=True, help="Release tag")
+    parser.add_argument(
+        "--docs-base-url",
+        required=True,
+        help="Browser-viewable base URL for published release docs",
+    )
     parser.add_argument(
         "--summary",
         action="append",
@@ -69,17 +76,56 @@ def load_summary(path: Path) -> dict[str, Any]:
     return payload
 
 
-def asset_url(repo: str, tag: str, asset_name: str) -> str:
-    return f"https://github.com/{repo}/releases/download/{tag}/{asset_name}"
+def docs_asset_url(docs_base_url: str, asset_name: str) -> str:
+    return f"{docs_base_url.rstrip('/')}/{asset_name}"
 
 
 def summary_asset_name(image_name: str, suffix: str) -> str:
     return f"release-security-{image_name}-{suffix}"
 
 
+def package_page_url(repo: str, package_name: str) -> str:
+    return f"https://github.com/{repo}/pkgs/container/{package_name}"
+
+
+def parse_package_details(summary: dict[str, Any]) -> tuple[str, str]:
+    image_ref = str(summary.get("image_ref", ""))
+    match = IMAGE_REF_PATTERN.fullmatch(image_ref)
+    if match is None:
+        raise SystemExit(f"unsupported image_ref format in summary: {image_ref!r}")
+    return match.group("owner"), match.group("package")
+
+
+def release_pull_ref(summary: dict[str, Any], tag: str) -> str:
+    owner, package_name = parse_package_details(summary)
+    return f"ghcr.io/{owner}/{package_name}:{tag}"
+
+
+def build_published_images_section(
+    repo: str,
+    tag: str,
+    summary_map: list[tuple[str, dict[str, Any]]],
+) -> list[str]:
+    lines = [
+        "## Published Images",
+        "",
+        "Package pages show the image tags for this release and the copy-ready pull target.",
+        "",
+        "| Image | Package Page | Pull |",
+        "| --- | --- | --- |",
+    ]
+    for _, summary in summary_map:
+        _, package_name = parse_package_details(summary)
+        lines.append(
+            f"| `{package_name}` | [View package]({package_page_url(repo, package_name)}) | `docker pull {release_pull_ref(summary, tag)}` |"
+        )
+    return lines
+
+
 def build_fragment(
     repo: str,
     tag: str,
+    docs_base_url: str,
     summary_map: list[tuple[str, dict[str, Any]]],
     residual_risk_markdown: Path,
 ) -> list[str]:
@@ -90,11 +136,13 @@ def build_fragment(
     overview_asset = "release-security-overview.md"
 
     lines = [
+        *build_published_images_section(repo, tag, summary_map),
+        "",
         "## Security Status",
         "",
         f"- Published image scans for `{tag}` reported `{total_critical}` critical, `{total_high}` high, and `{total_findings}` total HIGH/CRITICAL findings.",
-        f"- Release security overview: [{overview_asset}]({asset_url(repo, tag, overview_asset)})",
-        f"- Residual critical-risk report: [{residual_asset}]({asset_url(repo, tag, residual_asset)})",
+        f"- Release security overview: [{overview_asset}]({docs_asset_url(docs_base_url, overview_asset)})",
+        f"- Residual critical-risk report: [{residual_asset}]({docs_asset_url(docs_base_url, residual_asset)})",
         "",
         "| Image | Critical | High | Total | Summary | Machine-readable | SBOM |",
         "| --- | ---: | ---: | ---: | --- | --- | --- |",
@@ -104,18 +152,19 @@ def build_fragment(
         summary_md = summary_asset_name(image_name, "summary.md")
         summary_json = summary_asset_name(image_name, "summary.json")
         sbom_json = summary_asset_name(image_name, "sbom.spdx.json")
+        _, package_name = parse_package_details(summary)
         lines.append(
             "| `{image}` | {critical} | {high} | {total} | [{summary_md}]({summary_md_url}) | [{summary_json}]({summary_json_url}) | [{sbom_json}]({sbom_url}) |".format(
-                image=image_name,
+                image=package_name,
                 critical=summary["critical"],
                 high=summary["high"],
                 total=summary["total"],
                 summary_md=summary_md,
-                summary_md_url=asset_url(repo, tag, summary_md),
+                summary_md_url=docs_asset_url(docs_base_url, summary_md),
                 summary_json=summary_json,
-                summary_json_url=asset_url(repo, tag, summary_json),
+                summary_json_url=docs_asset_url(docs_base_url, summary_json),
                 sbom_json=sbom_json,
-                sbom_url=asset_url(repo, tag, sbom_json),
+                sbom_url=docs_asset_url(docs_base_url, sbom_json),
             )
         )
 
@@ -129,6 +178,8 @@ def build_fragment(
         [
             "",
             f"Residual-risk summary: {critical_line.removeprefix('- ')}",
+            "",
+            f"Browser-viewable copies live in `docs/releases/{tag}/`. Downloadable copies remain attached to the GitHub Release.",
             "",
             "These assets are generated from the release workflow's Trivy scans and are the supported entry point for release security status.",
         ]
@@ -173,6 +224,7 @@ def main() -> int:
     fragment_lines = build_fragment(
         repo=args.repo,
         tag=args.tag,
+        docs_base_url=args.docs_base_url,
         summary_map=summary_map,
         residual_risk_markdown=args.residual_risk_markdown,
     )
