@@ -20,6 +20,9 @@ maintainer devcontainer definition as the host-side control plane:
   repository wrapper's one-command credential bridge, so the Git operation
   still runs in the maintainer container without writing credentials into the
   container filesystem
+- GitHub CLI commands should use `task maintainer:gh -- ...`, which injects
+  host-supplied or host-derived credentials into a single container-side `gh`
+  command without persisting `gh` login state in the container or workspace
 
 That keeps DevPod available for downstream IDE experiences without making it
 the automation path for repository maintenance.

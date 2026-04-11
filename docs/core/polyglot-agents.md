@@ -25,6 +25,7 @@ man polyglot-task-contract
 task maintainer:up
 task maintainer:task -- ci
 task maintainer:git -- status --short --branch
+task maintainer:gh -- run view 24285030079
 task image:discover
 task image:pin -- --write
 task image:verify
@@ -81,10 +82,13 @@ Published image maintenance also writes evidence under:
 - keep changes aligned with the repository's security-first posture
 - use the Knowledge layer when judgment is needed, not just mechanics
 - treat the published images as a separate maintenance lane: discover, pin, verify, then scan
-- use `task maintainer:up`, `task maintainer:task -- ...`, and `task maintainer:git -- ...` when you need to enter the maintainer lane from the host
+- use `task maintainer:up`, `task maintainer:task -- ...`, `task maintainer:git -- ...`, and `task maintainer:gh -- ...` when you need to enter the maintainer lane from the host
 - for HTTPS remotes, let `task maintainer:git -- ...` bridge credentials into a
   single container-side Git command instead of pushing from the host or
   persisting secrets in the container
+- for GitHub API and Actions work, let `task maintainer:gh -- ...` inject
+  `GH_TOKEN` / `GITHUB_TOKEN` or a host-derived token into one container-side
+  command instead of logging `gh` into the container
 - if the maintainer container cannot execute the workflow, fix the maintainer container rather than falling back to the host
 - on Windows worktrees, use `git worktree add --relative-paths` if you want the Dev Containers CLI to mount the Git common dir for container-side Git
 - for published-image CVEs, fix repo-owned causes first: stale base images,

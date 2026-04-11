@@ -29,6 +29,12 @@ tasks:
     cmds:
       - python scripts/run_in_maintainer_container.py git -- {{.CLI_ARGS}}
 
+  maintainer:gh:
+    desc: Run gh inside the maintainer devcontainer, e.g. task maintainer:gh -- run view 123456789
+    deps: [maintainer:up]
+    cmds:
+      - python scripts/run_in_maintainer_container.py gh -- {{.CLI_ARGS}}
+
   _require_maintainer:
     internal: true
     cmds:
@@ -121,6 +127,13 @@ tasks:
         examples/java-image-example/.artifacts/scans/dependency-report.json
         examples/java-maintenance-example/.artifacts/scans/dependency-report.json
         templates/java-secure/.artifacts/scans/dependency-report.json
+
+  scan:auto:fixtures:
+    desc: Materialize and validate the Python scan:auto fixture matrix
+    deps: [_require_maintainer]
+    cmds:
+      - mkdir -p .artifacts/scans
+      - python scripts/run_python_scan_auto_fixtures.py
 
   scenarios:python-maintenance:
     desc: Run the Python dependency-maintenance scenario and write scenario artifacts
@@ -319,4 +332,5 @@ tasks:
       - task lint
       - task test
       - task scan
+      - task scan:auto:fixtures
       - task scenarios:verify

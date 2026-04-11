@@ -27,6 +27,15 @@ Recommended response:
 - inspect the related artifacts under `.artifacts/scans/`
 - fix the real contract failure before widening the scope
 
+## `gh` says you are not logged in inside the maintainer container
+
+Recommended response:
+- use `task maintainer:gh -- ...` instead of opening an interactive `gh auth login`
+- supply `GH_TOKEN` or `GITHUB_TOKEN` on the host, or rely on the host Git
+  credential store for the repository HTTPS remote
+- treat any plan to write credentials into the repository or container home as
+  a bug
+
 ## `task` says there is no Taskfile in a published starter image
 
 Recommended response:
