@@ -194,9 +194,9 @@ workflow.
 
 Use the GitHub Actions `cut-release` workflow to create a tagged release from
 the UI. It computes the next `major`, `minor`, or `patch` tag from the
-repository tags and then triggers the tag-based release flow. Manual runs of
-`release-images` are for validation and manual image publish only, and do not
-update GitHub Release notes, release security assets, or this table.
+repository tags, dispatches the full release workflow, and waits for it to
+finish. Manual runs of `release-images` support `validate-only` mode for image
+validation and `full-release` mode for an existing tag.
 
 <!-- recent-releases:start -->
 ## Recent Releases

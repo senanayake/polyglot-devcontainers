@@ -21,6 +21,7 @@ on:
         type: string
 
 permissions:
+  actions: write
   contents: write
 
 concurrency:
@@ -137,13 +138,144 @@ jobs:
           git tag -a "${VERSION}" "${TARGET_SHA}" -m "Release ${VERSION}"
           git push origin "refs/tags/${VERSION}"
 
-      - name: Summarize release handoff
+      - name: Dispatch full release workflow
+        id: dispatch
         env:
+          GH_API_URL: ${{ github.api_url }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.validate.outputs.next_tag }}
         run: |
-          {
-            echo ""
-            echo "Pushed \`${VERSION}\`."
-            echo ""
-            echo "The existing \`release-images\` workflow will now run automatically on the tag push to publish images, generate release notes, attach release security assets, and refresh the README recent releases table."
-          } >> "${GITHUB_STEP_SUMMARY}"
+          set -euo pipefail
+
+          requested_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "requested_at=${requested_at}" >> "${GITHUB_OUTPUT}"
+
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          api_url = os.environ["GH_API_URL"]
+          repo = os.environ["GH_REPO"]
+          token = os.environ["GH_TOKEN"]
+          version = os.environ["VERSION"]
+
+          payload = json.dumps(
+              {
+                  "ref": version,
+                  "inputs": {
+                      "release_mode": "full-release",
+                      "release_tag": version,
+                  },
+              }
+          ).encode("utf-8")
+
+          request = urllib.request.Request(
+              f"{api_url}/repos/{repo}/actions/workflows/release-images.yml/dispatches",
+              data=payload,
+              method="POST",
+              headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {token}",
+                  "Content-Type": "application/json",
+                  "User-Agent": "polyglot-devcontainers-cut-release",
+              },
+          )
+
+          with urllib.request.urlopen(request) as response:
+              if response.status not in (201, 204):
+                  raise SystemExit(
+                      f"Unexpected workflow dispatch status: {response.status}"
+                  )
+          PY
+
+      - name: Wait for full release workflow
+        env:
+          EXPECTED_SHA: ${{ steps.validate.outputs.target_sha }}
+          GH_API_URL: ${{ github.api_url }}
+          GH_REPO: ${{ github.repository }}
+          GH_SERVER_URL: ${{ github.server_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REQUESTED_AT: ${{ steps.dispatch.outputs.requested_at }}
+          VERSION: ${{ steps.validate.outputs.next_tag }}
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import time
+          import urllib.request
+
+          api_url = os.environ["GH_API_URL"]
+          expected_sha = os.environ["EXPECTED_SHA"]
+          repo = os.environ["GH_REPO"]
+          requested_at = os.environ["REQUESTED_AT"]
+          server_url = os.environ["GH_SERVER_URL"]
+          summary_path = os.environ["GITHUB_STEP_SUMMARY"]
+          token = os.environ["GH_TOKEN"]
+          version = os.environ["VERSION"]
+
+          headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": f"Bearer {token}",
+              "User-Agent": "polyglot-devcontainers-cut-release",
+          }
+
+          def get_json(url: str) -> dict:
+              request = urllib.request.Request(url, headers=headers)
+              with urllib.request.urlopen(request) as response:
+                  return json.load(response)
+
+          run = None
+          for _ in range(60):
+              data = get_json(
+                  f"{api_url}/repos/{repo}/actions/workflows/release-images.yml/runs?event=workflow_dispatch&per_page=20"
+              )
+              candidates = [
+                  item
+                  for item in data.get("workflow_runs", [])
+                  if item.get("head_branch") == version
+                  and item.get("head_sha") == expected_sha
+                  and item.get("created_at", "") >= requested_at
+              ]
+              if candidates:
+                  candidates.sort(key=lambda item: item["created_at"])
+                  run = candidates[0]
+                  break
+              time.sleep(5)
+
+          if run is None:
+              raise SystemExit("Timed out waiting for release-images workflow to start")
+
+          run_id = str(run["id"])
+          run_url = run["html_url"]
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"run_id={run_id}\n")
+              output.write(f"run_url={run_url}\n")
+
+          with open(summary_path, "a", encoding="utf-8") as summary:
+              summary.write("\n")
+              summary.write(f"Pushed `{version}`.\n\n")
+              summary.write(
+                  f"Dispatched `release-images` for `{version}`: {run_url}\n"
+              )
+
+          while True:
+              current = get_json(f"{api_url}/repos/{repo}/actions/runs/{run_id}")
+              status = current.get("status")
+              conclusion = current.get("conclusion")
+              print(f"release-images run {run_id}: status={status} conclusion={conclusion}")
+
+              if status == "completed":
+                  if conclusion != "success":
+                      raise SystemExit(
+                          f"release-images failed for {version}: {server_url}/{repo}/actions/runs/{run_id}"
+                      )
+                  break
+
+              time.sleep(15)
+          PY

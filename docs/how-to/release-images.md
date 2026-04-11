@@ -38,10 +38,10 @@ The release path is split into two workflows:
 
 - `.github/workflows/cut-release.yml` is the GitHub UI entry point. It
   computes the next semantic version from the existing tags, tags the chosen
-  ref, and pushes that tag.
+  ref, dispatches the full release workflow, and waits for it to finish.
 - `.github/workflows/release-images.yml` is the tag-driven publisher. It can
-  still run manually, but that path is for validation and manual image publish
-  only.
+  still run manually, and manual runs now support an explicit `full-release`
+  mode for an existing tag.
 
 Use `cut-release` when you want the full release flow from the GitHub UI:
 
@@ -53,18 +53,29 @@ Use `cut-release` when you want the full release flow from the GitHub UI:
 5. Run the workflow.
 
 That workflow looks at the highest existing `vMAJOR.MINOR.PATCH` tag, computes
-the next tag from your selected increment, pushes it, and lets
-`release-images` run automatically on the tag push.
+the next tag from your selected increment, pushes it, dispatches
+`release-images` in `full-release` mode for that tag, and waits for the result.
 
 `release-images` can run:
 
-- manually with workflow dispatch for validation and manual image publish
+- manually with workflow dispatch in `validate-only` mode for validation and
+  manual image publish
+- manually with workflow dispatch in `full-release` mode for an existing
+  version tag
 - on semantic version tags such as `v0.6.0` for a full release
 
 The `Recent Releases` section in `README.md` reflects successful GitHub
 Releases, not every tag in the repository. The tag set is authoritative for
 version selection, which is why `cut-release` computes the next tag from Git
 tags directly instead of asking you to enter the version manually.
+
+If you need to backfill release assets for an existing tag, run
+`release-images` manually with:
+
+1. `release_mode=full-release`
+2. `release_tag=vX.Y.Z`
+3. the workflow ref left on `main` or any branch that contains the workflow
+   file
 
 Tag-triggered releases also refresh the moving `latest` tag for each published
 image, so downstream consumers can follow the newest released image without
