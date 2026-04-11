@@ -114,6 +114,8 @@ The release notes now include a generated `Security Status` section with:
 
 - GitHub package-page links for each published image and the exact
   `docker pull ghcr.io/...:<tag>` target for that release
+- links to the relevant template and example README files for each published
+  image, pinned to the same release tag
 - per-image Critical / High / Total counts
 - browser-view links to the per-image summary Markdown and JSON files
 - browser-view links to the per-image SBOM files
@@ -137,6 +139,10 @@ The release also attaches downloadable copies of the same files:
 - `release-security-<image>-sbom.spdx.json`
 - `release-security-residual-risk.md`
 - `release-security-residual-risk.json`
+
+The image-to-template and image-to-example routing for those release-note links
+is maintained in `published-image-catalog.toml`. When a published image changes
+or a new published image is added, update that catalog in the same change.
 
 ## Maintain published image bases
 

@@ -13,6 +13,16 @@ The maintainer image is published so repository contributors can consume the
 same environment that CI validates. It is intentionally broader than the
 starter images and is not part of the recommended downstream starter catalog.
 
+## Release note routing
+
+Release notes link each published image to its package page plus the relevant
+starter templates and examples.
+
+That mapping is maintained in `published-image-catalog.toml`.
+
+When a published image is added, renamed, or repurposed, update the catalog in
+the same change so release notes stay aligned with the repository surface.
+
 ## Tag policy
 
 - `sha-<commit>` style immutable tags for every published build

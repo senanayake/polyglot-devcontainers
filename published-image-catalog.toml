@@ -1,0 +1,31 @@
+catalog_version = 1
+
+[images."polyglot-devcontainers-maintainer"]
+templates = []
+examples = []
+docs = [
+  { label = "Repository README", path = "README.md" },
+  { label = "Release Images Guide", path = "docs/how-to/release-images.md" },
+]
+
+[images."polyglot-devcontainers-java"]
+templates = [
+  { label = "java-secure", path = "templates/java-secure/README.md" },
+]
+examples = [
+  { label = "java-image-example", path = "examples/java-image-example/README.md" },
+  { label = "java-maintenance-example", path = "examples/java-maintenance-example/README.md" },
+]
+docs = [
+  { label = "Use the Published Java Image", path = "docs/how-to/use-the-published-java-image.md" },
+]
+
+[images."polyglot-devcontainers-python-node"]
+templates = [
+  { label = "python-node-secure", path = "templates/python-node-secure/README.md" },
+]
+examples = [
+  { label = "python-image-example", path = "examples/python-image-example/README.md" },
+  { label = "python-maintenance-example", path = "examples/python-maintenance-example/README.md" },
+]
+docs = []

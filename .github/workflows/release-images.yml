@@ -439,6 +439,7 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --tag "${TAG_NAME}" \
             --docs-base-url "https://github.com/${GITHUB_REPOSITORY}/blob/${DEFAULT_BRANCH}/docs/releases/${TAG_NAME}" \
+            --image-catalog published-image-catalog.toml \
             --summary maintainer=.artifacts/release-assets/trivy-maintainer-summary.json \
             --summary java=.artifacts/release-assets/trivy-java-summary.json \
             --summary python-node=.artifacts/release-assets/trivy-python-node-summary.json \
@@ -559,6 +560,7 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --tag "${TAG_NAME}" \
             --docs-base-url "${DOCS_BASE_URL}" \
+            --image-catalog published-image-catalog.toml \
             --summary maintainer=.artifacts/release-assets/upload/release-security-maintainer-summary.json \
             --summary java=.artifacts/release-assets/upload/release-security-java-summary.json \
             --summary python-node=.artifacts/release-assets/upload/release-security-python-node-summary.json \
