@@ -396,7 +396,7 @@ jobs:
               --target "${RELEASE_SHA}"
           fi
 
-  publish-release-security:
+  prepare-release-security:
     runs-on: ubuntu-latest
     needs:
       - release-context
@@ -424,6 +424,7 @@ jobs:
 
       - name: Build release security reports
         env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
@@ -434,18 +435,17 @@ jobs:
             --report python-node=.artifacts/release-assets/trivy-python-node.json \
             --json-output .artifacts/release-assets/release-security-residual-risk.json \
             --markdown-output .artifacts/release-assets/release-security-residual-risk.md
-          gh release view "${TAG_NAME}" --json body --jq .body > .artifacts/release-assets/release-notes-existing.md
           python3 scripts/build_release_security_summary.py \
             --repo "${GITHUB_REPOSITORY}" \
             --tag "${TAG_NAME}" \
+            --docs-base-url "https://github.com/${GITHUB_REPOSITORY}/blob/${DEFAULT_BRANCH}/docs/releases/${TAG_NAME}" \
+            --image-catalog published-image-catalog.toml \
             --summary maintainer=.artifacts/release-assets/trivy-maintainer-summary.json \
             --summary java=.artifacts/release-assets/trivy-java-summary.json \
             --summary python-node=.artifacts/release-assets/trivy-python-node-summary.json \
             --residual-risk-markdown .artifacts/release-assets/release-security-residual-risk.md \
             --overview-output .artifacts/release-assets/release-security-overview.md \
-            --notes-fragment-output .artifacts/release-assets/release-security-notes.md \
-            --existing-notes .artifacts/release-assets/release-notes-existing.md \
-            --release-notes-output .artifacts/release-assets/release-notes-updated.md
+            --notes-fragment-output .artifacts/release-assets/release-security-notes.md
 
       - name: Stage release security assets
         run: |
@@ -462,6 +462,113 @@ jobs:
           cp .artifacts/release-assets/release-security-overview.md .artifacts/release-assets/upload/release-security-overview.md
           cp .artifacts/release-assets/release-security-residual-risk.md .artifacts/release-assets/upload/release-security-residual-risk.md
           cp .artifacts/release-assets/release-security-residual-risk.json .artifacts/release-assets/upload/release-security-residual-risk.json
+
+      - name: Upload staged release security asset bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-security-assets-${{ needs.release-context.outputs.release_tag }}
+          path: .artifacts/release-assets/upload
+          if-no-files-found: error
+
+  publish-release-security-docs:
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - prepare-release-security
+    if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
+    outputs:
+      docs_base_url: ${{ steps.publish.outputs.docs_base_url }}
+    steps:
+      - name: Check out default branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Download staged release security asset bundle
+        uses: actions/download-artifact@v5
+        with:
+          name: release-security-assets-${{ needs.release-context.outputs.release_tag }}
+          path: .artifacts/release-security-docs
+
+      - name: Publish browser-viewable release security docs
+        id: publish
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          docs_dir="docs/releases/${TAG_NAME}"
+          rm -rf "${docs_dir}"
+          mkdir -p "${docs_dir}"
+          cp .artifacts/release-security-docs/* "${docs_dir}/"
+          echo "docs_base_url=https://github.com/${GH_REPO}/blob/${DEFAULT_BRANCH}/${docs_dir}" >> "${GITHUB_OUTPUT}"
+
+      - name: Commit release security docs
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          docs_dir="docs/releases/${TAG_NAME}"
+          if git diff --quiet -- "${docs_dir}"; then
+            echo "Release security docs already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${docs_dir}"
+          git commit -m "Publish release security docs for ${TAG_NAME}"
+          git push origin "HEAD:${DEFAULT_BRANCH}"
+
+  publish-release-security:
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - publish-release-notes
+      - prepare-release-security
+      - publish-release-security-docs
+    if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.release-context.outputs.checkout_ref }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Download staged release security asset bundle
+        uses: actions/download-artifact@v5
+        with:
+          name: release-security-assets-${{ needs.release-context.outputs.release_tag }}
+          path: .artifacts/release-assets/upload
+
+      - name: Build release notes security block
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          DOCS_BASE_URL: ${{ needs.publish-release-security-docs.outputs.docs_base_url }}
+          TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
+        run: |
+          gh release view "${TAG_NAME}" --json body --jq .body > .artifacts/release-assets/release-notes-existing.md
+          python3 scripts/build_release_security_summary.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --tag "${TAG_NAME}" \
+            --docs-base-url "${DOCS_BASE_URL}" \
+            --image-catalog published-image-catalog.toml \
+            --summary maintainer=.artifacts/release-assets/upload/release-security-maintainer-summary.json \
+            --summary java=.artifacts/release-assets/upload/release-security-java-summary.json \
+            --summary python-node=.artifacts/release-assets/upload/release-security-python-node-summary.json \
+            --residual-risk-markdown .artifacts/release-assets/upload/release-security-residual-risk.md \
+            --overview-output .artifacts/release-assets/upload/release-security-overview.md \
+            --notes-fragment-output .artifacts/release-assets/release-security-notes.md \
+            --existing-notes .artifacts/release-assets/release-notes-existing.md \
+            --release-notes-output .artifacts/release-assets/release-notes-updated.md
 
       - name: Upload release security assets
         env:

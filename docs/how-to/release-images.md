@@ -55,6 +55,9 @@ Use `cut-release` when you want the full release flow from the GitHub UI:
 That workflow looks at the highest existing `vMAJOR.MINOR.PATCH` tag, computes
 the next tag from your selected increment, pushes it, dispatches
 `release-images` in `full-release` mode for that tag, and waits for the result.
+The workflow now shows that flow as separate planning, tag-push, and
+downstream release jobs instead of hiding everything inside one orchestration
+job.
 
 `release-images` can run:
 
@@ -97,8 +100,9 @@ For each published image, `release-images`:
 When the workflow runs from a pushed version tag, it also:
 
 1. creates or updates the GitHub Release notes
-2. uploads release security assets and adds a `Security Status` section to the
-   GitHub Release
+2. publishes browser-viewable release security docs under
+   `docs/releases/<tag>/`, uploads the same files as release assets, and adds a
+   `Security Status` section to the GitHub Release
 3. refreshes the `Recent Releases` table in `README.md`
 
 ## Find release security status
@@ -108,13 +112,26 @@ tag.
 
 The release notes now include a generated `Security Status` section with:
 
+- GitHub package-page links for each published image and the exact
+  `docker pull ghcr.io/...:<tag>` target for that release
+- links to the relevant template and example README files for each published
+  image, pinned to the same release tag
 - per-image Critical / High / Total counts
-- direct links to the per-image summary Markdown and JSON assets
-- direct links to the per-image SBOM assets
-- a release-level residual-risk report for critical findings that remain in the
-  latest upstream-supported third-party binaries
+- browser-view links to the per-image summary Markdown and JSON files
+- browser-view links to the per-image SBOM files
+- a browser-view link to the release-level residual-risk report for critical
+  findings that remain in the latest upstream-supported third-party binaries
 
-The release also publishes these assets directly:
+Browser-viewable copies are published to:
+
+- `docs/releases/<tag>/release-security-overview.md`
+- `docs/releases/<tag>/release-security-<image>-summary.md`
+- `docs/releases/<tag>/release-security-<image>-summary.json`
+- `docs/releases/<tag>/release-security-<image>-sbom.spdx.json`
+- `docs/releases/<tag>/release-security-residual-risk.md`
+- `docs/releases/<tag>/release-security-residual-risk.json`
+
+The release also attaches downloadable copies of the same files:
 
 - `release-security-overview.md`
 - `release-security-<image>-summary.md`
@@ -122,6 +139,10 @@ The release also publishes these assets directly:
 - `release-security-<image>-sbom.spdx.json`
 - `release-security-residual-risk.md`
 - `release-security-residual-risk.json`
+
+The image-to-template and image-to-example routing for those release-note links
+is maintained in `published-image-catalog.toml`. When a published image changes
+or a new published image is added, update that catalog in the same change.
 
 ## Maintain published image bases
 

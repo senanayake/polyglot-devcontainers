@@ -29,8 +29,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  tag-release:
+  plan-release:
     runs-on: ubuntu-latest
+    outputs:
+      default_branch: ${{ steps.context.outputs.default_branch }}
+      next_tag: ${{ steps.resolve.outputs.next_tag }}
+      previous_tag: ${{ steps.resolve.outputs.previous_tag }}
+      target_ref: ${{ steps.context.outputs.target_ref }}
+      target_sha: ${{ steps.context.outputs.target_sha }}
     steps:
       - name: Check out target ref
         uses: actions/checkout@v5
@@ -38,85 +44,59 @@ jobs:
           ref: ${{ inputs.target_ref }}
           fetch-depth: 0
 
-      - name: Validate release request
-        id: validate
+      - name: Fetch semantic version tags
+        run: git fetch --force --tags origin
+
+      - name: Resolve next release tag
+        id: resolve
         env:
           INCREMENT: ${{ inputs.increment }}
-          TARGET_REF: ${{ inputs.target_ref }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
+          python3 scripts/resolve_next_release_tag.py \
+            --increment "${INCREMENT}" \
+            --github-output "${GITHUB_OUTPUT}"
 
-          case "${INCREMENT}" in
-            patch|minor|major)
-              ;;
-            *)
-              echo "Unsupported increment: ${INCREMENT}" >&2
-              exit 1
-              ;;
-          esac
-
-          git fetch --force --tags origin
-
-          previous_tag="$(git tag --list 'v*.*.*' --sort=-version:refname | head -n 1)"
-
-          if [[ -z "${previous_tag}" ]]; then
-            current_major=0
-            current_minor=0
-            current_patch=0
-          else
-            if [[ ! "${previous_tag}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-              echo "Latest tag does not match vMAJOR.MINOR.PATCH: ${previous_tag}" >&2
-              exit 1
-            fi
-
-            current_major="${BASH_REMATCH[1]}"
-            current_minor="${BASH_REMATCH[2]}"
-            current_patch="${BASH_REMATCH[3]}"
-          fi
-
-          case "${INCREMENT}" in
-            patch)
-              next_major="${current_major}"
-              next_minor="${current_minor}"
-              next_patch="$((current_patch + 1))"
-              ;;
-            minor)
-              next_major="${current_major}"
-              next_minor="$((current_minor + 1))"
-              next_patch=0
-              ;;
-            major)
-              next_major="$((current_major + 1))"
-              next_minor=0
-              next_patch=0
-              ;;
-          esac
-
-          next_tag="v${next_major}.${next_minor}.${next_patch}"
-
+      - name: Capture release context
+        id: context
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          TARGET_REF: ${{ inputs.target_ref }}
+        run: |
+          set -euo pipefail
+          next_tag="${{ steps.resolve.outputs.next_tag }}"
           if git ls-remote --exit-code --tags origin "refs/tags/${next_tag}" >/dev/null 2>&1; then
             echo "Computed next tag already exists on origin: ${next_tag}" >&2
             exit 1
           fi
 
           target_sha="$(git rev-parse HEAD)"
-          echo "previous_tag=${previous_tag}" >> "${GITHUB_OUTPUT}"
-          echo "next_tag=${next_tag}" >> "${GITHUB_OUTPUT}"
+          echo "default_branch=${DEFAULT_BRANCH}" >> "${GITHUB_OUTPUT}"
+          echo "target_ref=${TARGET_REF}" >> "${GITHUB_OUTPUT}"
           echo "target_sha=${target_sha}" >> "${GITHUB_OUTPUT}"
 
+      - name: Summarize release plan
+        env:
+          DEFAULT_BRANCH: ${{ steps.context.outputs.default_branch }}
+          INCREMENT: ${{ inputs.increment }}
+          NEXT_TAG: ${{ steps.resolve.outputs.next_tag }}
+          PREVIOUS_TAG: ${{ steps.resolve.outputs.previous_tag }}
+          TARGET_REF: ${{ steps.context.outputs.target_ref }}
+          TARGET_SHA: ${{ steps.context.outputs.target_sha }}
+        run: |
+          set -euo pipefail
           {
             echo "### Release tag request"
             echo ""
-            if [[ -n "${previous_tag}" ]]; then
-              echo "- Previous tag: \`${previous_tag}\`"
+            if [[ -n "${PREVIOUS_TAG}" ]]; then
+              echo "- Previous tag: \`${PREVIOUS_TAG}\`"
             else
               echo "- Previous tag: none"
             fi
             echo "- Increment: \`${INCREMENT}\`"
-            echo "- Next tag: \`${next_tag}\`"
+            echo "- Next tag: \`${NEXT_TAG}\`"
             echo "- Target ref: \`${TARGET_REF}\`"
-            echo "- Target commit: \`${target_sha}\`"
+            echo "- Target commit: \`${TARGET_SHA}\`"
             echo "- Default branch: \`${DEFAULT_BRANCH}\`"
           } >> "${GITHUB_STEP_SUMMARY}"
 
@@ -127,16 +107,56 @@ jobs:
             } >> "${GITHUB_STEP_SUMMARY}"
           fi
 
+  push-release-tag:
+    needs: plan-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out target commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan-release.outputs.target_sha }}
+          fetch-depth: 0
+
       - name: Create and push annotated tag
         env:
-          VERSION: ${{ steps.validate.outputs.next_tag }}
-          TARGET_SHA: ${{ steps.validate.outputs.target_sha }}
+          TARGET_SHA: ${{ needs.plan-release.outputs.target_sha }}
+          VERSION: ${{ needs.plan-release.outputs.next_tag }}
         run: |
           set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null 2>&1; then
+            echo "Tag already exists on origin: ${VERSION}" >&2
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "${VERSION}" "${TARGET_SHA}" -m "Release ${VERSION}"
           git push origin "refs/tags/${VERSION}"
+
+      - name: Summarize pushed tag
+        env:
+          TARGET_SHA: ${{ needs.plan-release.outputs.target_sha }}
+          VERSION: ${{ needs.plan-release.outputs.next_tag }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Release tag pushed"
+            echo ""
+            echo "- Tag: \`${VERSION}\`"
+            echo "- Commit: \`${TARGET_SHA}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  run-release-images:
+    needs:
+      - plan-release
+      - push-release-tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan-release.outputs.target_sha }}
+          fetch-depth: 1
 
       - name: Dispatch full release workflow
         id: dispatch
@@ -144,138 +164,49 @@ jobs:
           GH_API_URL: ${{ github.api_url }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.validate.outputs.next_tag }}
+          VERSION: ${{ needs.plan-release.outputs.next_tag }}
         run: |
           set -euo pipefail
-
-          requested_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "requested_at=${requested_at}" >> "${GITHUB_OUTPUT}"
-
-          python - <<'PY'
-          import json
-          import os
-          import urllib.request
-
-          api_url = os.environ["GH_API_URL"]
-          repo = os.environ["GH_REPO"]
-          token = os.environ["GH_TOKEN"]
-          version = os.environ["VERSION"]
-
-          payload = json.dumps(
-              {
-                  "ref": version,
-                  "inputs": {
-                      "release_mode": "full-release",
-                      "release_tag": version,
-                  },
-              }
-          ).encode("utf-8")
-
-          request = urllib.request.Request(
-              f"{api_url}/repos/{repo}/actions/workflows/release-images.yml/dispatches",
-              data=payload,
-              method="POST",
-              headers={
-                  "Accept": "application/vnd.github+json",
-                  "Authorization": f"Bearer {token}",
-                  "Content-Type": "application/json",
-                  "User-Agent": "polyglot-devcontainers-cut-release",
-              },
-          )
-
-          with urllib.request.urlopen(request) as response:
-              if response.status not in (201, 204):
-                  raise SystemExit(
-                      f"Unexpected workflow dispatch status: {response.status}"
-                  )
-          PY
+          python3 scripts/dispatch_github_workflow.py \
+            --api-url "${GH_API_URL}" \
+            --repo "${GH_REPO}" \
+            --workflow release-images.yml \
+            --ref "${VERSION}" \
+            --input "release_mode=full-release" \
+            --input "release_tag=${VERSION}" \
+            --github-output "${GITHUB_OUTPUT}"
 
       - name: Wait for full release workflow
+        id: wait
         env:
-          EXPECTED_SHA: ${{ steps.validate.outputs.target_sha }}
+          EXPECTED_SHA: ${{ needs.plan-release.outputs.target_sha }}
           GH_API_URL: ${{ github.api_url }}
           GH_REPO: ${{ github.repository }}
           GH_SERVER_URL: ${{ github.server_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REQUESTED_AT: ${{ steps.dispatch.outputs.requested_at }}
-          VERSION: ${{ steps.validate.outputs.next_tag }}
+          VERSION: ${{ needs.plan-release.outputs.next_tag }}
         run: |
           set -euo pipefail
+          python3 scripts/wait_for_github_workflow.py \
+            --api-url "${GH_API_URL}" \
+            --repo "${GH_REPO}" \
+            --workflow release-images.yml \
+            --head-branch "${VERSION}" \
+            --head-sha "${EXPECTED_SHA}" \
+            --requested-after "${REQUESTED_AT}" \
+            --server-url "${GH_SERVER_URL}" \
+            --github-output "${GITHUB_OUTPUT}"
 
-          python - <<'PY'
-          import json
-          import os
-          import sys
-          import time
-          import urllib.request
-
-          api_url = os.environ["GH_API_URL"]
-          expected_sha = os.environ["EXPECTED_SHA"]
-          repo = os.environ["GH_REPO"]
-          requested_at = os.environ["REQUESTED_AT"]
-          server_url = os.environ["GH_SERVER_URL"]
-          summary_path = os.environ["GITHUB_STEP_SUMMARY"]
-          token = os.environ["GH_TOKEN"]
-          version = os.environ["VERSION"]
-
-          headers = {
-              "Accept": "application/vnd.github+json",
-              "Authorization": f"Bearer {token}",
-              "User-Agent": "polyglot-devcontainers-cut-release",
-          }
-
-          def get_json(url: str) -> dict:
-              request = urllib.request.Request(url, headers=headers)
-              with urllib.request.urlopen(request) as response:
-                  return json.load(response)
-
-          run = None
-          for _ in range(60):
-              data = get_json(
-                  f"{api_url}/repos/{repo}/actions/workflows/release-images.yml/runs?event=workflow_dispatch&per_page=20"
-              )
-              candidates = [
-                  item
-                  for item in data.get("workflow_runs", [])
-                  if item.get("head_branch") == version
-                  and item.get("head_sha") == expected_sha
-                  and item.get("created_at", "") >= requested_at
-              ]
-              if candidates:
-                  candidates.sort(key=lambda item: item["created_at"])
-                  run = candidates[0]
-                  break
-              time.sleep(5)
-
-          if run is None:
-              raise SystemExit("Timed out waiting for release-images workflow to start")
-
-          run_id = str(run["id"])
-          run_url = run["html_url"]
-
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-              output.write(f"run_id={run_id}\n")
-              output.write(f"run_url={run_url}\n")
-
-          with open(summary_path, "a", encoding="utf-8") as summary:
-              summary.write("\n")
-              summary.write(f"Pushed `{version}`.\n\n")
-              summary.write(
-                  f"Dispatched `release-images` for `{version}`: {run_url}\n"
-              )
-
-          while True:
-              current = get_json(f"{api_url}/repos/{repo}/actions/runs/{run_id}")
-              status = current.get("status")
-              conclusion = current.get("conclusion")
-              print(f"release-images run {run_id}: status={status} conclusion={conclusion}")
-
-              if status == "completed":
-                  if conclusion != "success":
-                      raise SystemExit(
-                          f"release-images failed for {version}: {server_url}/{repo}/actions/runs/{run_id}"
-                      )
-                  break
-
-              time.sleep(15)
-          PY
+      - name: Summarize downstream release workflow
+        env:
+          RUN_URL: ${{ steps.wait.outputs.run_url }}
+          VERSION: ${{ needs.plan-release.outputs.next_tag }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Full release workflow"
+            echo ""
+            echo "- Release tag: \`${VERSION}\`"
+            echo "- Downstream workflow: ${RUN_URL}"
+          } >> "${GITHUB_STEP_SUMMARY}"
