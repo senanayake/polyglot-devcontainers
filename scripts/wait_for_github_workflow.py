@@ -35,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--timeout-seconds",
         type=int,
-        default=300,
+        default=3600,
         help="Maximum time to wait for the workflow run",
     )
     parser.add_argument(
