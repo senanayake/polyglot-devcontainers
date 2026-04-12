@@ -174,6 +174,12 @@ jobs:
             context: .
             workdir: /workspaces/polyglot-devcontainers/templates/java-secure
             description: Gradle-first Java engineering container for polyglot-devcontainers.
+          - name: diagrams
+            image_name: polyglot-devcontainers-diagrams
+            dockerfile: templates/diagram-secure/.devcontainer/Containerfile
+            context: .
+            workdir: /workspaces/polyglot-devcontainers/templates/diagram-secure
+            description: D2-first diagram rendering container for presentation-quality software portfolio visuals.
           - name: python-node
             image_name: polyglot-devcontainers-python-node
             dockerfile: templates/python-node-secure/.devcontainer/Containerfile
@@ -230,6 +236,9 @@ jobs:
             java)
               devcontainer_json="templates/java-secure/.devcontainer/devcontainer.json"
               ;;
+            diagrams)
+              devcontainer_json="templates/diagram-secure/.devcontainer/devcontainer.json"
+              ;;
             python-node)
               devcontainer_json="templates/python-node-secure/.devcontainer/devcontainer.json"
               ;;
@@ -243,7 +252,7 @@ jobs:
             --devcontainer-json "${devcontainer_json}"
 
       - name: Bootstrap empty starter workspace
-        if: ${{ matrix.name == 'java' || matrix.name == 'python-node' }}
+        if: ${{ matrix.name == 'java' || matrix.name == 'diagrams' || matrix.name == 'python-node' }}
         run: |
           if [ "${{ matrix.name }}" = "python-node" ]; then
             bash scripts/smoke_test_published_starter.sh --image "${{ matrix.image_name }}:ci" --run-scenarios
@@ -432,6 +441,7 @@ jobs:
           python3 scripts/build_residual_risk_report.py \
             --report maintainer=.artifacts/release-assets/trivy-maintainer.json \
             --report java=.artifacts/release-assets/trivy-java.json \
+            --report diagrams=.artifacts/release-assets/trivy-diagrams.json \
             --report python-node=.artifacts/release-assets/trivy-python-node.json \
             --json-output .artifacts/release-assets/release-security-residual-risk.json \
             --markdown-output .artifacts/release-assets/release-security-residual-risk.md
@@ -442,6 +452,7 @@ jobs:
             --image-catalog published-image-catalog.toml \
             --summary maintainer=.artifacts/release-assets/trivy-maintainer-summary.json \
             --summary java=.artifacts/release-assets/trivy-java-summary.json \
+            --summary diagrams=.artifacts/release-assets/trivy-diagrams-summary.json \
             --summary python-node=.artifacts/release-assets/trivy-python-node-summary.json \
             --residual-risk-markdown .artifacts/release-assets/release-security-residual-risk.md \
             --overview-output .artifacts/release-assets/release-security-overview.md \
@@ -456,6 +467,9 @@ jobs:
           cp .artifacts/release-assets/trivy-java-summary.md .artifacts/release-assets/upload/release-security-java-summary.md
           cp .artifacts/release-assets/trivy-java-summary.json .artifacts/release-assets/upload/release-security-java-summary.json
           cp .artifacts/release-assets/sbom-java.spdx.json .artifacts/release-assets/upload/release-security-java-sbom.spdx.json
+          cp .artifacts/release-assets/trivy-diagrams-summary.md .artifacts/release-assets/upload/release-security-diagrams-summary.md
+          cp .artifacts/release-assets/trivy-diagrams-summary.json .artifacts/release-assets/upload/release-security-diagrams-summary.json
+          cp .artifacts/release-assets/sbom-diagrams.spdx.json .artifacts/release-assets/upload/release-security-diagrams-sbom.spdx.json
           cp .artifacts/release-assets/trivy-python-node-summary.md .artifacts/release-assets/upload/release-security-python-node-summary.md
           cp .artifacts/release-assets/trivy-python-node-summary.json .artifacts/release-assets/upload/release-security-python-node-summary.json
           cp .artifacts/release-assets/sbom-python-node.spdx.json .artifacts/release-assets/upload/release-security-python-node-sbom.spdx.json
@@ -563,6 +577,7 @@ jobs:
             --image-catalog published-image-catalog.toml \
             --summary maintainer=.artifacts/release-assets/upload/release-security-maintainer-summary.json \
             --summary java=.artifacts/release-assets/upload/release-security-java-summary.json \
+            --summary diagrams=.artifacts/release-assets/upload/release-security-diagrams-summary.json \
             --summary python-node=.artifacts/release-assets/upload/release-security-python-node-summary.json \
             --residual-risk-markdown .artifacts/release-assets/upload/release-security-residual-risk.md \
             --overview-output .artifacts/release-assets/upload/release-security-overview.md \

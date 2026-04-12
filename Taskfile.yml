@@ -52,9 +52,11 @@ tasks:
     cmds:
       - python examples/python-example/tasks.py init
       - task -t examples/python-image-example/Taskfile.yml init
+      - task -t examples/diagram-image-example/Taskfile.yml init
       - task -t examples/java-image-example/Taskfile.yml init
       - task -t templates/python-secure/Taskfile.yml init
       - task -t templates/node-secure/Taskfile.yml init
+      - task -t templates/diagram-secure/Taskfile.yml init
       - task -t templates/python-node-secure/Taskfile.yml init
       - task -t templates/java-secure/Taskfile.yml init
 
@@ -64,9 +66,11 @@ tasks:
     cmds:
       - python examples/python-example/tasks.py lint
       - task -t examples/python-image-example/Taskfile.yml lint
+      - task -t examples/diagram-image-example/Taskfile.yml lint
       - task -t examples/java-image-example/Taskfile.yml lint
       - task -t templates/python-secure/Taskfile.yml lint
       - task -t templates/node-secure/Taskfile.yml lint
+      - task -t templates/diagram-secure/Taskfile.yml lint
       - task -t templates/python-node-secure/Taskfile.yml lint
       - task -t templates/java-secure/Taskfile.yml lint
 
@@ -76,9 +80,11 @@ tasks:
     cmds:
       - python examples/python-example/tasks.py test
       - task -t examples/python-image-example/Taskfile.yml test
+      - task -t examples/diagram-image-example/Taskfile.yml test
       - task -t examples/java-image-example/Taskfile.yml test
       - task -t templates/python-secure/Taskfile.yml test
       - task -t templates/node-secure/Taskfile.yml test
+      - task -t templates/diagram-secure/Taskfile.yml test
       - task -t templates/python-node-secure/Taskfile.yml test
       - task -t templates/java-secure/Taskfile.yml test
 
@@ -89,9 +95,11 @@ tasks:
       - mkdir -p .artifacts/scans
       - python examples/python-example/tasks.py scan
       - task -t examples/python-image-example/Taskfile.yml scan
+      - task -t examples/diagram-image-example/Taskfile.yml scan
       - task -t examples/java-image-example/Taskfile.yml scan
       - task -t templates/python-secure/Taskfile.yml scan
       - task -t templates/node-secure/Taskfile.yml scan
+      - task -t templates/diagram-secure/Taskfile.yml scan
       - task -t templates/python-node-secure/Taskfile.yml scan
       - task -t templates/java-secure/Taskfile.yml scan
       - gitleaks git . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
@@ -102,8 +110,10 @@ tasks:
     cmds:
       - python examples/python-example/tasks.py format
       - task -t examples/python-image-example/Taskfile.yml format
+      - task -t examples/diagram-image-example/Taskfile.yml format
       - task -t templates/python-secure/Taskfile.yml format
       - task -t templates/node-secure/Taskfile.yml format
+      - task -t templates/diagram-secure/Taskfile.yml format
       - task -t templates/python-node-secure/Taskfile.yml format
 
   deps:report:
@@ -222,6 +232,9 @@ tasks:
       - docker build --pull --file templates/java-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-java:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-java:verify --devcontainer-json templates/java-secure/.devcontainer/devcontainer.json
       - docker save --output .artifacts/images/java.tar polyglot-devcontainers-java:verify
+      - docker build --pull --file templates/diagram-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-diagrams:verify .
+      - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-diagrams:verify --devcontainer-json templates/diagram-secure/.devcontainer/devcontainer.json
+      - docker save --output .artifacts/images/diagrams.tar polyglot-devcontainers-diagrams:verify
       - docker build --pull --file templates/python-node-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-python-node:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-python-node:verify --devcontainer-json templates/python-node-secure/.devcontainer/devcontainer.json
       - docker save --output .artifacts/images/python-node.tar polyglot-devcontainers-python-node:verify
@@ -233,6 +246,7 @@ tasks:
       - task image:discover -- --check-pinned
       - task image:build
       - bash scripts/smoke_test_published_starter.sh --image polyglot-devcontainers-java:verify
+      - bash scripts/smoke_test_published_starter.sh --image polyglot-devcontainers-diagrams:verify
       - bash scripts/smoke_test_published_starter.sh --image polyglot-devcontainers-python-node:verify --run-scenarios
       - >
         docker run --rm -u root
@@ -245,6 +259,12 @@ tasks:
         -v "$(pwd):/workspaces/polyglot-devcontainers"
         -w /workspaces/polyglot-devcontainers/templates/java-secure
         polyglot-devcontainers-java:verify
+        bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
+      - >
+        docker run --rm -u root
+        -v "$(pwd):/workspaces/polyglot-devcontainers"
+        -w /workspaces/polyglot-devcontainers/templates/diagram-secure
+        polyglot-devcontainers-diagrams:verify
         bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
       - >
         docker run --rm -u root
@@ -290,6 +310,21 @@ tasks:
         --markdown-output .artifacts/scans/image-security/trivy-java-summary.md
       - >
         trivy image
+        --input .artifacts/images/diagrams.tar
+        --format json
+        --severity HIGH,CRITICAL
+        --ignore-unfixed
+        --vuln-type os,library
+        --output .artifacts/scans/image-security/trivy-diagrams.json
+      - >
+        python scripts/summarize_trivy_report.py
+        --report .artifacts/scans/image-security/trivy-diagrams.json
+        --image-name diagrams
+        --image-ref polyglot-devcontainers-diagrams:verify
+        --json-output .artifacts/scans/image-security/trivy-diagrams-summary.json
+        --markdown-output .artifacts/scans/image-security/trivy-diagrams-summary.md
+      - >
+        trivy image
         --input .artifacts/images/python-node.tar
         --format json
         --severity HIGH,CRITICAL
@@ -307,6 +342,7 @@ tasks:
         python scripts/build_residual_risk_report.py
         --report maintainer=.artifacts/scans/image-security/trivy-maintainer.json
         --report java=.artifacts/scans/image-security/trivy-java.json
+        --report diagrams=.artifacts/scans/image-security/trivy-diagrams.json
         --report python-node=.artifacts/scans/image-security/trivy-python-node.json
         --json-output .artifacts/scans/image-security/residual-risk.json
         --markdown-output .artifacts/scans/image-security/residual-risk.md

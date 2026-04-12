@@ -1,0 +1,19 @@
+{
+  "name": "diagram-secure",
+  "build": {
+    "dockerfile": "Containerfile",
+    "context": ".."
+  },
+  "postCreateCommand": "bash /usr/local/share/polyglot-devcontainers/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "files.associations": {
+          "*.d2": "plaintext"
+        }
+      }
+    }
+  },
+  "remoteUser": "vscode"
+}

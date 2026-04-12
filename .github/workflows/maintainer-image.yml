@@ -73,6 +73,7 @@ jobs:
           python3 scripts/run_in_maintainer_container.py git -- status --short --branch
           python3 scripts/run_in_maintainer_container.py gh -- --version
           python3 scripts/run_in_maintainer_container.py gh -- auth status
+          python3 scripts/run_in_maintainer_container.py exec -- diagram --help
 
 
       - name: Run maintainer workflow

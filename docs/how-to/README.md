@@ -5,6 +5,7 @@ repository.
 
 - [Use the Templates](./use-the-templates.md)
 - [Use the Published Java Image](./use-the-published-java-image.md)
+- [Use the Published Diagrams Image](./use-the-published-diagrams-image.md)
 - [Work Effectively in IDEs](./work-effectively-in-ides.md)
 - [Use GitHub CLI In The Maintainer Container](./use-github-cli-in-maintainer.md)
 - [Compose Features](./compose-features.md)

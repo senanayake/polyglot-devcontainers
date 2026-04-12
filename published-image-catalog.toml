@@ -20,6 +20,17 @@ docs = [
   { label = "Use the Published Java Image", path = "docs/how-to/use-the-published-java-image.md" },
 ]
 
+[images."polyglot-devcontainers-diagrams"]
+templates = [
+  { label = "diagram-secure", path = "templates/diagram-secure/README.md" },
+]
+examples = [
+  { label = "diagram-image-example", path = "examples/diagram-image-example/README.md" },
+]
+docs = [
+  { label = "Use the Published Diagrams Image", path = "docs/how-to/use-the-published-diagrams-image.md" },
+]
+
 [images."polyglot-devcontainers-python-node"]
 templates = [
   { label = "python-node-secure", path = "templates/python-node-secure/README.md" },

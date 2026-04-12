@@ -51,6 +51,7 @@ Polyglot reduces that entropy by making the execution surface explicit:
 Today, you can use this repository to:
 
 - work on Polyglot itself inside a published maintainer container
+- create slide-quality software portfolio diagrams from a published diagrams image
 - start a new repository from a secure Python, Java, Node, or polyglot template
 - consume published starter images directly in downstream devcontainers
 - run repo-owned scenarios for dependency maintenance, policy-aware scanning,
@@ -107,6 +108,7 @@ Choose a starter from [templates](./templates/README.md):
 - [python-api-secure](./templates/python-api-secure/README.md)
 - [node-secure](./templates/node-secure/README.md)
 - [python-node-secure](./templates/python-node-secure/README.md)
+- [diagram-secure](./templates/diagram-secure/README.md)
 - [java-secure](./templates/java-secure/README.md)
 
 Open the copied starter in a devcontainer, then run `task ci`.
@@ -161,6 +163,7 @@ Use [examples](./examples/README.md) when you want a working environment that
 teaches the system:
 
 - [python-image-example](./examples/python-image-example/README.md)
+- [diagram-image-example](./examples/diagram-image-example/README.md)
 - [java-image-example](./examples/java-image-example/README.md)
 - [python-maintenance-example](./examples/python-maintenance-example/README.md)
 - [java-maintenance-example](./examples/java-maintenance-example/README.md)
@@ -184,6 +187,7 @@ Current published images:
 
 - [`ghcr.io/senanayake/polyglot-devcontainers-maintainer`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-maintainer)
 - [`ghcr.io/senanayake/polyglot-devcontainers-java`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-java)
+- [`ghcr.io/senanayake/polyglot-devcontainers-diagrams`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-diagrams)
 - [`ghcr.io/senanayake/polyglot-devcontainers-python-node`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-python-node)
 
 The maintainer image is for working on this repository and preserving CI parity.
