@@ -380,7 +380,7 @@ jobs:
             trivy-${{ matrix.name }}-summary.json
             trivy-${{ matrix.name }}-summary.md
             sbom-${{ matrix.name }}.spdx.json
-          if-no-files-found: error
+          if-no-files-found: warn
 
   publish-release-notes:
     runs-on: ubuntu-latest

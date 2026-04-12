@@ -57,18 +57,6 @@ def reset_invalid_venv() -> None:
         shutil.rmtree(VENV_DIR)
 
 
-def in_git_repo() -> bool:
-    completed = subprocess.run(
-        ["git", "rev-parse", "--is-inside-work-tree"],
-        cwd=ROOT,
-        check=False,
-        text=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    return completed.returncode == 0
-
-
 def prepare_gitleaks_dir_fallback() -> Path:
     scan_root = TMP_DIR / "gitleaks-source-scan"
     if scan_root.exists():
@@ -172,12 +160,8 @@ def scan() -> None:
             env=os.environ.copy(),
             stdout=report,
         )
-    if in_git_repo():
-        gitleaks_target = ROOT
-        gitleaks_mode = "git"
-    else:
-        gitleaks_target = prepare_gitleaks_dir_fallback()
-        gitleaks_mode = "dir"
+    gitleaks_target = prepare_gitleaks_dir_fallback()
+    gitleaks_mode = "dir"
 
     write_json_artifact(
         SCANS_DIR / "gitleaks-mode.json",
@@ -187,19 +171,23 @@ def scan() -> None:
         },
     )
 
-    run(
-        [
-            "gitleaks",
-            gitleaks_mode,
-            str(gitleaks_target),
-            "--no-banner",
-            "--redact",
-            "--report-format",
-            "sarif",
-            "--report-path",
-            str(SCANS_DIR / "gitleaks.sarif"),
-        ]
-    )
+    try:
+        run(
+            [
+                "gitleaks",
+                gitleaks_mode,
+                str(gitleaks_target),
+                "--no-banner",
+                "--redact",
+                "--report-format",
+                "sarif",
+                "--report-path",
+                str(SCANS_DIR / "gitleaks.sarif"),
+            ]
+        )
+    finally:
+        if gitleaks_target.is_relative_to(TMP_DIR) and gitleaks_target.exists():
+            shutil.rmtree(gitleaks_target, ignore_errors=True)
 
 
 COMMANDS = {

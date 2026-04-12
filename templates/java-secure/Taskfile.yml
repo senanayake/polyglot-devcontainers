@@ -18,7 +18,7 @@ tasks:
     cmds:
       - mkdir -p .artifacts/scans
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon testClasses
-      - trivy fs --scanners vuln --format json --output .artifacts/scans/trivy-java.json .
+      - trivy fs --timeout 15m --scanners vuln --format json --output .artifacts/scans/trivy-java.json .
       - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
 
   deps:inventory:

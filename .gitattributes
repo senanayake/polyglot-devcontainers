@@ -19,3 +19,5 @@ Dockerfile* text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
 uv.lock text eol=lf
+*.d2 text eol=lf
+features/diagram-rendering/diagram text eol=lf
