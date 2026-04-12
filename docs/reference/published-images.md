@@ -7,6 +7,7 @@ template immediately.
 
 - `ghcr.io/<owner>/polyglot-devcontainers-maintainer`
 - `ghcr.io/<owner>/polyglot-devcontainers-java`
+- `ghcr.io/<owner>/polyglot-devcontainers-diagrams`
 - `ghcr.io/<owner>/polyglot-devcontainers-python-node`
 
 The maintainer image is published so repository contributors can consume the

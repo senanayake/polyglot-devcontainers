@@ -51,6 +51,7 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && rm -rf /tmp/nodesource.key /tmp/githubcli-fingerprints.txt /tmp/install_runtime_docs.sh /tmp/runtime-docs /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list /etc/apt/sources.list.d/github-cli.list
 
 RUN bash /tmp/features/security-baseline/install.sh \
+    && bash /tmp/features/diagram-rendering/install.sh \
     && bash /tmp/features/python-engineering/install.sh \
     && bash /tmp/features/node-engineering/install.sh \
     && bash /tmp/features/java-engineering/install.sh \

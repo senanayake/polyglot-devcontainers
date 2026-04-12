@@ -169,6 +169,7 @@ The initial scope is only the published images:
 
 - `.devcontainer/Containerfile`
 - `templates/java-secure/.devcontainer/Containerfile`
+- `templates/diagram-secure/.devcontainer/Containerfile`
 - `templates/python-node-secure/.devcontainer/Containerfile`
 
 `task image:pin` is report-only unless you pass `--write`.
@@ -213,6 +214,7 @@ silence scanner output unless a human explicitly asks for that exception.
 
 - the root repository image built from `.devcontainer/Containerfile`
 - the Gradle-first Java image built from `templates/java-secure/.devcontainer/Containerfile`
+- the D2-first diagrams image built from `templates/diagram-secure/.devcontainer/Containerfile`
 - the Python plus Node / TypeScript image built from `templates/python-node-secure/.devcontainer/Containerfile`
 
 ## Verify the registry target
