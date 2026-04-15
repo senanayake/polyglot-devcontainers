@@ -193,6 +193,36 @@ Current published images:
 The maintainer image is for working on this repository and preserving CI parity.
 The starter images are the recommended downstream base images.
 
+## Using Polyglot Images Downstream
+
+The published images can be used as base images for your own private containers and development environments.
+
+See [docs/downstream/README.md](docs/downstream/README.md) for guidance on:
+
+- **Building private images** from polyglot base images
+- **Understanding the stable API** that polyglot guarantees
+- **Creating private scenarios** following polyglot patterns
+- **Choosing the right base image** for your use case
+
+Example use case from the Sententia project:
+
+```dockerfile
+FROM ghcr.io/senanayake/polyglot-devcontainers-python-node:latest
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends docker.io && \
+    rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY . .
+RUN pnpm build
+USER vscode
+CMD ["pnpm", "tsx", "src/index.ts"]
+```
+
+For detailed patterns, security best practices, and the base image contract, see the [downstream documentation](docs/downstream/README.md).
+
 The recent releases table below is maintained automatically by the release
 workflow.
 
