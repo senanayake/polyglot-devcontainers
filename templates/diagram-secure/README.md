@@ -59,3 +59,8 @@ For local runtime guidance in the container, run:
 man polyglot
 man polyglot-diagrams
 ```
+
+When consuming the published image directly in an empty workspace, `task init`
+will scaffold the starter files, add a starter `AGENTS.md`, create a
+`.kbriefs/` workspace with templates, and create the Diataxis-oriented `docs/`
+structure alongside the diagram source tree.
