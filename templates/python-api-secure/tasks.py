@@ -867,7 +867,7 @@ def run_verification_tests() -> subprocess.CompletedProcess[str]:
     env.pop("TEMP", None)
     env.pop("TMPDIR", None)
     return subprocess.run(
-        [str(PYTHON), "-m", "pytest", "-q", "-x"],
+        [str(PYTHON), "-m", "pytest", "-q", "-x", "-m", "not integration"],
         cwd=ROOT,
         check=False,
         text=True,
@@ -1017,6 +1017,21 @@ def format_code() -> None:
 
 
 def test() -> None:
+    """Fast suite - skips integration tests."""
+    if not PYTHON.exists():
+        init()
+    run([str(PYTHON), "-m", "pytest", "-q", "-s", "-m", "not integration"])
+
+
+def test_integration() -> None:
+    """Live integration tests only."""
+    if not PYTHON.exists():
+        init()
+    run([str(PYTHON), "-m", "pytest", "-q", "-s", "-m", "integration"])
+
+
+def test_all() -> None:
+    """Full suite."""
     if not PYTHON.exists():
         init()
     run([str(PYTHON), "-m", "pytest", "-q", "-s"])
@@ -1746,7 +1761,7 @@ def build_remediation_plan_artifact(*, run_baseline_tests: bool) -> dict[str, An
         "baseline_tests_passed": None,
         "blocked": False,
         "reasons": [],
-        "verification_command": f"{PYTHON} -m pytest -q -x",
+        "verification_command": f"{PYTHON} -m pytest -q -x -m 'not integration'",
     }
     if run_baseline_tests:
         test_result = run_verification_tests()
@@ -2383,6 +2398,8 @@ COMMANDS = {
     "scan_plan": scan_plan,
     "scan_pr": scan_pr,
     "test": test,
+    "test_all": test_all,
+    "test_integration": test_integration,
     "upgrade": upgrade,
 }
 

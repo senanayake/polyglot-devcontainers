@@ -1,0 +1,16 @@
+{
+  "id": "pandoc",
+  "version": "0.1.0",
+  "name": "Pandoc Document Renderer",
+  "description": "Install pandoc for Markdown to HTML/PDF conversion.",
+  "options": {
+    "texlive": {
+      "type": "boolean",
+      "default": false,
+      "description": "Also install texlive-latex-recommended and texlive-xetex for PDF generation via XeLaTeX. Adds about 400 MB; only enable when PDF output is required."
+    }
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ]
+}

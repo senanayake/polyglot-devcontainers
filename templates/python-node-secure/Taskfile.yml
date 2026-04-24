@@ -10,8 +10,19 @@ tasks:
       - python tasks.py lint
 
   test:
+    desc: Run the fast default test suite (no integration tests)
     cmds:
       - python tasks.py test
+
+  test:integration:
+    desc: Run opt-in live integration tests
+    cmds:
+      - python tasks.py test_integration
+
+  test:all:
+    desc: Run the full test suite
+    cmds:
+      - python tasks.py test_all
 
   scan:
     cmds:
@@ -55,6 +66,7 @@ tasks:
       - task scenarios:non-git-scan-fallback
 
   ci:
+    desc: Run all starter checks with the fast default test suite
     cmds:
       - task init
       - task lint

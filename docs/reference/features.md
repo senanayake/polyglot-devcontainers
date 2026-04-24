@@ -7,6 +7,13 @@ Purpose:
 - install `task`
 - install `gitleaks`
 
+## pandoc
+
+Purpose:
+
+- install `pandoc`
+- optionally install XeLaTeX support for PDF generation
+
 ## python-engineering
 
 Purpose:

@@ -38,7 +38,9 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=python_api_secure_template --cov-report=term-missing"
+markers = [
+  "integration: marks tests that call external resources (deselect with -m 'not integration')",
+]
 
 [tool.ruff]
 line-length = 100

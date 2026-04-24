@@ -28,7 +28,9 @@ where = ["backend/src"]
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
-addopts = "--cov=python_node_secure_template --cov-report=term-missing"
+markers = [
+  "integration: marks tests that call external resources (deselect with -m 'not integration')",
+]
 
 [tool.ruff]
 line-length = 100

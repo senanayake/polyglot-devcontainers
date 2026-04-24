@@ -6,6 +6,8 @@ devcontainers.
 - `security-baseline`: installs Task and Gitleaks
 - `diagram-rendering`: installs D2, Graphviz, curated fonts, and the `diagram`
   wrapper CLI
+- `pandoc`: installs Pandoc and optional XeLaTeX support for Markdown-to-HTML
+  and PDF rendering
 - `python-engineering`: installs Python workflow helpers such as `pre-commit`
   and `uv`
 - `node-engineering`: enables `corepack` and pins `pnpm`
