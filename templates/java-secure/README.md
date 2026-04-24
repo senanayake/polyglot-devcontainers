@@ -22,5 +22,6 @@ task ci
 ```
 
 When consuming the published image directly in an empty workspace, `task init`
-will scaffold the starter files and then prepare the project-local Gradle state
-inside that workspace.
+will scaffold the starter files, create a starter `AGENTS.md`, create a
+`.kbriefs/` workspace with templates, create a Diataxis-shaped `docs/` tree,
+and then prepare the project-local Gradle state inside that workspace.

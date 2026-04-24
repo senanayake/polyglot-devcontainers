@@ -74,6 +74,21 @@ task init
 echo "[starter-smoke] phase=verify-bootstrap"
 test -f Taskfile.yml
 test -f .polyglot-bootstrap.json
+echo "[starter-smoke] phase=verify-project-conventions"
+test -f AGENTS.md
+grep -q "Knowledge-Based Product Development" AGENTS.md
+test -f .kbriefs/README.md
+test -f .kbriefs/templates/design-space.md
+test -f .kbriefs/templates/failure-mode.md
+test -f .kbriefs/templates/limit.md
+test -f .kbriefs/templates/source-profile.md
+test -f .kbriefs/templates/standard.md
+test -f .kbriefs/templates/tradeoff.md
+test -f docs/README.md
+test -f docs/tutorials/README.md
+test -f docs/how-to/README.md
+test -f docs/reference/README.md
+test -f docs/explanation/README.md
 echo "[starter-smoke] phase=task-ci"
 task ci
 EOF

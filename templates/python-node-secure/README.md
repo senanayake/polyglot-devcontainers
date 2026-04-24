@@ -24,8 +24,10 @@ task scenarios:verify
 ```
 
 When consuming the published image directly in an empty workspace, `task init`
-will scaffold the starter files and then install the project-local Python and
-Node dependencies into that workspace.
+will scaffold the starter files, create a starter `AGENTS.md`, create a
+`.kbriefs/` workspace with templates, create a Diataxis-shaped `docs/` tree,
+and then install the project-local Python and Node dependencies into that
+workspace.
 
 Starter-local scenarios are also available after bootstrap:
 
