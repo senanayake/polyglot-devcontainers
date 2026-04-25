@@ -111,6 +111,24 @@ def format_code() -> None:
 
 
 def test() -> None:
+    """Fast suite - skips Python integration tests."""
+    reset_invalid_venv()
+    if not PYTHON.exists():
+        init()
+    run([str(PYTHON), "-m", "pytest", "-q", "-s", "-m", "not integration"])
+    run(PNPM + ["test"])
+
+
+def test_integration() -> None:
+    """Live Python integration tests only."""
+    reset_invalid_venv()
+    if not PYTHON.exists():
+        init()
+    run([str(PYTHON), "-m", "pytest", "-q", "-s", "-m", "integration"])
+
+
+def test_all() -> None:
+    """Full suite."""
     reset_invalid_venv()
     if not PYTHON.exists():
         init()
@@ -196,6 +214,8 @@ COMMANDS = {
     "lint": lint,
     "scan": scan,
     "test": test,
+    "test_all": test_all,
+    "test_integration": test_integration,
 }
 
 

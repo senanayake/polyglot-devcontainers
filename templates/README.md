@@ -16,6 +16,7 @@ Feature building blocks currently include:
 
 - `security-baseline`
 - `diagram-rendering`
+- `pandoc`
 - `python-engineering`
 - `node-engineering`
 - `java-engineering`
