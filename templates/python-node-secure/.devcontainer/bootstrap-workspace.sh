@@ -27,9 +27,11 @@ while IFS= read -r -d '' entry; do
 done < <(find . -mindepth 1 -maxdepth 1 -print0)
 
 cp -R "${payload}/." .
+/usr/local/bin/polyglot-scaffold-project-conventions "${template}"
 
 cat > .polyglot-bootstrap.json <<EOF
 {
-  "template": "${template}"
+  "template": "${template}",
+  "project_conventions_scaffolded": true
 }
 EOF

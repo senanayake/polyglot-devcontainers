@@ -7,8 +7,11 @@ inspect the results.
 
 - work from the repository root
 - use the maintainer container
-- start Docker inside that container if your current session needs image-backed
-  tooling
+- ensure the maintainer image runtime is available when your current session
+  needs image-backed tooling
+
+Polyglot now prefers Podman for image-backed maintainer workflows and falls
+back to Docker only when Podman is unavailable.
 
 The runtime docs for this flow are:
 

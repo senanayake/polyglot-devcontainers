@@ -5,6 +5,7 @@ The repository currently provides starter templates:
 - `python-secure` - Minimal Python library/package starter
 - `python-api-secure` - FastAPI web API with database and auth patterns
 - `node-secure` - Node.js/TypeScript starter
+- `diagram-secure` - D2-first starter for presentation-quality diagrams
 - `python-node-secure` - Polyglot Python + Node starter
 - `java-secure` - Java starter with Gradle
 
@@ -14,6 +15,8 @@ customization and to compose local features from `features/`.
 Feature building blocks currently include:
 
 - `security-baseline`
+- `diagram-rendering`
+- `pandoc`
 - `python-engineering`
 - `node-engineering`
 - `java-engineering`

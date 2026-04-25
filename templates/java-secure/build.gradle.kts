@@ -1,4 +1,5 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import org.gradle.api.plugins.jvm.JvmTestSuite
 
 plugins {
     java
@@ -26,14 +27,73 @@ java {
 }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.13.4"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     spotbugsPlugins("com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0")
 }
 
-tasks.test {
-    useJUnitPlatform()
+testing {
+    suites {
+        withType(JvmTestSuite::class).configureEach {
+            useJUnitJupiter("5.13.4")
+            dependencies {
+                implementation(platform("org.junit:junit-bom:5.13.4"))
+            }
+        }
+
+        val test by getting(JvmTestSuite::class) {
+            dependencies {
+                implementation(project())
+            }
+        }
+
+        register<JvmTestSuite>("propertyTest") {
+            dependencies {
+                implementation(project())
+                implementation("net.jqwik:jqwik:1.9.3")
+            }
+            targets {
+                all {
+                    testTask.configure {
+                        shouldRunAfter(test)
+                    }
+                }
+            }
+        }
+
+        register<JvmTestSuite>("integrationTest") {
+            dependencies {
+                implementation(project())
+            }
+            targets {
+                all {
+                    testTask.configure {
+                        shouldRunAfter(test)
+                    }
+                }
+            }
+        }
+
+        register<JvmTestSuite>("acceptanceTest") {
+            dependencies {
+                implementation(project())
+                implementation("io.cucumber:cucumber-java:7.34.3")
+                implementation("io.cucumber:cucumber-junit-platform-engine:7.34.3")
+                implementation("org.junit.platform:junit-platform-suite")
+            }
+            targets {
+                all {
+                    testTask.configure {
+                        shouldRunAfter(test)
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(testing.suites.named("propertyTest"))
+    dependsOn(testing.suites.named("integrationTest"))
+    dependsOn(testing.suites.named("acceptanceTest"))
 }
 
 spotless {

@@ -4,21 +4,59 @@ tasks:
   init:
     cmds:
       - mkdir -p .artifacts/scans
-      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --write-locks testClasses
+      - >
+        GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}"
+        gradle --no-daemon --write-locks
+        testClasses propertyTestClasses integrationTestClasses acceptanceTestClasses
 
   lint:
     cmds:
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon spotlessCheck spotbugsMain spotbugsTest
 
   test:
+    desc: Run the full automated test suite
+    cmds:
+      - >
+        GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}"
+        gradle --no-daemon test propertyTest integrationTest acceptanceTest
+
+  test:fast:
+    desc: Run the fast feedback suite (unit + property)
+    cmds:
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon test propertyTest
+
+  test:unit:
+    desc: Run unit tests only
     cmds:
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon test
+
+  test:integration:
+    desc: Run integration tests only
+    cmds:
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon integrationTest
+
+  test:acceptance:
+    desc: Run executable specification and BDD tests
+    cmds:
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon acceptanceTest
+
+  test:property:
+    desc: Run property-based tests
+    cmds:
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon propertyTest
+
+  test:all:
+    desc: Alias for the full automated test suite
+    cmds:
+      - task test
 
   scan:
     cmds:
       - mkdir -p .artifacts/scans
-      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon testClasses
-      - trivy fs --scanners vuln --format json --output .artifacts/scans/trivy-java.json .
+      - >
+        GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}"
+        gradle --no-daemon testClasses propertyTestClasses integrationTestClasses acceptanceTestClasses
+      - trivy fs --timeout 15m --scanners vuln --format json --output .artifacts/scans/trivy-java.json .
       - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
 
   deps:inventory:
@@ -92,7 +130,9 @@ tasks:
       - task deps:plan
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --no-parallel useLatestVersions -Drevision=release
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --no-parallel useLatestVersionsCheck -Drevision=release
-      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --write-locks test
+      - >
+        GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}"
+        gradle --no-daemon --write-locks test propertyTest integrationTest acceptanceTest
       - task lint
       - task scan
 

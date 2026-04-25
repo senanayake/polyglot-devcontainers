@@ -2,6 +2,19 @@ name: release-images
 
 on:
   workflow_dispatch:
+    inputs:
+      release_mode:
+        description: Release behavior for a manual run
+        required: true
+        default: validate-only
+        type: choice
+        options:
+          - validate-only
+          - full-release
+      release_tag:
+        description: Existing vMAJOR.MINOR.PATCH tag to use for full manual releases
+        required: false
+        type: string
   push:
     tags:
       - "v*.*.*"
@@ -13,8 +26,138 @@ permissions:
   security-events: write
   attestations: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
+  release-context:
+    runs-on: ubuntu-latest
+    outputs:
+      checkout_ref: ${{ steps.plan.outputs.checkout_ref }}
+      is_full_release: ${{ steps.plan.outputs.is_full_release }}
+      push_main_tag: ${{ steps.plan.outputs.push_main_tag }}
+      release_mode: ${{ steps.plan.outputs.release_mode }}
+      release_sha: ${{ steps.inspect.outputs.release_sha }}
+      release_tag: ${{ steps.plan.outputs.release_tag }}
+    steps:
+      - name: Resolve release context
+        id: plan
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_RELEASE_MODE: ${{ inputs.release_mode }}
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          checkout_ref="${REF_NAME}"
+          is_full_release=false
+          push_main_tag=false
+          release_mode="tag-push"
+          release_tag=""
+
+          if [[ "${EVENT_NAME}" == "push" && "${REF}" == refs/tags/* ]]; then
+            is_full_release=true
+            release_mode="tag-push"
+            release_tag="${REF_NAME}"
+            checkout_ref="${REF_NAME}"
+          elif [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            release_mode="${INPUT_RELEASE_MODE:-validate-only}"
+
+            case "${release_mode}" in
+              validate-only)
+                ;;
+              full-release)
+                if [[ -n "${INPUT_RELEASE_TAG:-}" ]]; then
+                  release_tag="${INPUT_RELEASE_TAG}"
+                elif [[ "${REF}" == refs/tags/* ]]; then
+                  release_tag="${REF_NAME}"
+                else
+                  echo "workflow_dispatch full-release requires release_tag or a tag ref" >&2
+                  exit 1
+                fi
+
+                if [[ ! "${release_tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                  echo "release_tag must match vMAJOR.MINOR.PATCH, got: ${release_tag}" >&2
+                  exit 1
+                fi
+
+                is_full_release=true
+                checkout_ref="${release_tag}"
+                ;;
+              *)
+                echo "Unsupported release_mode: ${release_mode}" >&2
+                exit 1
+                ;;
+            esac
+          fi
+
+          if [[ "${is_full_release}" != "true" && "${REF}" == "refs/heads/${DEFAULT_BRANCH}" ]]; then
+            push_main_tag=true
+          fi
+
+          echo "checkout_ref=${checkout_ref}" >> "${GITHUB_OUTPUT}"
+          echo "is_full_release=${is_full_release}" >> "${GITHUB_OUTPUT}"
+          echo "push_main_tag=${push_main_tag}" >> "${GITHUB_OUTPUT}"
+          echo "release_mode=${release_mode}" >> "${GITHUB_OUTPUT}"
+          echo "release_tag=${release_tag}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check out resolved ref
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.plan.outputs.checkout_ref }}
+          fetch-depth: 0
+
+      - name: Inspect resolved ref
+        id: inspect
+        env:
+          IS_FULL_RELEASE: ${{ steps.plan.outputs.is_full_release }}
+          RELEASE_TAG: ${{ steps.plan.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          release_sha="$(git rev-parse HEAD)"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+
+          if [[ "${IS_FULL_RELEASE}" == "true" ]]; then
+            tag_sha="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
+            if [[ "${tag_sha}" != "${release_sha}" ]]; then
+              echo "Resolved ref ${RELEASE_TAG} does not match HEAD ${release_sha}" >&2
+              exit 1
+            fi
+          fi
+
+      - name: Explain manual dispatch scope
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          CHECKOUT_REF: ${{ steps.plan.outputs.checkout_ref }}
+          IS_FULL_RELEASE: ${{ steps.plan.outputs.is_full_release }}
+          RELEASE_MODE: ${{ steps.plan.outputs.release_mode }}
+          RELEASE_TAG: ${{ steps.plan.outputs.release_tag }}
+          RELEASE_SHA: ${{ steps.inspect.outputs.release_sha }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "### Manual release-images run"
+            echo ""
+            echo "- Selected mode: \`${RELEASE_MODE}\`"
+            echo "- Resolved ref: \`${CHECKOUT_REF}\`"
+            echo "- Resolved commit: \`${RELEASE_SHA}\`"
+            if [[ "${IS_FULL_RELEASE}" == "true" ]]; then
+              echo "- Full release enabled for \`${RELEASE_TAG}\`."
+              echo "- GitHub Release notes, release security assets, and the README recent releases table will run if the publish matrix succeeds."
+            else
+              echo "- This run will validate and publish images for the selected ref."
+              echo "- GitHub Release notes, release security assets, and the README recent releases table are disabled in \`validate-only\` mode."
+              echo "- Use \`release_mode=full-release\` with an existing release tag to run the release-only steps manually."
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"
+
   publish:
+    needs: release-context
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
@@ -34,6 +177,12 @@ jobs:
             context: .
             workdir: /workspaces/polyglot-devcontainers/templates/java-secure
             description: Gradle-first Java engineering container for polyglot-devcontainers.
+          - name: diagrams
+            image_name: polyglot-devcontainers-diagrams
+            dockerfile: templates/diagram-secure/.devcontainer/Containerfile
+            context: .
+            workdir: /workspaces/polyglot-devcontainers/templates/diagram-secure
+            description: D2-first diagram rendering container for presentation-quality software portfolio visuals.
           - name: python-node
             image_name: polyglot-devcontainers-python-node
             dockerfile: templates/python-node-secure/.devcontainer/Containerfile
@@ -44,6 +193,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.release-context.outputs.checkout_ref }}
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -57,9 +209,9 @@ jobs:
             latest=false
           tags: |
             type=sha
-            type=ref,event=tag
-            type=raw,value=latest,enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
-            type=raw,value=main,enable={{is_default_branch}}
+            type=raw,value=${{ needs.release-context.outputs.release_tag }},enable=${{ needs.release-context.outputs.is_full_release == 'true' }}
+            type=raw,value=latest,enable=${{ needs.release-context.outputs.is_full_release == 'true' }}
+            type=raw,value=main,enable=${{ needs.release-context.outputs.push_main_tag == 'true' }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=${{ matrix.description }}
@@ -87,6 +239,9 @@ jobs:
             java)
               devcontainer_json="templates/java-secure/.devcontainer/devcontainer.json"
               ;;
+            diagrams)
+              devcontainer_json="templates/diagram-secure/.devcontainer/devcontainer.json"
+              ;;
             python-node)
               devcontainer_json="templates/python-node-secure/.devcontainer/devcontainer.json"
               ;;
@@ -100,7 +255,7 @@ jobs:
             --devcontainer-json "${devcontainer_json}"
 
       - name: Bootstrap empty starter workspace
-        if: ${{ matrix.name == 'java' || matrix.name == 'python-node' }}
+        if: ${{ matrix.name == 'java' || matrix.name == 'diagrams' || matrix.name == 'python-node' }}
         run: |
           if [ "${{ matrix.name }}" = "python-node" ]; then
             bash scripts/smoke_test_published_starter.sh --image "${{ matrix.image_name }}:ci" --run-scenarios
@@ -228,18 +383,21 @@ jobs:
             trivy-${{ matrix.name }}-summary.json
             trivy-${{ matrix.name }}-summary.md
             sbom-${{ matrix.name }}.spdx.json
-          if-no-files-found: error
+          if-no-files-found: warn
 
   publish-release-notes:
     runs-on: ubuntu-latest
-    needs: publish
-    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+    needs:
+      - release-context
+      - publish
+    if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
     steps:
       - name: Create GitHub release with generated notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          TAG_NAME: ${{ github.ref_name }}
+          RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
+          TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
         run: |
           if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
             echo "Release ${TAG_NAME} already exists."
@@ -247,18 +405,22 @@ jobs:
             gh release create "${TAG_NAME}" \
               --title "${TAG_NAME}" \
               --generate-notes \
-              --target "${GITHUB_SHA}"
+              --target "${RELEASE_SHA}"
           fi
 
-  publish-release-security:
+  prepare-release-security:
     runs-on: ubuntu-latest
     needs:
+      - release-context
       - publish
       - publish-release-notes
-    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+    if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.release-context.outputs.checkout_ref }}
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -274,28 +436,30 @@ jobs:
 
       - name: Build release security reports
         env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
         run: |
           python3 scripts/build_residual_risk_report.py \
             --report maintainer=.artifacts/release-assets/trivy-maintainer.json \
             --report java=.artifacts/release-assets/trivy-java.json \
+            --report diagrams=.artifacts/release-assets/trivy-diagrams.json \
             --report python-node=.artifacts/release-assets/trivy-python-node.json \
             --json-output .artifacts/release-assets/release-security-residual-risk.json \
             --markdown-output .artifacts/release-assets/release-security-residual-risk.md
-          gh release view "${TAG_NAME}" --json body --jq .body > .artifacts/release-assets/release-notes-existing.md
           python3 scripts/build_release_security_summary.py \
             --repo "${GITHUB_REPOSITORY}" \
             --tag "${TAG_NAME}" \
+            --docs-base-url "https://github.com/${GITHUB_REPOSITORY}/blob/${DEFAULT_BRANCH}/docs/releases/${TAG_NAME}" \
+            --image-catalog published-image-catalog.toml \
             --summary maintainer=.artifacts/release-assets/trivy-maintainer-summary.json \
             --summary java=.artifacts/release-assets/trivy-java-summary.json \
+            --summary diagrams=.artifacts/release-assets/trivy-diagrams-summary.json \
             --summary python-node=.artifacts/release-assets/trivy-python-node-summary.json \
             --residual-risk-markdown .artifacts/release-assets/release-security-residual-risk.md \
             --overview-output .artifacts/release-assets/release-security-overview.md \
-            --notes-fragment-output .artifacts/release-assets/release-security-notes.md \
-            --existing-notes .artifacts/release-assets/release-notes-existing.md \
-            --release-notes-output .artifacts/release-assets/release-notes-updated.md
+            --notes-fragment-output .artifacts/release-assets/release-security-notes.md
 
       - name: Stage release security assets
         run: |
@@ -306,6 +470,9 @@ jobs:
           cp .artifacts/release-assets/trivy-java-summary.md .artifacts/release-assets/upload/release-security-java-summary.md
           cp .artifacts/release-assets/trivy-java-summary.json .artifacts/release-assets/upload/release-security-java-summary.json
           cp .artifacts/release-assets/sbom-java.spdx.json .artifacts/release-assets/upload/release-security-java-sbom.spdx.json
+          cp .artifacts/release-assets/trivy-diagrams-summary.md .artifacts/release-assets/upload/release-security-diagrams-summary.md
+          cp .artifacts/release-assets/trivy-diagrams-summary.json .artifacts/release-assets/upload/release-security-diagrams-summary.json
+          cp .artifacts/release-assets/sbom-diagrams.spdx.json .artifacts/release-assets/upload/release-security-diagrams-sbom.spdx.json
           cp .artifacts/release-assets/trivy-python-node-summary.md .artifacts/release-assets/upload/release-security-python-node-summary.md
           cp .artifacts/release-assets/trivy-python-node-summary.json .artifacts/release-assets/upload/release-security-python-node-summary.json
           cp .artifacts/release-assets/sbom-python-node.spdx.json .artifacts/release-assets/upload/release-security-python-node-sbom.spdx.json
@@ -313,11 +480,119 @@ jobs:
           cp .artifacts/release-assets/release-security-residual-risk.md .artifacts/release-assets/upload/release-security-residual-risk.md
           cp .artifacts/release-assets/release-security-residual-risk.json .artifacts/release-assets/upload/release-security-residual-risk.json
 
+      - name: Upload staged release security asset bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-security-assets-${{ needs.release-context.outputs.release_tag }}
+          path: .artifacts/release-assets/upload
+          if-no-files-found: error
+
+  publish-release-security-docs:
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - prepare-release-security
+    if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
+    outputs:
+      docs_base_url: ${{ steps.publish.outputs.docs_base_url }}
+    steps:
+      - name: Check out default branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Download staged release security asset bundle
+        uses: actions/download-artifact@v5
+        with:
+          name: release-security-assets-${{ needs.release-context.outputs.release_tag }}
+          path: .artifacts/release-security-docs
+
+      - name: Publish browser-viewable release security docs
+        id: publish
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          docs_dir="docs/releases/${TAG_NAME}"
+          rm -rf "${docs_dir}"
+          mkdir -p "${docs_dir}"
+          cp .artifacts/release-security-docs/* "${docs_dir}/"
+          echo "docs_base_url=https://github.com/${GH_REPO}/blob/${DEFAULT_BRANCH}/${docs_dir}" >> "${GITHUB_OUTPUT}"
+
+      - name: Commit release security docs
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          docs_dir="docs/releases/${TAG_NAME}"
+          if git diff --quiet -- "${docs_dir}"; then
+            echo "Release security docs already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${docs_dir}"
+          git commit -m "Publish release security docs for ${TAG_NAME}"
+          git push origin "HEAD:${DEFAULT_BRANCH}"
+
+  publish-release-security:
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - publish-release-notes
+      - prepare-release-security
+      - publish-release-security-docs
+    if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.release-context.outputs.checkout_ref }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Download staged release security asset bundle
+        uses: actions/download-artifact@v5
+        with:
+          name: release-security-assets-${{ needs.release-context.outputs.release_tag }}
+          path: .artifacts/release-assets/upload
+
+      - name: Build release notes security block
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          DOCS_BASE_URL: ${{ needs.publish-release-security-docs.outputs.docs_base_url }}
+          TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
+        run: |
+          gh release view "${TAG_NAME}" --json body --jq .body > .artifacts/release-assets/release-notes-existing.md
+          python3 scripts/build_release_security_summary.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --tag "${TAG_NAME}" \
+            --docs-base-url "${DOCS_BASE_URL}" \
+            --image-catalog published-image-catalog.toml \
+            --summary maintainer=.artifacts/release-assets/upload/release-security-maintainer-summary.json \
+            --summary java=.artifacts/release-assets/upload/release-security-java-summary.json \
+            --summary diagrams=.artifacts/release-assets/upload/release-security-diagrams-summary.json \
+            --summary python-node=.artifacts/release-assets/upload/release-security-python-node-summary.json \
+            --residual-risk-markdown .artifacts/release-assets/upload/release-security-residual-risk.md \
+            --overview-output .artifacts/release-assets/upload/release-security-overview.md \
+            --notes-fragment-output .artifacts/release-assets/release-security-notes.md \
+            --existing-notes .artifacts/release-assets/release-notes-existing.md \
+            --release-notes-output .artifacts/release-assets/release-notes-updated.md
+
       - name: Upload release security assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
         run: |
           gh release upload "${TAG_NAME}" .artifacts/release-assets/upload/* --clobber
 
@@ -325,14 +600,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
         run: |
           gh release edit "${TAG_NAME}" --notes-file .artifacts/release-assets/release-notes-updated.md
 
   update-readme-recent-releases:
     runs-on: ubuntu-latest
-    needs: publish-release-security
-    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+    needs:
+      - release-context
+      - publish-release-security
+    if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
     steps:
       - name: Check out default branch
         uses: actions/checkout@v5

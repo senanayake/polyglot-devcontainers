@@ -57,18 +57,6 @@ def reset_invalid_venv() -> None:
         shutil.rmtree(VENV_DIR)
 
 
-def in_git_repo() -> bool:
-    completed = subprocess.run(
-        ["git", "rev-parse", "--is-inside-work-tree"],
-        cwd=ROOT,
-        check=False,
-        text=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    return completed.returncode == 0
-
-
 def prepare_gitleaks_dir_fallback() -> Path:
     scan_root = TMP_DIR / "gitleaks-source-scan"
     if scan_root.exists():
@@ -122,12 +110,54 @@ def format_code() -> None:
     run(PNPM + ["format"])
 
 
-def test() -> None:
+def run_backend_pytest_suite(*paths: str, marker: str | None = None) -> None:
     reset_invalid_venv()
     if not PYTHON.exists():
         init()
-    run([str(PYTHON), "-m", "pytest", "-q", "-s"])
+
+    command = [str(PYTHON), "-m", "pytest", "-q", "-s"]
+    if marker is not None:
+        command.extend(["-m", marker])
+    command.extend(paths)
+    run(command)
+
+
+def test() -> None:
+    """Full automated test suite."""
+    run_backend_pytest_suite("backend/tests")
     run(PNPM + ["test"])
+
+
+def test_fast() -> None:
+    """Fast feedback suite for inner-loop work."""
+    run_backend_pytest_suite("backend/tests/unit", "backend/tests/property")
+    run(PNPM + ["test:unit"])
+
+
+def test_unit() -> None:
+    """Unit tests only."""
+    run_backend_pytest_suite("backend/tests/unit")
+    run(PNPM + ["test:unit"])
+
+
+def test_integration() -> None:
+    """Live Python integration tests only."""
+    run_backend_pytest_suite("backend/tests/integration", marker="integration")
+
+
+def test_acceptance() -> None:
+    """Executable specification and BDD tests."""
+    run_backend_pytest_suite("backend/tests/acceptance", marker="acceptance")
+
+
+def test_property() -> None:
+    """Property-based tests."""
+    run_backend_pytest_suite("backend/tests/property", marker="property")
+
+
+def test_all() -> None:
+    """Alias for the full suite."""
+    test()
 
 
 def scan() -> None:
@@ -172,12 +202,8 @@ def scan() -> None:
             env=os.environ.copy(),
             stdout=report,
         )
-    if in_git_repo():
-        gitleaks_target = ROOT
-        gitleaks_mode = "git"
-    else:
-        gitleaks_target = prepare_gitleaks_dir_fallback()
-        gitleaks_mode = "dir"
+    gitleaks_target = prepare_gitleaks_dir_fallback()
+    gitleaks_mode = "dir"
 
     write_json_artifact(
         SCANS_DIR / "gitleaks-mode.json",
@@ -187,19 +213,23 @@ def scan() -> None:
         },
     )
 
-    run(
-        [
-            "gitleaks",
-            gitleaks_mode,
-            str(gitleaks_target),
-            "--no-banner",
-            "--redact",
-            "--report-format",
-            "sarif",
-            "--report-path",
-            str(SCANS_DIR / "gitleaks.sarif"),
-        ]
-    )
+    try:
+        run(
+            [
+                "gitleaks",
+                gitleaks_mode,
+                str(gitleaks_target),
+                "--no-banner",
+                "--redact",
+                "--report-format",
+                "sarif",
+                "--report-path",
+                str(SCANS_DIR / "gitleaks.sarif"),
+            ]
+        )
+    finally:
+        if gitleaks_target.is_relative_to(TMP_DIR) and gitleaks_target.exists():
+            shutil.rmtree(gitleaks_target, ignore_errors=True)
 
 
 COMMANDS = {
@@ -208,6 +238,12 @@ COMMANDS = {
     "lint": lint,
     "scan": scan,
     "test": test,
+    "test_acceptance": test_acceptance,
+    "test_all": test_all,
+    "test_fast": test_fast,
+    "test_integration": test_integration,
+    "test_property": test_property,
+    "test_unit": test_unit,
 }
 
 

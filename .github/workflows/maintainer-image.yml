@@ -67,9 +67,14 @@ jobs:
       - name: Smoke test maintainer Dev Containers CLI control path
         env:
           POLYGLOT_MAINTAINER_IMAGE: ${{ env.IMAGE_NAME }}:ci
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 scripts/run_in_maintainer_container.py exec -- python scripts/require_maintainer_container.py
           python3 scripts/run_in_maintainer_container.py git -- status --short --branch
+          python3 scripts/run_in_maintainer_container.py gh -- --version
+          python3 scripts/run_in_maintainer_container.py gh -- auth status
+          python3 scripts/run_in_maintainer_container.py exec -- diagram --help
+
 
       - name: Run maintainer workflow
         run: |
