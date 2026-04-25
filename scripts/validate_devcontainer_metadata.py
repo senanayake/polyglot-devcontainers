@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from oci_runtime import preferred_runtime
+
 
 STORABLE_KEYS = {
     "forwardPorts",
@@ -55,9 +57,10 @@ def expected_metadata(devcontainer_path: Path) -> dict[str, Any]:
 
 
 def inspect_image_labels(image: str) -> dict[str, str]:
+    runtime = preferred_runtime()
     result = subprocess.run(
         [
-            "docker",
+            runtime,
             "image",
             "inspect",
             image,

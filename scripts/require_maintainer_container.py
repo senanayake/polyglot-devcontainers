@@ -5,10 +5,10 @@ from __future__ import annotations
 
 import argparse
 import os
-import shutil
-import subprocess
 import sys
 from pathlib import Path
+
+from oci_runtime import preferred_runtime
 
 
 ROLE_ENV = "POLYGLOT_CONTAINER_ROLE"
@@ -19,26 +19,17 @@ def in_container() -> bool:
     return Path("/.dockerenv").exists() or Path("/run/.containerenv").exists()
 
 
-def docker_available() -> tuple[bool, str]:
-    if shutil.which("docker") is None:
-        return False, "docker CLI is not installed in the maintainer container"
+def oci_runtime_available() -> tuple[bool, str]:
     try:
-        subprocess.run(
-            ["docker", "info"],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=20,
-        )
-    except subprocess.TimeoutExpired:
-        return False, "docker info timed out inside the maintainer container"
-    except subprocess.CalledProcessError:
-        return False, "docker daemon is not reachable inside the maintainer container"
-    return True, ""
+        runtime = preferred_runtime()
+    except RuntimeError as exc:
+        return False, str(exc)
+    return True, runtime
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--require-oci-runtime", action="store_true")
     parser.add_argument("--require-docker", action="store_true")
     return parser.parse_args()
 
@@ -56,18 +47,25 @@ def main() -> int:
             f"{ROLE_ENV} must be set to '{EXPECTED_ROLE}' inside the maintainer container"
         )
 
-    if args.require_docker:
-        ok, message = docker_available()
+    require_oci_runtime = args.require_oci_runtime or args.require_docker
+    runtime_name = ""
+    if require_oci_runtime:
+        ok, message = oci_runtime_available()
         if not ok:
             errors.append(message)
+        else:
+            runtime_name = message
 
     if errors:
         for error in errors:
             print(f"[maintainer-runtime] {error}", file=sys.stderr)
         return 1
 
-    requirement = "maintainer+docker" if args.require_docker else "maintainer"
-    print(f"[maintainer-runtime] ok requirement={requirement}", flush=True)
+    requirement = "maintainer+oci-runtime" if require_oci_runtime else "maintainer"
+    if runtime_name:
+        print(f"[maintainer-runtime] ok requirement={requirement} runtime={runtime_name}", flush=True)
+    else:
+        print(f"[maintainer-runtime] ok requirement={requirement}", flush=True)
     return 0
 
 

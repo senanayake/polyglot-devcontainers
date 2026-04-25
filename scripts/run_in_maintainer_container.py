@@ -40,7 +40,7 @@ def devcontainer_cli_version() -> str:
 
 def runtime() -> str:
     configured = os.environ.get("POLYGLOT_CONTAINER_RUNTIME")
-    candidates = [configured] if configured else ["docker", "podman"]
+    candidates = [configured] if configured else ["podman", "docker"]
 
     for candidate in candidates:
         if not candidate or shutil.which(candidate) is None:
@@ -58,7 +58,7 @@ def runtime() -> str:
         return candidate
 
     print(
-        "[maintainer-runtime] no healthy container runtime found; tried docker and podman",
+        "[maintainer-runtime] no healthy container runtime found; tried podman and docker",
         file=sys.stderr,
     )
     raise SystemExit(1)

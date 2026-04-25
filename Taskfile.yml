@@ -43,8 +43,7 @@ tasks:
   _require_image_runtime:
     internal: true
     cmds:
-      - bash scripts/start_docker_daemon.sh
-      - python scripts/require_maintainer_container.py --require-docker
+      - python scripts/require_maintainer_container.py --require-oci-runtime
 
   init:
     desc: Bootstrap the maintained repository environments
@@ -250,18 +249,18 @@ tasks:
     deps: [_require_image_runtime]
     cmds:
       - mkdir -p .artifacts/images
-      - docker build --pull --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:verify .
+      - python scripts/oci_runtime.py build --pull --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-maintainer:verify --devcontainer-json .devcontainer/devcontainer.json
-      - docker save --output .artifacts/images/maintainer.tar polyglot-devcontainers-maintainer:verify
-      - docker build --pull --file templates/java-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-java:verify .
+      - python scripts/oci_runtime.py save --output .artifacts/images/maintainer.tar polyglot-devcontainers-maintainer:verify
+      - python scripts/oci_runtime.py build --pull --file templates/java-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-java:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-java:verify --devcontainer-json templates/java-secure/.devcontainer/devcontainer.json
-      - docker save --output .artifacts/images/java.tar polyglot-devcontainers-java:verify
-      - docker build --pull --file templates/diagram-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-diagrams:verify .
+      - python scripts/oci_runtime.py save --output .artifacts/images/java.tar polyglot-devcontainers-java:verify
+      - python scripts/oci_runtime.py build --pull --file templates/diagram-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-diagrams:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-diagrams:verify --devcontainer-json templates/diagram-secure/.devcontainer/devcontainer.json
-      - docker save --output .artifacts/images/diagrams.tar polyglot-devcontainers-diagrams:verify
-      - docker build --pull --file templates/python-node-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-python-node:verify .
+      - python scripts/oci_runtime.py save --output .artifacts/images/diagrams.tar polyglot-devcontainers-diagrams:verify
+      - python scripts/oci_runtime.py build --pull --file templates/python-node-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-python-node:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-python-node:verify --devcontainer-json templates/python-node-secure/.devcontainer/devcontainer.json
-      - docker save --output .artifacts/images/python-node.tar polyglot-devcontainers-python-node:verify
+      - python scripts/oci_runtime.py save --output .artifacts/images/python-node.tar polyglot-devcontainers-python-node:verify
 
   image:verify:
     desc: Check published image pinning, build the published images, and run their validation workflows
@@ -273,25 +272,25 @@ tasks:
       - bash scripts/smoke_test_published_starter.sh --image polyglot-devcontainers-diagrams:verify
       - bash scripts/smoke_test_published_starter.sh --image polyglot-devcontainers-python-node:verify --run-scenarios
       - >
-        docker run --rm -u root
+        python scripts/oci_runtime.py run --rm -u root
         -v "$(pwd):/workspaces/polyglot-devcontainers"
         -w /workspaces/polyglot-devcontainers
         polyglot-devcontainers-maintainer:verify
         bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
       - >
-        docker run --rm -u root
+        python scripts/oci_runtime.py run --rm -u root
         -v "$(pwd):/workspaces/polyglot-devcontainers"
         -w /workspaces/polyglot-devcontainers/templates/java-secure
         polyglot-devcontainers-java:verify
         bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
       - >
-        docker run --rm -u root
+        python scripts/oci_runtime.py run --rm -u root
         -v "$(pwd):/workspaces/polyglot-devcontainers"
         -w /workspaces/polyglot-devcontainers/templates/diagram-secure
         polyglot-devcontainers-diagrams:verify
         bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
       - >
-        docker run --rm -u root
+        python scripts/oci_runtime.py run --rm -u root
         -v "$(pwd):/workspaces/polyglot-devcontainers"
         -w /workspaces/polyglot-devcontainers/templates/python-node-secure
         polyglot-devcontainers-python-node:verify
