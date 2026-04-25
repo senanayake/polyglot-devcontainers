@@ -867,7 +867,7 @@ def run_verification_tests() -> subprocess.CompletedProcess[str]:
     env.pop("TEMP", None)
     env.pop("TMPDIR", None)
     return subprocess.run(
-        [str(PYTHON), "-m", "pytest", "-q", "-x", "tests/unit", "tests/property"],
+        [str(PYTHON), "-m", "pytest", "-q", "-x", "-m", "not integration", "tests"],
         cwd=ROOT,
         check=False,
         text=True,
@@ -2108,6 +2108,7 @@ def apply_remediation_candidate(
     command = [part for part in shlex.split(str(candidate["command"]))]
     outcome = {
         "candidate_key": candidate["candidate_key"],
+        "attempt_signature": candidate_attempt_signature(candidate),
         "package_name": candidate["package_name"],
         "target_type": candidate["target_type"],
         "target_dependency_name": candidate["target_dependency_name"],
@@ -2175,6 +2176,12 @@ def apply_remediation_candidate(
         return outcome
 
 
+def candidate_attempt_signature(candidate: dict[str, Any]) -> str:
+    # Equivalent uv add commands should be attempted once, even if multiple
+    # vulnerable packages collapse to the same parent upgrade.
+    return str(candidate.get("command") or candidate.get("candidate_key"))
+
+
 def remediation_report_status(
     initial_plan: dict[str, Any],
     final_plan: dict[str, Any],
@@ -2197,14 +2204,15 @@ def build_remediation_report(
     accepted: list[dict[str, Any]],
     rolled_back: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    exhausted_reasons = {item["candidate_key"]: item["reason"] for item in rolled_back}
+    exhausted_reasons = {item["attempt_signature"]: item["reason"] for item in rolled_back}
     exhausted_candidates = []
     remaining_candidates = []
     for candidate in final_plan["candidates"]:
-        if candidate["candidate_key"] in exhausted_reasons and candidate["action"] == "apply":
+        attempt_signature = candidate_attempt_signature(candidate)
+        if attempt_signature in exhausted_reasons and candidate["action"] == "apply":
             exhausted_candidate = dict(candidate)
             exhausted_candidate["action"] = "exhausted"
-            exhausted_candidate["reason"] = exhausted_reasons[candidate["candidate_key"]]
+            exhausted_candidate["reason"] = exhausted_reasons[attempt_signature]
             exhausted_candidates.append(exhausted_candidate)
             continue
         remaining_candidates.append(candidate)
@@ -2312,14 +2320,15 @@ def execute_scan_auto() -> tuple[dict[str, Any], int]:
             pending_candidates = [
                 candidate
                 for candidate in current_plan["candidates"]
-                if candidate["action"] == "apply" and candidate["candidate_key"] not in attempted
+                if candidate["action"] == "apply"
+                and candidate_attempt_signature(candidate) not in attempted
             ]
             if not pending_candidates:
                 final_plan = current_plan
                 break
 
             candidate = sorted(pending_candidates, key=candidate_sort_key)[0]
-            attempted.add(candidate["candidate_key"])
+            attempted.add(candidate_attempt_signature(candidate))
             print_status(
                 f"attempting {candidate['target_type']} remediation "
                 f"{candidate['target_dependency_name']} -> {candidate['target_version']} "
