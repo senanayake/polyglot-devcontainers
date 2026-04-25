@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from oci_runtime import preferred_runtime
+from oci_runtime import configured_runtimes, runtime_status
 
 
 STORABLE_KEYS = {
@@ -56,8 +56,7 @@ def expected_metadata(devcontainer_path: Path) -> dict[str, Any]:
     return {key: value for key, value in data.items() if key in STORABLE_KEYS}
 
 
-def inspect_image_labels(image: str) -> dict[str, str]:
-    runtime = preferred_runtime()
+def inspect_image_labels(image: str, runtime: str) -> dict[str, str]:
     result = subprocess.run(
         [
             runtime,
@@ -72,6 +71,35 @@ def inspect_image_labels(image: str) -> dict[str, str]:
         text=True,
     )
     return json.loads(result.stdout)
+
+
+def candidate_runtimes(explicit_runtime: str | None) -> list[str]:
+    if explicit_runtime:
+        return [explicit_runtime]
+
+    healthy_runtimes: list[str] = []
+    for runtime in configured_runtimes():
+        ok, _ = runtime_status(runtime)
+        if ok and runtime not in healthy_runtimes:
+            healthy_runtimes.append(runtime)
+    return healthy_runtimes
+
+
+def inspect_image_labels_with_fallback(image: str, explicit_runtime: str | None) -> dict[str, str]:
+    failures: list[str] = []
+
+    for runtime in candidate_runtimes(explicit_runtime):
+        try:
+            return inspect_image_labels(image, runtime)
+        except subprocess.CalledProcessError as exc:
+            stderr = (exc.stderr or exc.stdout or "").strip()
+            if stderr:
+                failures.append(f"{runtime}: {stderr}")
+            else:
+                failures.append(f"{runtime}: image inspect exited with status {exc.returncode}")
+
+    failure_detail = "; ".join(failures) if failures else "no healthy OCI runtime available"
+    raise RuntimeError(f"unable to inspect image {image!r}: {failure_detail}")
 
 
 def actual_metadata(labels: dict[str, str]) -> dict[str, Any]:
@@ -118,11 +146,19 @@ def main() -> int:
         required=True,
         help="Path to the source devcontainer.json file.",
     )
+    parser.add_argument(
+        "--runtime",
+        help="OCI runtime that owns the built image store (for example: docker or podman).",
+    )
     args = parser.parse_args()
 
     devcontainer_path = Path(args.devcontainer_json)
     expected = expected_metadata(devcontainer_path)
-    labels = inspect_image_labels(args.image)
+    try:
+        labels = inspect_image_labels_with_fallback(args.image, args.runtime)
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     actual = actual_metadata(labels)
     mismatches = subset_mismatches(expected, actual)
 
