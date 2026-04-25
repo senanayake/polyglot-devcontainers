@@ -1,0 +1,18 @@
+Feature: __FEATURE_NAME__ feature installation
+  The feature should install and configure the documented tooling in a way that
+  is understandable to humans and AI agents.
+
+  Rule: Default installation is observable and testable
+
+    Scenario: Install the feature with default options
+      Given a devcontainer image that enables the "__FEATURE_ID__" feature
+      When the feature install script runs
+      Then the "__FEATURE_COMMAND__" command is available on PATH
+      And the documented default behavior is satisfied
+
+  Rule: Option behavior remains explicit
+
+    Scenario: Configure a non-default option
+      Given the feature exposes configurable options
+      When a test scenario sets a non-default option value
+      Then the resulting environment matches the option contract

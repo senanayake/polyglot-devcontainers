@@ -9,10 +9,17 @@ devcontainer workflow.
 - `Taskfile.yml` - Task automation
 - `src/` - Python package structure
 - `tests/` - Test suite
-- Pinned Python developer tooling (uv, ruff, mypy, pytest)
+- Pinned Python developer tooling (uv, ruff, mypy, pytest, pytest-bdd, hypothesis)
 - `uv.lock` - Reproducible dependency locking
 - `pre-commit` configuration
 - Security scanning with pip-audit
+- A layered test surface:
+  - `task test` - full automated suite
+  - `task test:fast` - unit + property
+  - `task test:unit`
+  - `task test:integration`
+  - `task test:acceptance`
+  - `task test:property`
 
 ## Quick Start
 

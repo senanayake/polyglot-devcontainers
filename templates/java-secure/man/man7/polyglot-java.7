@@ -40,6 +40,16 @@ do the work
 .IP "4." 3
 run \f[CR]task ci\f[R]
 .PP
+Focused testing workflow:
+.IP "1." 3
+use \f[CR]task test:fast\f[R] for the unit plus property loop
+.IP "2." 3
+use \f[CR]task test:unit\f[R], \f[CR]task test:integration\f[R],
+\f[CR]task test:acceptance\f[R], or \f[CR]task test:property\f[R] when
+you need a specific suite
+.IP "3." 3
+use \f[CR]task test\f[R] as the full automated regression bar
+.PP
 Dependency\-oriented workflow:
 .IP "1." 3
 run \f[CR]task deps:inventory\f[R]
@@ -100,6 +110,9 @@ Prefer normalized report artifacts when triaging multiple update
 candidates.
 .IP \(bu 2
 Keep the verification loop intact after dependency changes.
+.IP \(bu 2
+Treat \f[CR]task test\f[R] as the full bar and use focused
+\f[CR]task test:*\f[R] helpers for suite\-level diagnostics.
 .SH SEE ALSO
 .IP \(bu 2
 \f[CR]polyglot(7)\f[R]

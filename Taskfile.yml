@@ -60,6 +60,30 @@ tasks:
       - task -t templates/python-node-secure/Taskfile.yml init
       - task -t templates/java-secure/Taskfile.yml init
 
+  init:feature:
+    desc: Scaffold a new repository-owned OCI devcontainer feature
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/scaffold_feature.py {{range .CLI_ARGS_LIST}}{{. | q}} {{end}}
+
+  init-feature:
+    desc: Alias for task init:feature
+    deps: [_require_maintainer]
+    cmds:
+      - task init:feature -- {{.CLI_ARGS}}
+
+  init:adr:
+    desc: Scaffold a new architecture decision record
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/scaffold_adr.py {{range .CLI_ARGS_LIST}}{{. | q}} {{end}}
+
+  init-adr:
+    desc: Alias for task init:adr
+    deps: [_require_maintainer]
+    cmds:
+      - task init:adr -- {{.CLI_ARGS}}
+
   lint:
     desc: Run repository quality checks across maintained environments
     deps: [_require_maintainer]

@@ -22,11 +22,14 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "hypothesis==6.152.2",
   "mypy==1.17.1",
   "pip-audit==2.8.0",
   "pre-commit==4.2.0",
   "pytest==8.4.1",
+  "pytest-bdd==8.1.0",
   "pytest-cov==6.2.1",
+  "pytest-xdist==3.8.0",
   "ruff==0.12.0"
 ]
 
@@ -38,8 +41,12 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+bdd_features_base_dir = "tests/acceptance/features"
+addopts = ["--strict-markers"]
 markers = [
   "integration: marks tests that call external resources (deselect with -m 'not integration')",
+  "acceptance: marks executable specification and BDD tests",
+  "property: marks property-based tests",
 ]
 
 [tool.ruff]

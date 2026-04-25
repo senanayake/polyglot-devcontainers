@@ -9,6 +9,8 @@ repository.
 - [Work Effectively in IDEs](./work-effectively-in-ides.md)
 - [Use GitHub CLI In The Maintainer Container](./use-github-cli-in-maintainer.md)
 - [Compose Features](./compose-features.md)
+- [Scaffold A Feature](./scaffold-a-feature.md)
+- [Record An Architecture Decision](./record-an-architecture-decision.md)
 - [Release Images](./release-images.md)
 - [Run the Security Workflow](./run-the-security-workflow.md)
 - [Run the Python Proving Batches](./run-the-python-proving-batches.md)

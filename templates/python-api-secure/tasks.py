@@ -867,7 +867,7 @@ def run_verification_tests() -> subprocess.CompletedProcess[str]:
     env.pop("TEMP", None)
     env.pop("TMPDIR", None)
     return subprocess.run(
-        [str(PYTHON), "-m", "pytest", "-q", "-x", "-m", "not integration"],
+        [str(PYTHON), "-m", "pytest", "-q", "-x", "tests/unit", "tests/property"],
         cwd=ROOT,
         check=False,
         text=True,
@@ -1016,25 +1016,50 @@ def format_code() -> None:
     run([str(PYTHON), "-m", "ruff", "format", "src", "tests", "tasks.py"])
 
 
-def test() -> None:
-    """Fast suite - skips integration tests."""
+def run_pytest_suite(*paths: str, marker: str | None = None) -> None:
     if not PYTHON.exists():
         init()
-    run([str(PYTHON), "-m", "pytest", "-q", "-s", "-m", "not integration"])
+
+    command = [str(PYTHON), "-m", "pytest", "-q", "-s"]
+    if marker is not None:
+        command.extend(["-m", marker])
+    command.extend(paths)
+    run(command)
+
+
+def test() -> None:
+    """Full automated test suite."""
+    run_pytest_suite("tests")
+
+
+def test_fast() -> None:
+    """Fast feedback suite for inner-loop work."""
+    run_pytest_suite("tests/unit", "tests/property")
+
+
+def test_unit() -> None:
+    """Unit tests only."""
+    run_pytest_suite("tests/unit")
+
+
+def test_acceptance() -> None:
+    """Executable specification and BDD tests."""
+    run_pytest_suite("tests/acceptance", marker="acceptance")
+
+
+def test_property() -> None:
+    """Property-based tests."""
+    run_pytest_suite("tests/property", marker="property")
 
 
 def test_integration() -> None:
     """Live integration tests only."""
-    if not PYTHON.exists():
-        init()
-    run([str(PYTHON), "-m", "pytest", "-q", "-s", "-m", "integration"])
+    run_pytest_suite("tests/integration", marker="integration")
 
 
 def test_all() -> None:
-    """Full suite."""
-    if not PYTHON.exists():
-        init()
-    run([str(PYTHON), "-m", "pytest", "-q", "-s"])
+    """Alias for the full suite."""
+    test()
 
 
 def scan() -> None:
@@ -2398,6 +2423,10 @@ COMMANDS = {
     "scan_plan": scan_plan,
     "scan_pr": scan_pr,
     "test": test,
+    "test_fast": test_fast,
+    "test_unit": test_unit,
+    "test_acceptance": test_acceptance,
+    "test_property": test_property,
     "test_all": test_all,
     "test_integration": test_integration,
     "upgrade": upgrade,

@@ -13,6 +13,13 @@ Included:
 - a checked-in `uv.lock` file for the Python side of the workspace
 - pre-commit configuration
 - local runtime docs available through `man polyglot` in the published image
+- a layered test surface:
+  - `task test` - full Python + Node suite
+  - `task test:fast` - Python unit + property plus Node unit tests
+  - `task test:unit`
+  - `task test:integration`
+  - `task test:acceptance`
+  - `task test:property`
 
 After opening the template in a devcontainer, run:
 
