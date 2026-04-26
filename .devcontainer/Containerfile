@@ -28,7 +28,7 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && chmod 0755 /tmp/install_runtime_docs.sh \
     && apt-get update \
     && apt-get -y dist-upgrade \
-    && apt-get install -y --no-install-recommends ca-certificates curl docker.io git gnupg less man-db \
+    && apt-get install -y --no-install-recommends ca-certificates curl docker.io fuse-overlayfs git gnupg less man-db podman slirp4netns uidmap \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSLo /tmp/nodesource.key https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
     && echo "${NODESOURCE_KEY_SHA256}  /tmp/nodesource.key" | sha256sum -c - \

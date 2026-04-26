@@ -110,30 +110,54 @@ def format_code() -> None:
     run(PNPM + ["format"])
 
 
-def test() -> None:
-    """Fast suite - skips Python integration tests."""
+def run_backend_pytest_suite(*paths: str, marker: str | None = None) -> None:
     reset_invalid_venv()
     if not PYTHON.exists():
         init()
-    run([str(PYTHON), "-m", "pytest", "-q", "-s", "-m", "not integration"])
+
+    command = [str(PYTHON), "-m", "pytest", "-q", "-s"]
+    if marker is not None:
+        command.extend(["-m", marker])
+    command.extend(paths)
+    run(command)
+
+
+def test() -> None:
+    """Full automated test suite."""
+    run_backend_pytest_suite("backend/tests")
     run(PNPM + ["test"])
+
+
+def test_fast() -> None:
+    """Fast feedback suite for inner-loop work."""
+    run_backend_pytest_suite("backend/tests/unit", "backend/tests/property")
+    run(PNPM + ["test:unit"])
+
+
+def test_unit() -> None:
+    """Unit tests only."""
+    run_backend_pytest_suite("backend/tests/unit")
+    run(PNPM + ["test:unit"])
 
 
 def test_integration() -> None:
     """Live Python integration tests only."""
-    reset_invalid_venv()
-    if not PYTHON.exists():
-        init()
-    run([str(PYTHON), "-m", "pytest", "-q", "-s", "-m", "integration"])
+    run_backend_pytest_suite("backend/tests/integration", marker="integration")
+
+
+def test_acceptance() -> None:
+    """Executable specification and BDD tests."""
+    run_backend_pytest_suite("backend/tests/acceptance", marker="acceptance")
+
+
+def test_property() -> None:
+    """Property-based tests."""
+    run_backend_pytest_suite("backend/tests/property", marker="property")
 
 
 def test_all() -> None:
-    """Full suite."""
-    reset_invalid_venv()
-    if not PYTHON.exists():
-        init()
-    run([str(PYTHON), "-m", "pytest", "-q", "-s"])
-    run(PNPM + ["test"])
+    """Alias for the full suite."""
+    test()
 
 
 def scan() -> None:
@@ -214,8 +238,12 @@ COMMANDS = {
     "lint": lint,
     "scan": scan,
     "test": test,
+    "test_acceptance": test_acceptance,
     "test_all": test_all,
+    "test_fast": test_fast,
     "test_integration": test_integration,
+    "test_property": test_property,
+    "test_unit": test_unit,
 }
 
 

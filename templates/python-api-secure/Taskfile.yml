@@ -20,17 +20,37 @@ tasks:
       - python tasks.py lint
 
   test:
-    desc: Run the fast default test suite (no integration tests)
+    desc: Run the full automated test suite
     cmds:
       - python tasks.py test
+
+  test:fast:
+    desc: Run the fast feedback suite (unit + property)
+    cmds:
+      - python tasks.py test_fast
+
+  test:unit:
+    desc: Run unit tests only
+    cmds:
+      - python tasks.py test_unit
 
   test:integration:
     desc: Run opt-in live integration tests
     cmds:
       - python tasks.py test_integration
 
+  test:acceptance:
+    desc: Run executable specification and BDD tests
+    cmds:
+      - python tasks.py test_acceptance
+
+  test:property:
+    desc: Run property-based tests
+    cmds:
+      - python tasks.py test_property
+
   test:all:
-    desc: Run the full test suite
+    desc: Alias for the full automated test suite
     cmds:
       - python tasks.py test_all
 

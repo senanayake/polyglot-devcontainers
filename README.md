@@ -75,6 +75,13 @@ This is the main working interface for humans and agents.
 Some environments also expose focused extensions such as:
 
 ```bash
+task init:feature
+task init:adr
+task test:fast
+task test:unit
+task test:integration
+task test:acceptance
+task test:property
 task upgrade
 task deps:report
 task scan:plan
@@ -83,6 +90,9 @@ task scan:pr
 ```
 
 when that workflow has been explicitly proven for that environment.
+
+`task test` remains the full automated regression bar. Focused `test:<concept>`
+verbs are zoom-in tools, not a redefinition of the contract.
 
 ## Quick Start
 

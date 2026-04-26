@@ -58,7 +58,13 @@ main() {
   render_agents_file
 
   mkdir -p .kbriefs/templates
-  mkdir -p docs/tutorials docs/how-to docs/reference docs/explanation
+  mkdir -p \
+    docs/tutorials \
+    docs/how-to \
+    docs/reference \
+    docs/reference/testing \
+    docs/explanation \
+    docs/explanation/decisions
 
   copy_if_missing "${asset_root}/.kbriefs/README.md" ".kbriefs/README.md"
 
@@ -70,7 +76,9 @@ main() {
   copy_if_missing "${asset_root}/docs/tutorials/README.md" "docs/tutorials/README.md"
   copy_if_missing "${asset_root}/docs/how-to/README.md" "docs/how-to/README.md"
   copy_if_missing "${asset_root}/docs/reference/README.md" "docs/reference/README.md"
+  copy_if_missing "${asset_root}/docs/reference/testing/README.md" "docs/reference/testing/README.md"
   copy_if_missing "${asset_root}/docs/explanation/README.md" "docs/explanation/README.md"
+  copy_if_missing "${asset_root}/docs/explanation/decisions/README.md" "docs/explanation/decisions/README.md"
 }
 
 main "$@"

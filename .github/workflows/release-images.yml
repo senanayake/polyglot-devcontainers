@@ -161,6 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      POLYGLOT_CONTAINER_RUNTIME: docker
     strategy:
       fail-fast: false
       matrix:
@@ -251,6 +252,7 @@ jobs:
               ;;
           esac
           python3 scripts/validate_devcontainer_metadata.py \
+            --runtime docker \
             --image "${{ matrix.image_name }}:ci" \
             --devcontainer-json "${devcontainer_json}"
 

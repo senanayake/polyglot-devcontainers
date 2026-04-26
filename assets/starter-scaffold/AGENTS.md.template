@@ -85,12 +85,31 @@ Use:
 - `docs/how-to/` for goal-oriented instructions
 - `docs/reference/` for factual contracts and interfaces
 - `docs/explanation/` for rationale, trade-offs, and architecture
+- `docs/explanation/decisions/` for ADRs
 
 Agents should add new documentation to the correct Diataxis section instead of
 accumulating mixed-purpose notes in one file.
 
 If a document does not fit one of those four sections, add a short note in the
 PR or issue explaining why before introducing a new pattern.
+
+When a change introduces a durable architectural choice, record it as an ADR
+instead of leaving the rationale only in chat or commit messages.
+
+---
+
+## Testing Guidance
+
+Treat testing as a hierarchy, not a single undifferentiated command.
+
+- `task test` should remain the full verification bar for automated tests
+- use focused verbs such as `task test:fast`, `task test:unit`,
+  `task test:integration`, `task test:acceptance`, and `task test:property`
+  when the project exposes them
+- keep requirements, executable specifications, and test files traceable to one
+  another when the project starts to grow
+- use BDD or specification-by-example artifacts for externally visible
+  behavior, and keep fast TDD-oriented tests available for inner-loop work
 
 ---
 
