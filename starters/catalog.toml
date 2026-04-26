@@ -11,6 +11,8 @@ published_image_bootstrap_supported = false
 runtime_guidance = ["polyglot", "polyglot-starters", "polyglot-python", "polyglot-security"]
 task_contract = ["init", "lint", "test", "scan", "ci"]
 features = ["security-baseline", "python-engineering", "agent-runtime"]
+scenarios = []
+default_profile = "baseline"
 proof_commands = ["task ci"]
 proof_paths = [
   ".polyglot-starter.json",
@@ -19,6 +21,11 @@ proof_paths = [
   ".venv",
   ".artifacts/scans/pip-audit-policy.json",
 ]
+
+[starters.python-secure.composition_profiles.baseline]
+description = "Baseline secure Python workspace with the default task contract."
+features = ["security-baseline", "python-engineering", "agent-runtime"]
+scenarios = []
 
 [starters.python-node-secure]
 title = "Python And Node Secure Starter"
@@ -32,6 +39,8 @@ published_image_bootstrap_supported = true
 runtime_guidance = ["polyglot", "polyglot-starters", "polyglot-python", "polyglot-security"]
 task_contract = ["init", "lint", "test", "scan", "ci"]
 features = ["security-baseline", "python-engineering", "node-engineering", "agent-runtime"]
+scenarios = ["starter-health", "security-evidence", "non-git-scan-fallback"]
+default_profile = "polyglot-default"
 proof_commands = ["task ci", "task scenarios:verify"]
 proof_paths = [
   ".polyglot-starter.json",
@@ -43,6 +52,11 @@ proof_paths = [
   ".artifacts/scans/pnpm-audit.json",
   ".artifacts/scenarios/starter-health.json",
 ]
+
+[starters.python-node-secure.composition_profiles.polyglot-default]
+description = "Default polyglot workspace with Python, Node, and starter-local scenario coverage."
+features = ["security-baseline", "python-engineering", "node-engineering", "agent-runtime"]
+scenarios = ["starter-health", "security-evidence", "non-git-scan-fallback"]
 
 [starters.java-secure]
 title = "Java Secure Starter"
@@ -56,6 +70,8 @@ published_image_bootstrap_supported = true
 runtime_guidance = ["polyglot", "polyglot-starters", "polyglot-java", "polyglot-security"]
 task_contract = ["init", "lint", "test", "scan", "ci"]
 features = ["security-baseline", "java-engineering", "agent-runtime"]
+scenarios = []
+default_profile = "baseline"
 proof_commands = ["task ci"]
 proof_paths = [
   ".polyglot-starter.json",
@@ -65,3 +81,8 @@ proof_paths = [
   ".artifacts/scans/trivy-java.json",
   ".artifacts/scans/gitleaks.sarif",
 ]
+
+[starters.java-secure.composition_profiles.baseline]
+description = "Baseline Gradle workspace with Java tooling and security scans."
+features = ["security-baseline", "java-engineering", "agent-runtime"]
+scenarios = []

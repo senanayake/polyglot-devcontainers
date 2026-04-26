@@ -37,6 +37,14 @@ IGNORED_COPY_NAMES = {
 
 
 @dataclass(frozen=True)
+class CompositionProfile:
+    profile_id: str
+    description: str
+    features: list[str]
+    scenarios: list[str]
+
+
+@dataclass(frozen=True)
 class StarterDefinition:
     starter_id: str
     title: str
@@ -48,6 +56,9 @@ class StarterDefinition:
     runtime_guidance: list[str]
     task_contract: list[str]
     features: list[str]
+    scenarios: list[str]
+    default_profile: str
+    composition_profiles: dict[str, CompositionProfile]
     proof_commands: list[str]
     proof_paths: list[str]
     published_image: str | None = None
@@ -94,6 +105,27 @@ def validate_starter_definition(starter: StarterDefinition) -> None:
         raise SystemExit(f"starter {starter.starter_id!r} must declare proof_commands")
     if not starter.proof_paths:
         raise SystemExit(f"starter {starter.starter_id!r} must declare proof_paths")
+    if starter.default_profile not in starter.composition_profiles:
+        raise SystemExit(
+            f"starter {starter.starter_id!r} default_profile "
+            f"{starter.default_profile!r} is not declared in composition_profiles"
+        )
+
+    for profile_id, profile in starter.composition_profiles.items():
+        unsupported_features = set(profile.features).difference(starter.features)
+        if unsupported_features:
+            unsupported = ", ".join(sorted(unsupported_features))
+            raise SystemExit(
+                f"starter {starter.starter_id!r} profile {profile_id!r} "
+                f"references unsupported features: {unsupported}"
+            )
+        unsupported_scenarios = set(profile.scenarios).difference(starter.scenarios)
+        if unsupported_scenarios:
+            unsupported = ", ".join(sorted(unsupported_scenarios))
+            raise SystemExit(
+                f"starter {starter.starter_id!r} profile {profile_id!r} "
+                f"references unsupported scenarios: {unsupported}"
+            )
 
     for required_file in ("Taskfile.yml", "README.md"):
         if not (template_path / required_file).exists():
@@ -115,6 +147,23 @@ def load_catalog() -> dict[str, StarterDefinition]:
     for starter_id, raw_value in starters.items():
         if not isinstance(raw_value, dict):
             raise SystemExit(f"starter entry {starter_id!r} must be a table")
+        profile_payload = raw_value.get("composition_profiles", {})
+        if not isinstance(profile_payload, dict) or not profile_payload:
+            raise SystemExit(
+                f"starter {starter_id!r} must declare one or more composition_profiles"
+            )
+        composition_profiles: dict[str, CompositionProfile] = {}
+        for profile_id, profile_value in profile_payload.items():
+            if not isinstance(profile_value, dict):
+                raise SystemExit(
+                    f"starter {starter_id!r} composition profile {profile_id!r} must be a table"
+                )
+            composition_profiles[profile_id] = CompositionProfile(
+                profile_id=profile_id,
+                description=str(profile_value["description"]),
+                features=[str(value) for value in profile_value.get("features", [])],
+                scenarios=[str(value) for value in profile_value.get("scenarios", [])],
+            )
         definitions[starter_id] = StarterDefinition(
             starter_id=starter_id,
             title=str(raw_value["title"]),
@@ -126,6 +175,9 @@ def load_catalog() -> dict[str, StarterDefinition]:
             runtime_guidance=[str(value) for value in raw_value.get("runtime_guidance", [])],
             task_contract=[str(value) for value in raw_value.get("task_contract", [])],
             features=[str(value) for value in raw_value.get("features", [])],
+            scenarios=[str(value) for value in raw_value.get("scenarios", [])],
+            default_profile=str(raw_value["default_profile"]),
+            composition_profiles=composition_profiles,
             proof_commands=[str(value) for value in raw_value.get("proof_commands", [])],
             proof_paths=[str(value) for value in raw_value.get("proof_paths", [])],
             published_image=(
@@ -158,6 +210,18 @@ def ensure_generation_mode(starter: StarterDefinition, mode: str | None) -> str:
     return selected
 
 
+def resolve_profile(starter: StarterDefinition, profile_id: str | None) -> CompositionProfile:
+    selected = profile_id or starter.default_profile
+    try:
+        return starter.composition_profiles[selected]
+    except KeyError as error:
+        available = ", ".join(sorted(starter.composition_profiles))
+        raise SystemExit(
+            f"composition profile {selected!r} is not supported for {starter.starter_id}; "
+            f"available profiles: {available}"
+        ) from error
+
+
 def resolve_repo_relative(path_value: str) -> Path:
     resolved = (ROOT / path_value).resolve()
     try:
@@ -187,17 +251,27 @@ def ignore_copy_entries(_: str, names: list[str]) -> set[str]:
     return {name for name in names if name in IGNORED_COPY_NAMES}
 
 
-def write_generated_stamp(output_path: Path, starter: StarterDefinition, generation_mode: str) -> None:
+def write_generated_stamp(
+    output_path: Path,
+    starter: StarterDefinition,
+    generation_mode: str,
+    profile: CompositionProfile,
+) -> None:
     payload = {
         "starter_id": starter.starter_id,
         "title": starter.title,
         "generation_mode": generation_mode,
+        "composition_profile": profile.profile_id,
+        "composition_description": profile.description,
         "source_template": starter.source_template,
         "published_image": starter.published_image,
         "published_image_bootstrap_supported": starter.published_image_bootstrap_supported,
         "runtime_guidance": starter.runtime_guidance,
         "task_contract": starter.task_contract,
-        "features": starter.features,
+        "supported_features": starter.features,
+        "selected_features": profile.features,
+        "supported_scenarios": starter.scenarios,
+        "selected_scenarios": profile.scenarios,
         "proof_commands": starter.proof_commands,
         "proof_paths": starter.proof_paths,
         "catalog_path": str(CATALOG_PATH.relative_to(ROOT)),
@@ -212,13 +286,18 @@ def generate_source_template(starter: StarterDefinition, output_path: Path) -> N
 
 
 def generate_workspace(
-    starter: StarterDefinition, output_path: Path, generation_mode: str, *, force: bool
+    starter: StarterDefinition,
+    profile: CompositionProfile,
+    output_path: Path,
+    generation_mode: str,
+    *,
+    force: bool,
 ) -> Path:
     validate_empty_or_force(output_path, force)
     if generation_mode != "source-template":
         raise SystemExit(f"unsupported generation mode: {generation_mode}")
     generate_source_template(starter, output_path)
-    write_generated_stamp(output_path, starter, generation_mode)
+    write_generated_stamp(output_path, starter, generation_mode, profile)
     return output_path
 
 
@@ -248,6 +327,7 @@ def markdown_lines(result: dict[str, Any]) -> list[str]:
         "",
         f"- title: `{result['title']}`",
         f"- generation mode: `{result['generation_mode']}`",
+        f"- composition profile: `{result['composition_profile']}`",
         f"- workspace: `{result['workspace']}`",
         f"- status: `{result['status']}`",
         "",
@@ -257,6 +337,16 @@ def markdown_lines(result: dict[str, Any]) -> list[str]:
 
     for page in result.get("runtime_guidance", []):
         lines.append(f"- `man {page}`")
+
+    lines.extend(["", "## Selected Composition", ""])
+    if result.get("selected_features"):
+        lines.append(f"- features: `{', '.join(result['selected_features'])}`")
+    else:
+        lines.append("- features: `none`")
+    if result.get("selected_scenarios"):
+        lines.append(f"- scenarios: `{', '.join(result['selected_scenarios'])}`")
+    else:
+        lines.append("- scenarios: `none`")
 
     lines.extend(["", "## Commands", ""])
     for command in result.get("commands", []):
@@ -279,19 +369,23 @@ def write_markdown(path: Path, payload: dict[str, Any]) -> None:
 
 def prove_starter(
     starter: StarterDefinition,
+    profile: CompositionProfile,
     generation_mode: str,
     *,
     workspace_root: Path,
     report_root: Path,
 ) -> int:
-    workspace = workspace_root / starter.starter_id
+    workspace = workspace_root / starter.starter_id / profile.profile_id
     workspace.parent.mkdir(parents=True, exist_ok=True)
-    generate_workspace(starter, workspace, generation_mode, force=True)
+    generate_workspace(starter, profile, workspace, generation_mode, force=True)
 
     result: dict[str, Any] = {
         "starter_id": starter.starter_id,
         "title": starter.title,
         "generation_mode": generation_mode,
+        "composition_profile": profile.profile_id,
+        "selected_features": profile.features,
+        "selected_scenarios": profile.scenarios,
         "workspace": str(workspace),
         "runtime_guidance": starter.runtime_guidance,
         "commands": [],
@@ -311,8 +405,8 @@ def prove_starter(
         result["status"] = "failed"
         result["failure"] = f"command failed: {' '.join(error.cmd)}"
 
-    json_output = report_root / starter.starter_id / "proof.json"
-    markdown_output = report_root / starter.starter_id / "proof.md"
+    json_output = report_root / starter.starter_id / profile.profile_id / "proof.json"
+    markdown_output = report_root / starter.starter_id / profile.profile_id / "proof.md"
     write_json(json_output, result)
     write_markdown(markdown_output, result)
     print(
@@ -333,11 +427,13 @@ def parse_args() -> argparse.Namespace:
 
     show_parser = subparsers.add_parser("show")
     show_parser.add_argument("--starter", required=True)
+    show_parser.add_argument("--profile")
 
     generate_parser = subparsers.add_parser("generate")
     generate_parser.add_argument("--starter", required=True)
     generate_parser.add_argument("--output", type=Path, required=True)
     generate_parser.add_argument("--mode")
+    generate_parser.add_argument("--profile")
     generate_parser.add_argument("--force", action="store_true")
 
     prove_parser = subparsers.add_parser("prove")
@@ -345,6 +441,7 @@ def parse_args() -> argparse.Namespace:
     prove_target.add_argument("--starter")
     prove_target.add_argument("--all", action="store_true")
     prove_parser.add_argument("--mode")
+    prove_parser.add_argument("--profile")
     prove_parser.add_argument("--workspace-root", type=Path, default=DEFAULT_PROOF_ROOT)
     prove_parser.add_argument("--report-root", type=Path, default=DEFAULT_REPORT_ROOT)
 
@@ -370,24 +467,35 @@ def main() -> int:
             print(
                 "[starter-validate] "
                 f"starter={starter.starter_id} mode={starter.default_generation_mode} "
-                f"template={starter.source_template}",
+                f"profile={starter.default_profile} template={starter.source_template}",
                 flush=True,
             )
         return 0
 
     if args.command == "show":
         starter = require_starter(definitions, args.starter)
-        print(json.dumps(asdict(starter), indent=2))
+        profile = resolve_profile(starter, args.profile)
+        payload = asdict(starter)
+        payload["resolved_profile"] = asdict(profile)
+        print(json.dumps(payload, indent=2))
         return 0
 
     if args.command == "generate":
         starter = require_starter(definitions, args.starter)
         generation_mode = ensure_generation_mode(starter, args.mode)
+        profile = resolve_profile(starter, args.profile)
         output_path = args.output if args.output.is_absolute() else (ROOT / args.output)
-        workspace = generate_workspace(starter, output_path, generation_mode, force=args.force)
+        workspace = generate_workspace(
+            starter,
+            profile,
+            output_path,
+            generation_mode,
+            force=args.force,
+        )
         print(
             "[starter-generate] "
-            f"starter={starter.starter_id} mode={generation_mode} output={workspace}",
+            f"starter={starter.starter_id} mode={generation_mode} "
+            f"profile={profile.profile_id} output={workspace}",
             flush=True,
         )
         return 0
@@ -401,8 +509,10 @@ def main() -> int:
         exit_code = 0
         for starter in starters:
             generation_mode = ensure_generation_mode(starter, args.mode)
+            profile = resolve_profile(starter, args.profile)
             current_exit = prove_starter(
                 starter,
+                profile,
                 generation_mode,
                 workspace_root=args.workspace_root if args.workspace_root.is_absolute() else ROOT / args.workspace_root,
                 report_root=args.report_root if args.report_root.is_absolute() else ROOT / args.report_root,
