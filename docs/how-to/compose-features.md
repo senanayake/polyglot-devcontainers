@@ -32,6 +32,8 @@ large Dockerfile.
 ## Selection guidance
 
 - Use `security-baseline` in every secure workspace.
+- Add `pandoc` when the workspace needs deterministic Markdown-to-HTML or PDF
+  rendering.
 - Add `python-engineering` for Python repositories.
 - Add `node-engineering` for Node/TypeScript repositories.
 - Add `agent-runtime` when the environment should be optimized for terminal and

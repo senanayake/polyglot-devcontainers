@@ -51,6 +51,7 @@ Polyglot reduces that entropy by making the execution surface explicit:
 Today, you can use this repository to:
 
 - work on Polyglot itself inside a published maintainer container
+- create slide-quality software portfolio diagrams from a published diagrams image
 - start a new repository from a secure Python, Java, Node, or polyglot template
 - consume published starter images directly in downstream devcontainers
 - run repo-owned scenarios for dependency maintenance, policy-aware scanning,
@@ -74,11 +75,24 @@ This is the main working interface for humans and agents.
 Some environments also expose focused extensions such as:
 
 ```bash
+task init:feature
+task init:adr
+task test:fast
+task test:unit
+task test:integration
+task test:acceptance
+task test:property
 task upgrade
 task deps:report
+task scan:plan
+task scan:auto
+task scan:pr
 ```
 
 when that workflow has been explicitly proven for that environment.
+
+`task test` remains the full automated regression bar. Focused `test:<concept>`
+verbs are zoom-in tools, not a redefinition of the contract.
 
 ## Quick Start
 
@@ -104,6 +118,7 @@ Choose a starter from [templates](./templates/README.md):
 - [python-api-secure](./templates/python-api-secure/README.md)
 - [node-secure](./templates/node-secure/README.md)
 - [python-node-secure](./templates/python-node-secure/README.md)
+- [diagram-secure](./templates/diagram-secure/README.md)
 - [java-secure](./templates/java-secure/README.md)
 
 Open the copied starter in a devcontainer, then run `task ci`.
@@ -158,6 +173,7 @@ Use [examples](./examples/README.md) when you want a working environment that
 teaches the system:
 
 - [python-image-example](./examples/python-image-example/README.md)
+- [diagram-image-example](./examples/diagram-image-example/README.md)
 - [java-image-example](./examples/java-image-example/README.md)
 - [python-maintenance-example](./examples/python-maintenance-example/README.md)
 - [java-maintenance-example](./examples/java-maintenance-example/README.md)
@@ -181,13 +197,52 @@ Current published images:
 
 - [`ghcr.io/senanayake/polyglot-devcontainers-maintainer`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-maintainer)
 - [`ghcr.io/senanayake/polyglot-devcontainers-java`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-java)
+- [`ghcr.io/senanayake/polyglot-devcontainers-diagrams`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-diagrams)
 - [`ghcr.io/senanayake/polyglot-devcontainers-python-node`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-python-node)
 
 The maintainer image is for working on this repository and preserving CI parity.
 The starter images are the recommended downstream base images.
 
+## Using Polyglot Images Downstream
+
+The published images can be used as base images for your own private containers and development environments.
+
+See [docs/downstream/README.md](docs/downstream/README.md) for guidance on:
+
+- **Building private images** from polyglot base images
+- **Understanding the stable API** that polyglot guarantees
+- **Creating private scenarios** following polyglot patterns
+- **Choosing the right base image** for your use case
+
+Example use case from the Sententia project:
+
+```dockerfile
+FROM ghcr.io/senanayake/polyglot-devcontainers-python-node:latest
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends docker.io && \
+    rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY . .
+RUN pnpm build
+USER vscode
+CMD ["pnpm", "tsx", "src/index.ts"]
+```
+
+For detailed patterns, security best practices, and the base image contract, see the [downstream documentation](docs/downstream/README.md).
+
 The recent releases table below is maintained automatically by the release
 workflow.
+
+Use the GitHub Actions `cut-release` workflow to create a tagged release from
+the UI. It computes the next `major`, `minor`, or `patch` tag from the
+repository tags, dispatches the full release workflow, and waits for it to
+finish. Manual runs of `release-images` support `validate-only` mode for image
+validation and `full-release` mode for an existing tag. Successful releases now
+add GitHub package-page links for the published images and browser-viewable
+security docs under `docs/releases/<tag>/`.
 
 <!-- recent-releases:start -->
 ## Recent Releases
@@ -196,11 +251,11 @@ Recent published release notes are available here:
 
 | Version | Date | Release Notes |
 | --- | --- | --- |
+| `v0.0.25` | 2026-04-12 | [v0.0.25](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.25) |
+| `v0.0.23` | 2026-04-11 | [v0.0.23](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.23) |
+| `v0.0.22` | 2026-04-11 | [v0.0.22](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.22) |
+| `v0.0.21` | 2026-04-11 | [v0.0.21](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.21) |
 | `v0.0.17` | 2026-03-24 | [v0.0.17](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.17) |
-| `v0.0.16` | 2026-03-23 | [v0.0.16](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.16) |
-| `v0.0.13` | 2026-03-23 | [v0.0.13](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.13) |
-| `v0.0.11` | 2026-03-23 | [v0.0.11](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.11) |
-| `v0.0.10` | 2026-03-22 | [v0.0.10](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.10) |
 
 <!-- recent-releases:end -->
 

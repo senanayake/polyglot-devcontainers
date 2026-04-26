@@ -1,0 +1,9 @@
+{
+  "id": "diagram-rendering",
+  "version": "0.1.0",
+  "name": "Diagram Rendering",
+  "description": "Install D2, Graphviz, curated fonts, and the diagram wrapper CLI.",
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ]
+}

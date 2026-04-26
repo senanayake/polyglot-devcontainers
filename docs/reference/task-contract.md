@@ -14,6 +14,11 @@ Some repositories may also expose optional helper tasks such as:
 
 ```bash
 task format
+task test:fast
+task test:unit
+task test:integration
+task test:acceptance
+task test:property
 task deps:inventory
 task deps:plan
 task deps:report
@@ -31,6 +36,12 @@ These helpers must extend the standard workflow rather than replace it.
 - `init`: bootstrap the development environment
 - `lint`: run code quality and type checks
 - `test`: run automated tests
+- `test:fast` (optional): run a fast inner-loop subset such as unit and
+  property tests
+- `test:unit` (optional): run unit tests only
+- `test:integration` (optional): run integration tests only
+- `test:acceptance` (optional): run executable specification / BDD tests only
+- `test:property` (optional): run property-based tests only
 - `scan`: run security checks
 - `ci`: run the full workflow
 - `deps:inventory` (optional): write normalized dependency inventory artifacts
@@ -61,10 +72,18 @@ bootstrap with `uv sync --frozen`. The other shapes remain important for
 detection, compatibility, and honest artifact generation, but they are not the
 primary path the repository is optimizing going forward.
 
-## Phase 1 Python behavior
+## Testing Hierarchy
 
-In the root repository:
+Polyglot now treats `task test` as the full automated regression bar.
 
-- `lint` runs Ruff and MyPy
-- `test` runs Pytest with coverage
-- `scan` runs `pip-audit`, policy evaluation, and Gitleaks with artifact output
+When an environment needs faster or narrower feedback loops, it should expose
+focused verbs such as:
+
+- `task test:fast`
+- `task test:unit`
+- `task test:integration`
+- `task test:acceptance`
+- `task test:property`
+
+Those helper verbs extend the contract. They do not redefine `task test` to
+mean a smaller suite.

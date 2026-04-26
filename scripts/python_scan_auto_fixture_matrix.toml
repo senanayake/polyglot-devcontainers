@@ -1,0 +1,165 @@
+[[fixture]]
+name = "python-secure-direct-runtime"
+source = "templates/python-secure"
+mode = "scan-auto"
+
+[fixture.expect]
+exit_code = 0
+status = "partial"
+min_accepted = 1
+max_rolled_back = 0
+remaining_apply_candidates = 0
+require_post_test_pass = true
+required_accepted_target_types = ["direct"]
+required_accepted_packages = ["python-jose"]
+
+[[fixture.replace]]
+path = "pyproject.toml"
+find = "python-jose[cryptography]>=3.4.0"
+replace = "python-jose[cryptography]==3.3.0"
+
+[[fixture.replace]]
+path = "security-scan-policy.toml"
+find = "allowed_scopes = [\"runtime\", \"dev\"]"
+replace = "allowed_scopes = [\"runtime\"]"
+
+[[fixture]]
+name = "python-secure-direct-dev"
+source = "templates/python-secure"
+mode = "scan-auto"
+
+[fixture.expect]
+exit_code = 0
+status = "partial"
+min_accepted = 1
+max_rolled_back = 1
+remaining_apply_candidates = 0
+require_post_test_pass = true
+required_accepted_target_types = ["direct"]
+required_accepted_packages = ["pygments"]
+
+[[fixture.replace]]
+path = "pyproject.toml"
+find = "  \"pytest==8.4.1\","
+replace = "  \"pygments==2.19.1\",\n  \"pytest==8.4.1\","
+
+[[fixture.replace]]
+path = "security-scan-policy.toml"
+find = "allowed_scopes = [\"runtime\", \"dev\"]"
+replace = "allowed_scopes = [\"dev\"]"
+
+[[fixture]]
+name = "python-secure-rollback"
+source = "templates/python-secure"
+mode = "scan-auto"
+
+[fixture.expect]
+exit_code = 1
+status = "failed"
+accepted = 0
+min_rolled_back = 1
+remaining_apply_candidates = 0
+require_post_test_pass = true
+required_rolled_back_packages = ["python-jose"]
+
+[[fixture.replace]]
+path = "pyproject.toml"
+find = "python-jose[cryptography]>=3.4.0"
+replace = "python-jose[cryptography]==3.3.0"
+
+[[fixture.replace]]
+path = "security-scan-policy.toml"
+find = "allowed_scopes = [\"runtime\", \"dev\"]"
+replace = "allowed_scopes = [\"runtime\"]"
+
+[[fixture.append]]
+path = "tests/test_scan_auto_guardrail.py"
+text = """
+from importlib.metadata import version
+
+
+def test_python_jose_version_stays_at_expected_baseline() -> None:
+    assert version("python-jose") == "3.3.0"
+"""
+
+[[fixture]]
+name = "python-secure-python-barrier"
+source = "templates/python-secure"
+mode = "scan-auto"
+refresh_lock = false
+
+[fixture.expect]
+exit_code = 0
+status = "partial"
+accepted = 0
+rolled_back = 0
+remaining_apply_candidates = 0
+require_post_test_pass = true
+require_skip_reason_contains = ["project declares >=3.8.1"]
+
+[[fixture.replace]]
+path = "pyproject.toml"
+find = "requires-python = \">=3.12\""
+replace = "requires-python = \">=3.8.1\""
+
+[[fixture.replace]]
+path = "pyproject.toml"
+find = "  \"pytest==8.4.1\","
+replace = "  \"pygments==2.19.1\",\n  \"pytest==8.4.1\","
+
+[[fixture.replace]]
+path = "security-scan-policy.toml"
+find = "allowed_scopes = [\"runtime\", \"dev\"]"
+replace = "allowed_scopes = [\"dev\"]"
+
+[[fixture]]
+name = "python-api-secure-transitive-parent"
+source = "templates/python-api-secure"
+mode = "scan-auto"
+
+[fixture.expect]
+exit_code = 0
+status = "partial"
+min_accepted = 1
+remaining_apply_candidates = 0
+require_post_test_pass = true
+required_accepted_target_types = ["transitive-parent"]
+required_accepted_target_dependencies = ["fastapi"]
+
+[[fixture.replace]]
+path = "pyproject.toml"
+find = "  \"python-multipart==0.0.20\","
+replace = "  \"python-multipart==0.0.22\","
+
+[[fixture.replace]]
+path = "security-scan-policy.toml"
+find = "allowed_scopes = [\"runtime\", \"dev\"]"
+replace = "allowed_scopes = [\"runtime\"]"
+
+[[fixture]]
+name = "python-secure-pr-branch"
+source = "templates/python-secure"
+mode = "scan-pr"
+initialize_git = true
+
+[fixture.expect]
+exit_code = 0
+status = "partial"
+min_accepted = 1
+remaining_apply_candidates = 0
+require_post_test_pass = true
+required_accepted_target_types = ["direct"]
+required_accepted_packages = ["python-jose"]
+expected_branch_prefix = "codex/scan-remediation"
+expected_commit_message = "chore(deps): automate Python CVE remediation"
+expect_clean_git = true
+
+[[fixture.replace]]
+path = "pyproject.toml"
+find = "python-jose[cryptography]>=3.4.0"
+replace = "python-jose[cryptography]==3.3.0"
+
+[[fixture.replace]]
+path = "security-scan-policy.toml"
+find = "allowed_scopes = [\"runtime\", \"dev\"]"
+replace = "allowed_scopes = [\"runtime\"]"

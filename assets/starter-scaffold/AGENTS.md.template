@@ -1,0 +1,130 @@
+# AGENTS.md
+
+This file defines the operating guidance for AI coding agents working in
+`__PROJECT_NAME__`.
+
+This project was scaffolded from the Polyglot Devcontainers starter
+`__STARTER_TEMPLATE__`.
+
+Project-specific guidance is intentionally marked with `[REPLACE: ...]` so the
+team can tighten the file as the project becomes more specific.
+
+---
+
+## Development Philosophy
+
+`__PROJECT_NAME__` treats Knowledge-Based Product Development (KBPD) as a
+first-class part of the engineering workflow.
+
+Agents should assume:
+
+- decisions are stronger when the knowledge gap is named first
+- experiments, failures, trade-offs, and limits should be captured as reusable
+  knowledge
+- structured knowledge belongs in `.kbriefs/`, not only in chat or commit
+  history
+- documentation should evolve alongside the code and the knowledge base
+
+---
+
+## Project Context
+
+- Project name: `__PROJECT_NAME__`
+- Starter template: `__STARTER_TEMPLATE__`
+- Default project slug: `__PROJECT_SLUG__`
+- [REPLACE: describe the product, users, and intended outcomes]
+- [REPLACE: list the primary languages, runtimes, or frameworks in use]
+- [REPLACE: record the most important operational constraints]
+
+---
+
+## Agent Workflow
+
+Agents should:
+
+1. understand the task and identify the main knowledge gaps
+2. search `.kbriefs/` for existing guidance before making a durable decision
+3. update code and documentation together when behavior or operating guidance
+   changes
+4. prefer reproducible, project-local workflows over host-specific shortcuts
+5. capture durable learning in `.kbriefs/` when a decision, failure, trade-off,
+   boundary, or design space is explored
+
+Agents should not:
+
+- bypass the task contract without a strong reason
+- leave project-specific placeholders unresolved once the needed context is
+  known
+- create knowledge only in ephemeral discussion when it belongs in `.kbriefs/`
+
+---
+
+## K-Briefs
+
+Use `.kbriefs/` as the home for reusable project knowledge.
+
+When a change teaches something durable, prefer adding or updating a K-Brief
+instead of relying on memory.
+
+Suggested starter workflow:
+
+1. search `.kbriefs/README.md` and existing briefs
+2. pick the closest template from `.kbriefs/templates/`
+3. capture the learning with evidence
+4. link the brief from code or docs when it materially changes behavior
+
+---
+
+## Documentation
+
+Project documentation lives under `docs/` and should follow the Diataxis model.
+
+Use:
+
+- `docs/tutorials/` for guided learning paths
+- `docs/how-to/` for goal-oriented instructions
+- `docs/reference/` for factual contracts and interfaces
+- `docs/explanation/` for rationale, trade-offs, and architecture
+- `docs/explanation/decisions/` for ADRs
+
+Agents should add new documentation to the correct Diataxis section instead of
+accumulating mixed-purpose notes in one file.
+
+If a document does not fit one of those four sections, add a short note in the
+PR or issue explaining why before introducing a new pattern.
+
+When a change introduces a durable architectural choice, record it as an ADR
+instead of leaving the rationale only in chat or commit messages.
+
+---
+
+## Testing Guidance
+
+Treat testing as a hierarchy, not a single undifferentiated command.
+
+- `task test` should remain the full verification bar for automated tests
+- use focused verbs such as `task test:fast`, `task test:unit`,
+  `task test:integration`, `task test:acceptance`, and `task test:property`
+  when the project exposes them
+- keep requirements, executable specifications, and test files traceable to one
+  another when the project starts to grow
+- use BDD or specification-by-example artifacts for externally visible
+  behavior, and keep fast TDD-oriented tests available for inner-loop work
+
+---
+
+## Project-Specific Policy Hooks
+
+- [REPLACE: define the task runner or verification contract]
+- [REPLACE: define the completion bar, for example lint/test/scan/ci]
+- [REPLACE: define any release, security, or compliance gates]
+- [REPLACE: define repository-specific code review expectations]
+
+---
+
+## Maintenance Notes
+
+This scaffolded file is intentionally conservative.
+
+As `__PROJECT_NAME__` matures, replace the `[REPLACE: ...]` markers with
+project-owned guidance and remove sections that do not apply.

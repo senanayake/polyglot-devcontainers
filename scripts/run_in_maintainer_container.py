@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import hashlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -18,9 +19,11 @@ from urllib.parse import urlparse
 
 DEFAULT_IMAGE = "ghcr.io/senanayake/polyglot-devcontainers-maintainer:main"
 DEFAULT_DEVCONTAINER_CLI_VERSION = "0.84.1"
+DEFAULT_GITHUB_HOST = "github.com"
 WORKSPACE_PATH = "/workspaces/polyglot-devcontainers"
 ROLE_ENV = "POLYGLOT_CONTAINER_ROLE"
 ROLE_VALUE = "maintainer"
+GH_OPTION_VALUE_FLAGS = {"--hostname", "--repo", "-R"}
 
 
 def repo_root() -> Path:
@@ -37,7 +40,7 @@ def devcontainer_cli_version() -> str:
 
 def runtime() -> str:
     configured = os.environ.get("POLYGLOT_CONTAINER_RUNTIME")
-    candidates = [configured] if configured else ["docker", "podman"]
+    candidates = [configured] if configured else ["podman", "docker"]
 
     for candidate in candidates:
         if not candidate or shutil.which(candidate) is None:
@@ -55,7 +58,7 @@ def runtime() -> str:
         return candidate
 
     print(
-        "[maintainer-runtime] no healthy container runtime found; tried docker and podman",
+        "[maintainer-runtime] no healthy container runtime found; tried podman and docker",
         file=sys.stderr,
     )
     raise SystemExit(1)
@@ -114,6 +117,22 @@ def run_capture(command: list[str]) -> str:
         text=True,
     )
     return completed.stdout.strip()
+
+
+def devcontainer_exec(
+    argv: list[str],
+    override_config: str | None,
+    *,
+    environment: dict[str, str] | None = None,
+) -> int:
+    command = [
+        *devcontainer_command(),
+        "exec",
+        *common_cli_args(override_config),
+        *remote_env_args(environment),
+        *argv,
+    ]
+    return run(command, check=False).returncode
 
 
 def git_mount_flags() -> list[str]:
@@ -272,13 +291,7 @@ def exec_command(argv: list[str], override_config: str | None) -> int:
     if exit_code != 0:
         return exit_code
 
-    command = [
-        *devcontainer_command(),
-        "exec",
-        *common_cli_args(override_config),
-        *argv,
-    ]
-    return run(command, check=False).returncode
+    return devcontainer_exec(argv, override_config)
 
 
 def default_remote_name() -> str:
@@ -321,6 +334,44 @@ def remote_url_for_git_command(argv: list[str]) -> str | None:
         return run_capture(get_url)
     except subprocess.CalledProcessError:
         return None
+
+
+def remote_url_for_name(remote_name: str | None = None) -> str | None:
+    remote = remote_name or default_remote_name()
+    try:
+        return run_capture(["git", "remote", "get-url", remote])
+    except subprocess.CalledProcessError:
+        return None
+
+
+def scp_style_remote_to_https(remote_url: str) -> str | None:
+    match = re.match(r"^(?P<user>[^@]+)@(?P<host>[^:]+):(?P<path>.+)$", remote_url)
+    if not match:
+        return None
+    return f"https://{match.group('host')}/{match.group('path')}"
+
+
+def https_remote_url(remote_url: str | None) -> str | None:
+    if not remote_url:
+        return None
+
+    scp_style = scp_style_remote_to_https(remote_url)
+    if scp_style:
+        return scp_style
+
+    parsed = urlparse(remote_url)
+    if parsed.scheme == "https":
+        return remote_url
+    if parsed.scheme == "ssh" and parsed.hostname and parsed.path:
+        return f"https://{parsed.hostname}/{parsed.path.lstrip('/')}"
+    return None
+
+
+def hostname_for_remote(remote_url: str | None) -> str | None:
+    https_url = https_remote_url(remote_url)
+    if https_url:
+        return urlparse(https_url).hostname
+    return None
 
 
 def git_credentials_for_remote(remote_url: str) -> tuple[str, str] | None:
@@ -379,6 +430,141 @@ def git_auth_remote_env(argv: list[str]) -> dict[str, str] | None:
     }
 
 
+def gh_host() -> str:
+    explicit = os.environ.get("GH_HOST")
+    if explicit:
+        return explicit
+
+    remote_host = hostname_for_remote(remote_url_for_name())
+    if remote_host:
+        return remote_host
+
+    return DEFAULT_GITHUB_HOST
+
+
+def gh_public_host(host: str) -> bool:
+    return host == DEFAULT_GITHUB_HOST or host.endswith(".ghe.com")
+
+
+def gh_token_env(host: str) -> tuple[str, str]:
+    if gh_public_host(host):
+        return ("GH_TOKEN", "GITHUB_TOKEN")
+    return ("GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN")
+
+
+def gh_token_from_environment(host: str) -> tuple[str, str] | None:
+    for variable in gh_token_env(host):
+        value = os.environ.get(variable)
+        if value:
+            return variable, value
+    return None
+
+
+def gh_token_from_git_credentials(host: str) -> tuple[str, str] | None:
+    remote_url = remote_url_for_name()
+    candidate_url = https_remote_url(remote_url)
+    if candidate_url is None:
+        candidate_url = f"https://{host}/"
+
+    credentials = git_credentials_for_remote(candidate_url)
+    if not credentials:
+        return None
+
+    return gh_token_env(host)[0], credentials[1]
+
+
+def gh_remote_env() -> dict[str, str]:
+    host = gh_host()
+    auth = gh_token_from_environment(host) or gh_token_from_git_credentials(host)
+
+    environment = {
+        "GH_PROMPT_DISABLED": "1",
+    }
+    if host != DEFAULT_GITHUB_HOST:
+        environment["GH_HOST"] = host
+    if auth:
+        environment[auth[0]] = auth[1]
+    return environment
+
+
+def gh_operation(argv: list[str]) -> tuple[str, str | None]:
+    index = 0
+    while index < len(argv):
+        token = argv[index]
+        if token in GH_OPTION_VALUE_FLAGS:
+            index += 2
+            continue
+        if any(token.startswith(prefix) for prefix in ("--hostname=", "--repo=")):
+            index += 1
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+
+        command = token
+        index += 1
+        while index < len(argv):
+            subtoken = argv[index]
+            if subtoken in GH_OPTION_VALUE_FLAGS:
+                index += 2
+                continue
+            if any(subtoken.startswith(prefix) for prefix in ("--hostname=", "--repo=")):
+                index += 1
+                continue
+            if subtoken.startswith("-"):
+                index += 1
+                continue
+            return command, subtoken
+        return command, None
+
+    return "", None
+
+
+def gh_command_allowed(argv: list[str]) -> bool:
+    command, subcommand = gh_operation(argv)
+    if command != "auth":
+        return True
+    if subcommand != "status":
+        return False
+    return "--show-token" not in argv and "-t" not in argv
+
+
+def gh_command(argv: list[str], override_config: str | None) -> int:
+    if not argv:
+        print("usage: run_in_maintainer_container.py gh -- <args...>", file=sys.stderr)
+        return 2
+
+    if not gh_command_allowed(argv):
+        print(
+            "[maintainer-gh] only non-persistent gh auth status checks are supported inside the "
+            "maintainer container. Supply GH_TOKEN or GITHUB_TOKEN on the host, or let the wrapper "
+            "derive an ephemeral token from the host Git credential store.",
+            file=sys.stderr,
+        )
+        return 2
+
+    exit_code = ensure_up(override_config)
+    if exit_code != 0:
+        return exit_code
+
+    script = """
+set -euo pipefail
+gh_config_dir="$(mktemp -d /tmp/polyglot-gh.XXXXXX)"
+cleanup() {
+  rm -rf "${gh_config_dir}"
+}
+trap cleanup EXIT
+export GH_CONFIG_DIR="${gh_config_dir}"
+exec gh "$@"
+""".strip()
+
+    return devcontainer_exec(
+        ["bash", "-lc", script, "--", *argv],
+        override_config,
+        environment=gh_remote_env(),
+    )
+
+
 def git_command(argv: list[str], override_config: str | None) -> int:
     if not argv:
         print("usage: run_in_maintainer_container.py git -- <args...>", file=sys.stderr)
@@ -390,17 +576,11 @@ def git_command(argv: list[str], override_config: str | None) -> int:
 
     auth_env = git_auth_remote_env(argv)
 
-    command = [
-        *devcontainer_command(),
-        "exec",
-        *common_cli_args(override_config),
-        *remote_env_args(auth_env),
-        "git",
-        "-c",
-        "core.autocrlf=input",
-        *argv,
-    ]
-    return run(command, check=False).returncode
+    return devcontainer_exec(
+        ["git", "-c", "core.autocrlf=input", *argv],
+        override_config,
+        environment=auth_env,
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -416,6 +596,9 @@ def parse_args() -> argparse.Namespace:
 
     git_parser = subparsers.add_parser("git")
     git_parser.add_argument("argv", nargs=argparse.REMAINDER)
+
+    gh_parser = subparsers.add_parser("gh")
+    gh_parser.add_argument("argv", nargs=argparse.REMAINDER)
 
     return parser.parse_args()
 
@@ -439,6 +622,11 @@ def main() -> int:
             if argv and argv[0] == "--":
                 argv = argv[1:]
             return git_command(argv, override)
+        if args.command == "gh":
+            argv = args.argv
+            if argv and argv[0] == "--":
+                argv = argv[1:]
+            return gh_command(argv, override)
         return 2
     finally:
         if override:

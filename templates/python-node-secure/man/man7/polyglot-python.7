@@ -53,6 +53,17 @@ do the work
 .IP "4." 3
 run \f[CR]task ci\f[R]
 .PP
+Focused testing workflow:
+.IP "1." 3
+use \f[CR]task test:fast\f[R] for unit plus property feedback and Node
+unit tests
+.IP "2." 3
+use \f[CR]task test:unit\f[R], \f[CR]task test:integration\f[R],
+\f[CR]task test:acceptance\f[R], or \f[CR]task test:property\f[R] when
+you need a specific Python slice
+.IP "3." 3
+use \f[CR]task test\f[R] as the full automated regression bar
+.PP
 Dependency\-oriented workflow:
 .IP "1." 3
 inspect \f[CR]task deps:inventory\f[R]
@@ -111,6 +122,9 @@ Keep \f[CR]uv.lock\f[R] checked in and aligned with
 \f[CR]pyproject.toml\f[R].
 .IP \(bu 2
 Use \f[CR]task ci\f[R] after dependency changes.
+.IP \(bu 2
+Treat \f[CR]task test\f[R] as the full bar and use focused
+\f[CR]task test:*\f[R] helpers for inner\-loop and diagnostic work.
 .SH SEE ALSO
 .IP \(bu 2
 \f[CR]polyglot(7)\f[R]

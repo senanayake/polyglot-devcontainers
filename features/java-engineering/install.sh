@@ -2,7 +2,9 @@
 set -euo pipefail
 
 GRADLE_VERSION="9.1.0"
-TRIVY_KEY_SHA256="51ca5d1384095c462099add67e46b028e0df0ff741c0f95ad30f561c4fad1ad4" # gitleaks:allow
+TRIVY_APT_KEYRING="/usr/share/keyrings/trivy.gpg"
+TRIVY_APT_REPO="https://aquasecurity.github.io/trivy-repo/deb"
+TRIVY_APT_KEY_URL="${TRIVY_APT_REPO}/public.key"
 
 apt-get update
 apt-get install -y --no-install-recommends ca-certificates curl gnupg unzip
@@ -17,11 +19,11 @@ ln -sf "/opt/gradle-${GRADLE_VERSION}/bin/gradle" /usr/local/bin/gradle
 rm -f /tmp/gradle.zip /tmp/gradle.zip.sha256
 
 mkdir -p /usr/share/keyrings
-curl -fsSLo /tmp/trivy.key https://get.trivy.dev/deb/public.key
-echo "${TRIVY_KEY_SHA256}  /tmp/trivy.key" | sha256sum -c -
-gpg --dearmor -o /usr/share/keyrings/trivy.gpg /tmp/trivy.key
-echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://get.trivy.dev/deb generic main" \
+# Follow Trivy's current Debian install instructions instead of pinning the
+# raw key file bytes, which can rotate without a package-signing trust change.
+curl -fsSL "${TRIVY_APT_KEY_URL}" | gpg --dearmor --batch --yes -o "${TRIVY_APT_KEYRING}"
+echo "deb [signed-by=${TRIVY_APT_KEYRING}] ${TRIVY_APT_REPO} generic main" \
   > /etc/apt/sources.list.d/trivy.list
 apt-get update
 apt-get install -y --no-install-recommends trivy
-rm -rf /var/lib/apt/lists/* /tmp/trivy.key
+rm -rf /var/lib/apt/lists/*

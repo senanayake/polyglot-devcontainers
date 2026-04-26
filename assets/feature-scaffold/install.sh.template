@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Activating feature '__FEATURE_ID__'"
+
+# TODO: Replace this scaffold with deterministic installation logic.
+# Guidance:
+# - prefer official packages or upstream-supported release artifacts
+# - keep the footprint minimal
+# - clean package-manager caches before exiting
+# - document every user-visible command or option in README.md

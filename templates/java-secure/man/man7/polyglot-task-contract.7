@@ -23,6 +23,11 @@ Optional helpers may also exist:
 .IP
 .EX
 task format
+task test:fast
+task test:unit
+task test:integration
+task test:acceptance
+task test:property
 task deps:inventory
 task deps:plan
 task deps:report
@@ -35,6 +40,9 @@ task upgrade
 \f[CR]task lint\f[R] Run code quality and type checks.
 .IP \(bu 2
 \f[CR]task test\f[R] Run automated tests.
+.IP \(bu 2
+Focused \f[CR]task test:*\f[R] helpers may exist for fast, unit,
+integration, acceptance, or property suites.
 .IP \(bu 2
 \f[CR]task scan\f[R] Run security checks and write artifacts.
 .IP \(bu 2
@@ -67,6 +75,9 @@ The safe default completion bar is \f[CR]task ci\f[R].
 .IP \(bu 2
 Use helper tasks to inspect or prepare changes, not to bypass
 verification.
+.IP \(bu 2
+\f[CR]task test\f[R] remains the full automated test bar when focused
+\f[CR]task test:*\f[R] helpers are present.
 .IP \(bu 2
 Keep artifact locations stable and inspectable.
 .SH SEE ALSO

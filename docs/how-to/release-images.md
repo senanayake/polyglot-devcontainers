@@ -14,6 +14,7 @@ The default maintainer execution path is:
 task maintainer:up
 task maintainer:task -- ci
 task maintainer:git -- status --short --branch
+task maintainer:gh -- run view 24285030079
 ```
 
 The host should only control the maintainer devcontainer through the official
@@ -23,6 +24,10 @@ workflow proof still has to happen inside that container.
 For HTTPS remotes, use `task maintainer:git -- ...` for the release commit and
 push path as well. The wrapper can inject credentials into a single
 container-side Git command without persisting them in the container.
+
+For GitHub API and Actions operations, use `task maintainer:gh -- ...`. That
+path uses the same container-first model with ephemeral token injection instead
+of a persistent `gh auth login` inside the container.
 
 ## Maintain the maintainer container
 
@@ -34,12 +39,51 @@ artifact instead of rebuilding the maintainer image on the host.
 
 ## Trigger the release workflow
 
-The release workflow is defined in `.github/workflows/release-images.yml`.
+The release path is split into two workflows:
 
-It can run:
+- `.github/workflows/cut-release.yml` is the GitHub UI entry point. It
+  computes the next semantic version from the existing tags, tags the chosen
+  ref, dispatches the full release workflow, and waits for it to finish.
+- `.github/workflows/release-images.yml` is the tag-driven publisher. It can
+  still run manually, and manual runs now support an explicit `full-release`
+  mode for an existing tag.
 
-- manually with workflow dispatch
-- on semantic version tags such as `v0.6.0`
+Use `cut-release` when you want the full release flow from the GitHub UI:
+
+1. Open `Actions`.
+2. Select `cut-release`.
+3. Choose `patch`, `minor`, or `major`.
+4. Leave `target_ref` on `main` unless you intentionally want to tag a
+   different ref.
+5. Run the workflow.
+
+That workflow looks at the highest existing `vMAJOR.MINOR.PATCH` tag, computes
+the next tag from your selected increment, pushes it, dispatches
+`release-images` in `full-release` mode for that tag, and waits for the result.
+The workflow now shows that flow as separate planning, tag-push, and
+downstream release jobs instead of hiding everything inside one orchestration
+job.
+
+`release-images` can run:
+
+- manually with workflow dispatch in `validate-only` mode for validation and
+  manual image publish
+- manually with workflow dispatch in `full-release` mode for an existing
+  version tag
+- on semantic version tags such as `v0.6.0` for a full release
+
+The `Recent Releases` section in `README.md` reflects successful GitHub
+Releases, not every tag in the repository. The tag set is authoritative for
+version selection, which is why `cut-release` computes the next tag from Git
+tags directly instead of asking you to enter the version manually.
+
+If you need to backfill release assets for an existing tag, run
+`release-images` manually with:
+
+1. `release_mode=full-release`
+2. `release_tag=vX.Y.Z`
+3. the workflow ref left on `main` or any branch that contains the workflow
+   file
 
 Tag-triggered releases also refresh the moving `latest` tag for each published
 image, so downstream consumers can follow the newest released image without
@@ -47,7 +91,7 @@ changing the image reference every time.
 
 ## What the workflow does
 
-For each published image, the workflow:
+For each published image, `release-images`:
 
 1. builds the image
 2. bootstraps an empty workspace for starter images and verifies `task init`
@@ -57,7 +101,14 @@ For each published image, the workflow:
 5. pushes the image to GHCR
 6. signs the image with Cosign
 7. attaches build provenance
-8. uploads release security assets and adds a `Security Status` section to the GitHub Release
+
+When the workflow runs from a pushed version tag, it also:
+
+1. creates or updates the GitHub Release notes
+2. publishes browser-viewable release security docs under
+   `docs/releases/<tag>/`, uploads the same files as release assets, and adds a
+   `Security Status` section to the GitHub Release
+3. refreshes the `Recent Releases` table in `README.md`
 
 ## Find release security status
 
@@ -66,13 +117,26 @@ tag.
 
 The release notes now include a generated `Security Status` section with:
 
+- GitHub package-page links for each published image and the exact
+  `docker pull ghcr.io/...:<tag>` target for that release
+- links to the relevant template and example README files for each published
+  image, pinned to the same release tag
 - per-image Critical / High / Total counts
-- direct links to the per-image summary Markdown and JSON assets
-- direct links to the per-image SBOM assets
-- a release-level residual-risk report for critical findings that remain in the
-  latest upstream-supported third-party binaries
+- browser-view links to the per-image summary Markdown and JSON files
+- browser-view links to the per-image SBOM files
+- a browser-view link to the release-level residual-risk report for critical
+  findings that remain in the latest upstream-supported third-party binaries
 
-The release also publishes these assets directly:
+Browser-viewable copies are published to:
+
+- `docs/releases/<tag>/release-security-overview.md`
+- `docs/releases/<tag>/release-security-<image>-summary.md`
+- `docs/releases/<tag>/release-security-<image>-summary.json`
+- `docs/releases/<tag>/release-security-<image>-sbom.spdx.json`
+- `docs/releases/<tag>/release-security-residual-risk.md`
+- `docs/releases/<tag>/release-security-residual-risk.json`
+
+The release also attaches downloadable copies of the same files:
 
 - `release-security-overview.md`
 - `release-security-<image>-summary.md`
@@ -80,6 +144,10 @@ The release also publishes these assets directly:
 - `release-security-<image>-sbom.spdx.json`
 - `release-security-residual-risk.md`
 - `release-security-residual-risk.json`
+
+The image-to-template and image-to-example routing for those release-note links
+is maintained in `published-image-catalog.toml`. When a published image changes
+or a new published image is added, update that catalog in the same change.
 
 ## Maintain published image bases
 
@@ -101,6 +169,7 @@ The initial scope is only the published images:
 
 - `.devcontainer/Containerfile`
 - `templates/java-secure/.devcontainer/Containerfile`
+- `templates/diagram-secure/.devcontainer/Containerfile`
 - `templates/python-node-secure/.devcontainer/Containerfile`
 
 `task image:pin` is report-only unless you pass `--write`.
@@ -145,6 +214,7 @@ silence scanner output unless a human explicitly asks for that exception.
 
 - the root repository image built from `.devcontainer/Containerfile`
 - the Gradle-first Java image built from `templates/java-secure/.devcontainer/Containerfile`
+- the D2-first diagrams image built from `templates/diagram-secure/.devcontainer/Containerfile`
 - the Python plus Node / TypeScript image built from `templates/python-node-secure/.devcontainer/Containerfile`
 
 ## Verify the registry target
