@@ -14,16 +14,18 @@ Current limitations:
 - generation is source-template-first only
 - published starter image references are stored as metadata, but thin
   image-backed starter generation is not yet a supported default path
-- the current catalog covers only:
+- the current catalog currently covers:
   - `python-secure`
   - `python-node-secure`
+  - `java-secure`
 
 Use the catalog through the root tasks:
 
 ```bash
 task starters:list
+task starters:validate
 task starters:show -- --starter python-secure
-task starters:prove -- --all
+task starters:verify
 ```
 
 The generator writes a `.polyglot-starter.json` stamp into generated workspaces

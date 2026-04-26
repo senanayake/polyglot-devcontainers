@@ -43,3 +43,25 @@ proof_paths = [
   ".artifacts/scans/pnpm-audit.json",
   ".artifacts/scenarios/starter-health.json",
 ]
+
+[starters.java-secure]
+title = "Java Secure Starter"
+description = "Gradle-based Java starter with source-complete generation and security scans."
+language = "java"
+source_template = "templates/java-secure"
+generation_modes = ["source-template"]
+default_generation_mode = "source-template"
+published_image = "ghcr.io/senanayake/polyglot-devcontainers-java"
+published_image_bootstrap_supported = true
+runtime_guidance = ["polyglot", "polyglot-starters", "polyglot-java", "polyglot-security"]
+task_contract = ["init", "lint", "test", "scan", "ci"]
+features = ["security-baseline", "java-engineering", "agent-runtime"]
+proof_commands = ["task ci"]
+proof_paths = [
+  ".polyglot-starter.json",
+  "Taskfile.yml",
+  "README.md",
+  ".gradle",
+  ".artifacts/scans/trivy-java.json",
+  ".artifacts/scans/gitleaks.sarif",
+]

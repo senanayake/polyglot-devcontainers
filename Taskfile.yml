@@ -128,6 +128,12 @@ tasks:
     cmds:
       - python scripts/starter_catalog.py list
 
+  starters:validate:
+    desc: Validate the experimental starter catalog contract
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py validate
+
   starters:show:
     desc: Show one experimental starter catalog entry as JSON
     deps: [_require_maintainer]
@@ -145,6 +151,13 @@ tasks:
     deps: [_require_maintainer]
     cmds:
       - python scripts/starter_catalog.py prove {{.CLI_ARGS}}
+
+  starters:verify:
+    desc: Validate the starter catalog and prove all experimental starters
+    deps: [_require_maintainer]
+    cmds:
+      - task starters:validate
+      - task starters:prove -- --all
 
   scenarios:python-maintenance:
     desc: Run the Python dependency-maintenance scenario and write scenario artifacts
@@ -344,3 +357,4 @@ tasks:
       - task test
       - task scan
       - task scenarios:verify
+      - task starters:verify

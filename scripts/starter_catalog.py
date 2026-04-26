@@ -17,6 +17,8 @@ ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "
 CATALOG_PATH = ROOT / "starters" / "catalog.toml"
 DEFAULT_PROOF_ROOT = ROOT / ".tmp" / "starter-proving"
 DEFAULT_REPORT_ROOT = ROOT / ".artifacts" / "starters"
+REQUIRED_TASKS = {"init", "lint", "test", "scan", "ci"}
+SUPPORTED_GENERATION_MODES = {"source-template", "published-image-bootstrap"}
 IGNORED_COPY_NAMES = {
     ".artifacts",
     ".coverage",
@@ -52,8 +54,59 @@ class StarterDefinition:
     published_image_bootstrap_supported: bool = False
 
 
+def validate_starter_definition(starter: StarterDefinition) -> None:
+    template_path = resolve_repo_relative(starter.source_template)
+    if not template_path.is_dir():
+        raise SystemExit(
+            f"starter {starter.starter_id!r} source_template is not a directory: "
+            f"{starter.source_template}"
+        )
+
+    missing_required = REQUIRED_TASKS.difference(starter.task_contract)
+    if missing_required:
+        missing = ", ".join(sorted(missing_required))
+        raise SystemExit(
+            f"starter {starter.starter_id!r} task_contract is missing required tasks: {missing}"
+        )
+
+    unsupported_modes = set(starter.generation_modes).difference(SUPPORTED_GENERATION_MODES)
+    if unsupported_modes:
+        unsupported = ", ".join(sorted(unsupported_modes))
+        raise SystemExit(
+            f"starter {starter.starter_id!r} has unsupported generation modes: {unsupported}"
+        )
+
+    if starter.default_generation_mode not in starter.generation_modes:
+        raise SystemExit(
+            f"starter {starter.starter_id!r} default_generation_mode "
+            f"{starter.default_generation_mode!r} is not listed in generation_modes"
+        )
+
+    if starter.published_image_bootstrap_supported and not starter.published_image:
+        raise SystemExit(
+            f"starter {starter.starter_id!r} enables published_image_bootstrap_supported "
+            "but does not declare a published_image"
+        )
+
+    if not starter.runtime_guidance:
+        raise SystemExit(f"starter {starter.starter_id!r} must declare runtime_guidance")
+    if not starter.proof_commands:
+        raise SystemExit(f"starter {starter.starter_id!r} must declare proof_commands")
+    if not starter.proof_paths:
+        raise SystemExit(f"starter {starter.starter_id!r} must declare proof_paths")
+
+    for required_file in ("Taskfile.yml", "README.md"):
+        if not (template_path / required_file).exists():
+            raise SystemExit(
+                f"starter {starter.starter_id!r} source template is missing {required_file}"
+            )
+
+
 def load_catalog() -> dict[str, StarterDefinition]:
     payload = tomllib.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    schema_version = payload.get("schema_version")
+    if schema_version != 1:
+        raise SystemExit(f"unsupported starter catalog schema_version: {schema_version!r}")
     starters = payload.get("starters", {})
     if not isinstance(starters, dict):
         raise SystemExit(f"expected [starters.*] entries in {CATALOG_PATH}")
@@ -82,6 +135,7 @@ def load_catalog() -> dict[str, StarterDefinition]:
                 raw_value.get("published_image_bootstrap_supported", False)
             ),
         )
+        validate_starter_definition(definitions[starter_id])
     return definitions
 
 
@@ -275,6 +329,7 @@ def parse_args() -> argparse.Namespace:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("list")
+    subparsers.add_parser("validate")
 
     show_parser = subparsers.add_parser("show")
     show_parser.add_argument("--starter", required=True)
@@ -306,6 +361,17 @@ def main() -> int:
             print(
                 f"{starter.starter_id}\t{starter.language}\t{starter.default_generation_mode}\t"
                 f"{starter.title}"
+            )
+        return 0
+
+    if args.command == "validate":
+        for starter_id in sorted(definitions):
+            starter = definitions[starter_id]
+            print(
+                "[starter-validate] "
+                f"starter={starter.starter_id} mode={starter.default_generation_mode} "
+                f"template={starter.source_template}",
+                flush=True,
             )
         return 0
 
