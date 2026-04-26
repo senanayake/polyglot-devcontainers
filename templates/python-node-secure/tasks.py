@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -59,22 +60,20 @@ def reset_invalid_venv() -> None:
 
 def in_git_repo() -> bool:
     completed = subprocess.run(
-        ["git", "rev-parse", "--is-inside-work-tree"],
+        ["git", "rev-parse", "--show-toplevel"],
         cwd=ROOT,
         check=False,
         text=True,
-        stdout=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
     )
-    return completed.returncode == 0
+    if completed.returncode != 0:
+        return False
+    git_root = completed.stdout.strip()
+    return bool(git_root) and Path(git_root).resolve() == ROOT.resolve()
 
 
-def prepare_gitleaks_dir_fallback() -> Path:
-    scan_root = TMP_DIR / "gitleaks-source-scan"
-    if scan_root.exists():
-        shutil.rmtree(scan_root)
-    scan_root.mkdir(parents=True)
-
+def populate_gitleaks_dir_fallback(scan_root: Path) -> None:
     for source in GITLEAKS_FALLBACK_PATHS:
         if not source.exists():
             continue
@@ -84,8 +83,6 @@ def prepare_gitleaks_dir_fallback() -> Path:
             shutil.copytree(source, destination)
         else:
             shutil.copy2(source, destination)
-
-    return scan_root
 
 
 def write_json_artifact(path: Path, payload: dict[str, object]) -> None:
@@ -172,34 +169,45 @@ def scan() -> None:
             env=os.environ.copy(),
             stdout=report,
         )
-    if in_git_repo():
-        gitleaks_target = ROOT
-        gitleaks_mode = "git"
-    else:
-        gitleaks_target = prepare_gitleaks_dir_fallback()
-        gitleaks_mode = "dir"
+    fallback_dir: tempfile.TemporaryDirectory[str] | None = None
+    try:
+        if in_git_repo():
+            gitleaks_target = ROOT
+            gitleaks_mode = "git"
+        else:
+            TMP_DIR.mkdir(exist_ok=True)
+            fallback_dir = tempfile.TemporaryDirectory(
+                prefix="gitleaks-source-scan-",
+                dir=str(TMP_DIR.resolve()),
+            )
+            gitleaks_target = Path(fallback_dir.name)
+            populate_gitleaks_dir_fallback(gitleaks_target)
+            gitleaks_mode = "dir"
 
-    write_json_artifact(
-        SCANS_DIR / "gitleaks-mode.json",
-        {
-            "mode": gitleaks_mode,
-            "target": str(gitleaks_target),
-        },
-    )
+        write_json_artifact(
+            SCANS_DIR / "gitleaks-mode.json",
+            {
+                "mode": gitleaks_mode,
+                "target": str(gitleaks_target),
+            },
+        )
 
-    run(
-        [
-            "gitleaks",
-            gitleaks_mode,
-            str(gitleaks_target),
-            "--no-banner",
-            "--redact",
-            "--report-format",
-            "sarif",
-            "--report-path",
-            str(SCANS_DIR / "gitleaks.sarif"),
-        ]
-    )
+        run(
+            [
+                "gitleaks",
+                gitleaks_mode,
+                str(gitleaks_target),
+                "--no-banner",
+                "--redact",
+                "--report-format",
+                "sarif",
+                "--report-path",
+                str(SCANS_DIR / "gitleaks.sarif"),
+            ]
+        )
+    finally:
+        if fallback_dir is not None:
+            fallback_dir.cleanup()
 
 
 COMMANDS = {

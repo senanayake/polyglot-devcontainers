@@ -122,6 +122,30 @@ tasks:
         examples/java-maintenance-example/.artifacts/scans/dependency-report.json
         templates/java-secure/.artifacts/scans/dependency-report.json
 
+  starters:list:
+    desc: List experimental starter catalog entries
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py list
+
+  starters:show:
+    desc: Show one experimental starter catalog entry as JSON
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py show {{.CLI_ARGS}}
+
+  starters:generate:
+    desc: Generate a source-complete starter from the experimental catalog
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py generate {{.CLI_ARGS}}
+
+  starters:prove:
+    desc: Generate and prove one or more starters from the experimental catalog
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py prove {{.CLI_ARGS}}
+
   scenarios:python-maintenance:
     desc: Run the Python dependency-maintenance scenario and write scenario artifacts
     deps: [_require_maintainer]
