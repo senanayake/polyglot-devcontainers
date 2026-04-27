@@ -50,7 +50,7 @@ esac
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "${tmpdir}"' EXIT
 
-curl -fsSLo "${tmpdir}/${d2_archive}" "https://github.com/terrastruct/d2/releases/download/v${D2_VERSION}/${d2_archive}"
+curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo "${tmpdir}/${d2_archive}" "https://github.com/terrastruct/d2/releases/download/v${D2_VERSION}/${d2_archive}"
 echo "${d2_sha256}  ${tmpdir}/${d2_archive}" | sha256sum -c -
 tar -xzf "${tmpdir}/${d2_archive}" -C "${tmpdir}"
 install -m 0755 "${tmpdir}/d2-v${D2_VERSION}/bin/d2" /usr/local/bin/d2

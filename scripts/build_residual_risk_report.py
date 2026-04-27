@@ -10,6 +10,10 @@ from typing import Any
 
 
 UPSTREAM_MANAGED_GOBINARIES = {
+    "usr/local/bin/d2": {
+        "tool": "d2",
+        "upstream_release_source": "terrastruct/d2",
+    },
     "usr/bin/trivy": {
         "tool": "trivy",
         "upstream_release_source": "aquasecurity/trivy",

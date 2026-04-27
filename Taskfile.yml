@@ -286,6 +286,7 @@ tasks:
     deps: [_require_image_runtime]
     cmds:
       - mkdir -p .artifacts/images
+      - rm -f .artifacts/images/maintainer.tar .artifacts/images/java.tar .artifacts/images/diagrams.tar .artifacts/images/python-node.tar
       - python scripts/oci_runtime.py build --pull --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-maintainer:verify --devcontainer-json .devcontainer/devcontainer.json
       - python scripts/oci_runtime.py save --output .artifacts/images/maintainer.tar polyglot-devcontainers-maintainer:verify
