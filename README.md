@@ -251,11 +251,11 @@ Recent published release notes are available here:
 
 | Version | Date | Release Notes |
 | --- | --- | --- |
+| `v0.0.27` | 2026-04-27 | [v0.0.27](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.27) |
 | `v0.0.25` | 2026-04-12 | [v0.0.25](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.25) |
 | `v0.0.23` | 2026-04-11 | [v0.0.23](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.23) |
 | `v0.0.22` | 2026-04-11 | [v0.0.22](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.22) |
 | `v0.0.21` | 2026-04-11 | [v0.0.21](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.21) |
-| `v0.0.17` | 2026-03-24 | [v0.0.17](https://github.com/senanayake/polyglot-devcontainers/releases/tag/v0.0.17) |
 
 <!-- recent-releases:end -->
 
