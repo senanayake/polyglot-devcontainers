@@ -6,7 +6,7 @@ USER root
 
 ENV POLYGLOT_BOOTSTRAP_TEMPLATE=python-node-secure
 
-ARG TASK_VERSION=3.49.1
+ARG TASK_VERSION=3.50.0
 ARG GITLEAKS_VERSION=8.30.1
 ARG PRE_COMMIT_VERSION=4.2.0
 ARG UV_VERSION=0.8.13
@@ -31,7 +31,7 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get -y dist-upgrade \
     && apt-get install -y --no-install-recommends ca-certificates curl git gnupg jq less man-db ripgrep shellcheck tar unzip \
     && mkdir -p /etc/apt/keyrings \
-    && curl -fsSLo /tmp/nodesource.key https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo /tmp/nodesource.key https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
     && echo "${NODESOURCE_KEY_SHA256}  /tmp/nodesource.key" | sha256sum -c - \
     && gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource.key \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
@@ -45,8 +45,8 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
         *) echo "Unsupported architecture: ${arch}" >&2; exit 1 ;; \
       esac \
     && tmpdir="$(mktemp -d)" \
-    && curl -fsSLo "${tmpdir}/${task_archive}" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/${task_archive}" \
-    && curl -fsSLo "${tmpdir}/task_checksums.txt" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_checksums.txt" \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo "${tmpdir}/${task_archive}" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/${task_archive}" \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo "${tmpdir}/task_checksums.txt" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_checksums.txt" \
     && task_checksum_line=$(grep "${task_archive}" "${tmpdir}/task_checksums.txt") \
     && if [ -z "$task_checksum_line" ]; then \
          echo "ERROR: Checksum not found for ${task_archive}" >&2; \
@@ -56,8 +56,8 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && mkdir -p /usr/local/libexec/polyglot-devcontainers \
     && tar -xzf "${tmpdir}/${task_archive}" -C /usr/local/libexec/polyglot-devcontainers task \
     && mv /usr/local/libexec/polyglot-devcontainers/task /usr/local/libexec/polyglot-devcontainers/task-real \
-    && curl -fsSLo "${tmpdir}/${gitleaks_archive}" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${gitleaks_archive}" \
-    && curl -fsSLo "${tmpdir}/gitleaks_checksums.txt" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt" \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo "${tmpdir}/${gitleaks_archive}" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${gitleaks_archive}" \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo "${tmpdir}/gitleaks_checksums.txt" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt" \
     && gitleaks_checksum_line=$(grep "${gitleaks_archive}" "${tmpdir}/gitleaks_checksums.txt") \
     && if [ -z "$gitleaks_checksum_line" ]; then \
          echo "ERROR: Checksum not found for ${gitleaks_archive}" >&2; \

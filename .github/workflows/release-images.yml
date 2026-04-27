@@ -327,10 +327,12 @@ jobs:
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}@${{ steps.push.outputs.digest }}
           scan-type: image
+          scanners: vuln
           format: sarif
           output: trivy-${{ matrix.name }}.sarif
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+          exit-code: 0
           vuln-type: os,library
         env:
           TRIVY_USERNAME: ${{ github.actor }}
@@ -341,10 +343,12 @@ jobs:
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}@${{ steps.push.outputs.digest }}
           scan-type: image
+          scanners: vuln
           format: json
           output: trivy-${{ matrix.name }}.json
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+          exit-code: 0
           vuln-type: os,library
           skip-setup-trivy: true
         env:

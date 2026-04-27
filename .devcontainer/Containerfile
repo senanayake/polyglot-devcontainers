@@ -30,12 +30,12 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
     && apt-get -y dist-upgrade \
     && apt-get install -y --no-install-recommends ca-certificates curl docker.io fuse-overlayfs git gnupg less man-db podman slirp4netns uidmap \
     && mkdir -p /etc/apt/keyrings \
-    && curl -fsSLo /tmp/nodesource.key https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo /tmp/nodesource.key https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
     && echo "${NODESOURCE_KEY_SHA256}  /tmp/nodesource.key" | sha256sum -c - \
     && gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource.key \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
     > /etc/apt/sources.list.d/nodesource.list \
-    && curl -fsSLo /etc/apt/keyrings/githubcli-archive-keyring.gpg https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo /etc/apt/keyrings/githubcli-archive-keyring.gpg https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     && gpg --batch --show-keys --with-colons /etc/apt/keyrings/githubcli-archive-keyring.gpg \
     | awk -F: '$1 == "fpr" { print $10 }' > /tmp/githubcli-fingerprints.txt \
     && grep -Fx "${GH_CLI_KEY_FINGERPRINT_0}" /tmp/githubcli-fingerprints.txt >/dev/null \

@@ -161,6 +161,43 @@ tasks:
         examples/java-maintenance-example/.artifacts/scans/dependency-report.json
         templates/java-secure/.artifacts/scans/dependency-report.json
 
+  starters:list:
+    desc: List experimental starter catalog entries
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py list
+
+  starters:validate:
+    desc: Validate the experimental starter catalog contract
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py validate
+
+  starters:show:
+    desc: Show one experimental starter catalog entry as JSON
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py show {{.CLI_ARGS}}
+
+  starters:generate:
+    desc: Generate a source-complete starter from the experimental catalog
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py generate {{.CLI_ARGS}}
+
+  starters:prove:
+    desc: Generate and prove one or more starters from the experimental catalog
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py prove {{.CLI_ARGS}}
+
+  starters:verify:
+    desc: Validate the starter catalog and prove all experimental starters
+    deps: [_require_maintainer]
+    cmds:
+      - task starters:validate
+      - task starters:prove -- --all
+
   scan:auto:fixtures:
     desc: Materialize and validate the Python scan:auto fixture matrix
     deps: [_require_maintainer]
@@ -249,6 +286,7 @@ tasks:
     deps: [_require_image_runtime]
     cmds:
       - mkdir -p .artifacts/images
+      - rm -f .artifacts/images/maintainer.tar .artifacts/images/java.tar .artifacts/images/diagrams.tar .artifacts/images/python-node.tar
       - python scripts/oci_runtime.py build --pull --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-maintainer:verify --devcontainer-json .devcontainer/devcontainer.json
       - python scripts/oci_runtime.py save --output .artifacts/images/maintainer.tar polyglot-devcontainers-maintainer:verify
@@ -393,3 +431,4 @@ tasks:
       - task scan
       - task scan:auto:fixtures
       - task scenarios:verify
+      - task starters:verify
