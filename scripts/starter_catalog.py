@@ -42,6 +42,7 @@ class CompositionProfile:
     description: str
     features: list[str]
     scenarios: list[str]
+    proof_scenarios: list[str]
 
 
 @dataclass(frozen=True)
@@ -126,6 +127,13 @@ def validate_starter_definition(starter: StarterDefinition) -> None:
                 f"starter {starter.starter_id!r} profile {profile_id!r} "
                 f"references unsupported scenarios: {unsupported}"
             )
+        unsupported_proof_scenarios = set(profile.proof_scenarios).difference(profile.scenarios)
+        if unsupported_proof_scenarios:
+            unsupported = ", ".join(sorted(unsupported_proof_scenarios))
+            raise SystemExit(
+                f"starter {starter.starter_id!r} profile {profile_id!r} "
+                f"references proof scenarios outside the profile scenario set: {unsupported}"
+            )
 
     for required_file in ("Taskfile.yml", "README.md"):
         if not (template_path / required_file).exists():
@@ -163,6 +171,7 @@ def load_catalog() -> dict[str, StarterDefinition]:
                 description=str(profile_value["description"]),
                 features=[str(value) for value in profile_value.get("features", [])],
                 scenarios=[str(value) for value in profile_value.get("scenarios", [])],
+                proof_scenarios=[str(value) for value in profile_value.get("proof_scenarios", [])],
             )
         definitions[starter_id] = StarterDefinition(
             starter_id=starter_id,
@@ -272,6 +281,7 @@ def write_generated_stamp(
         "selected_features": profile.features,
         "supported_scenarios": starter.scenarios,
         "selected_scenarios": profile.scenarios,
+        "proof_scenarios": profile.proof_scenarios,
         "proof_commands": starter.proof_commands,
         "proof_paths": starter.proof_paths,
         "catalog_path": str(CATALOG_PATH.relative_to(ROOT)),
@@ -305,6 +315,32 @@ def command_result(command: str, workdir: Path) -> dict[str, Any]:
     args = shlex.split(command)
     subprocess.run(args, cwd=workdir, check=True, text=True)
     return {"command": command, "status": "passed"}
+
+
+def scenario_result(starter: StarterDefinition, scenario_id: str, workdir: Path) -> dict[str, Any]:
+    script_path = workdir / "scripts" / "run_scenario.py"
+    scenario_path = workdir / "scenarios" / f"{scenario_id}.json"
+    json_output = workdir / ".artifacts" / "scenarios" / f"{scenario_id}.json"
+    markdown_output = workdir / ".artifacts" / "scenarios" / f"{scenario_id}.md"
+    args = [
+        sys.executable,
+        str(script_path),
+        "--workspace-root",
+        str(workdir),
+        "--scenario",
+        str(scenario_path),
+        "--json-output",
+        str(json_output),
+        "--markdown-output",
+        str(markdown_output),
+    ]
+    subprocess.run(args, cwd=workdir, check=True, text=True)
+    return {
+        "scenario": scenario_id,
+        "status": "passed",
+        "json_output": str(json_output),
+        "markdown_output": str(markdown_output),
+    }
 
 
 def check_required_path(workdir: Path, relative_path: str) -> dict[str, Any]:
@@ -347,6 +383,10 @@ def markdown_lines(result: dict[str, Any]) -> list[str]:
         lines.append(f"- scenarios: `{', '.join(result['selected_scenarios'])}`")
     else:
         lines.append("- scenarios: `none`")
+    if result.get("proof_scenarios"):
+        lines.append(f"- proof scenarios: `{', '.join(result['proof_scenarios'])}`")
+    else:
+        lines.append("- proof scenarios: `none`")
 
     lines.extend(["", "## Commands", ""])
     for command in result.get("commands", []):
@@ -355,6 +395,10 @@ def markdown_lines(result: dict[str, Any]) -> list[str]:
     lines.extend(["", "## Required Paths", ""])
     for path_result in result.get("path_results", []):
         lines.append(f"- `{path_result['path']}`: `{path_result['status']}`")
+
+    lines.extend(["", "## Scenario Proofs", ""])
+    for scenario in result.get("scenario_results", []):
+        lines.append(f"- `{scenario['scenario']}`: `{scenario['status']}`")
 
     if result.get("failure"):
         lines.extend(["", "## Failure", "", result["failure"]])
@@ -386,16 +430,20 @@ def prove_starter(
         "composition_profile": profile.profile_id,
         "selected_features": profile.features,
         "selected_scenarios": profile.scenarios,
+        "proof_scenarios": profile.proof_scenarios,
         "workspace": str(workspace),
         "runtime_guidance": starter.runtime_guidance,
         "commands": [],
         "path_results": [],
+        "scenario_results": [],
         "status": "passed",
     }
 
     try:
         for command in starter.proof_commands:
             result["commands"].append(command_result(command, workspace))
+        for scenario_id in profile.proof_scenarios:
+            result["scenario_results"].append(scenario_result(starter, scenario_id, workspace))
         for relative_path in starter.proof_paths:
             result["path_results"].append(check_required_path(workspace, relative_path))
         if any(path_result["status"] != "passed" for path_result in result["path_results"]):

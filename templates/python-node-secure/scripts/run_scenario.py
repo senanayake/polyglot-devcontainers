@@ -48,10 +48,10 @@ def in_git_repo(path: Path) -> bool:
     return completed.returncode == 0
 
 
-def create_workspace_copy(excluded_names: set[str]) -> Path:
+def create_workspace_copy(source_root: Path, excluded_names: set[str]) -> Path:
     target = Path(tempfile.mkdtemp(prefix="polyglot-scenario-"))
 
-    for entry in ROOT.iterdir():
+    for entry in source_root.iterdir():
         if entry.name in excluded_names:
             continue
         destination = target / entry.name
@@ -119,11 +119,16 @@ def check_artifact(spec: dict[str, Any], workdir: Path) -> dict[str, Any]:
     return result
 
 
-def capture_artifacts(paths: list[str], workdir: Path, scenario_name: str) -> list[str]:
+def capture_artifacts(
+    paths: list[str],
+    workdir: Path,
+    scenario_name: str,
+    artifact_root: Path,
+) -> list[str]:
     if not paths:
         return []
 
-    capture_root = ROOT / ".artifacts" / "scenarios" / scenario_name / "captured"
+    capture_root = artifact_root / ".artifacts" / "scenarios" / scenario_name / "captured"
     if capture_root.exists():
         shutil.rmtree(capture_root)
 
@@ -191,19 +196,32 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--scenario", type=Path, required=True)
     parser.add_argument("--json-output", type=Path, required=True)
     parser.add_argument("--markdown-output", type=Path, required=True)
+    parser.add_argument(
+        "--workspace-root",
+        type=Path,
+        help="override the workspace root used for in-place or copied scenario execution",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    manifest = load_json(args.scenario)
+    workspace_root = (args.workspace_root or ROOT).resolve()
+    if args.scenario.is_absolute():
+        scenario_path = args.scenario.resolve()
+    else:
+        scenario_path = (workspace_root / args.scenario).resolve()
+    manifest = load_json(scenario_path)
 
     excluded_names = set(manifest.get("exclude_from_copy", []))
     copied_workspace = bool(manifest.get("copy_workspace", False))
     if manifest.get("remove_git", False):
         excluded_names.add(".git")
 
-    workdir = create_workspace_copy(excluded_names) if copied_workspace else ROOT
+    if copied_workspace:
+        workdir = create_workspace_copy(workspace_root, excluded_names)
+    else:
+        workdir = workspace_root
     workspace_mode = "copied" if copied_workspace else "in-place"
 
     result: dict[str, Any] = {
@@ -246,6 +264,7 @@ def main() -> int:
             list(manifest.get("captured_artifacts", [])),
             workdir,
             str(manifest["name"]),
+            workspace_root,
         )
     except subprocess.CalledProcessError as error:
         result["status"] = "failed"

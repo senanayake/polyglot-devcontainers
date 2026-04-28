@@ -35,3 +35,8 @@ The current compatibility model is intentionally curated rather than inferred.
 Each starter declares named composition profiles that pin the supported feature
 and scenario set for that starter. Use profiles to reject unsupported
 combinations before generation instead of guessing from template structure.
+
+Profiles may also declare a smaller `proof_scenarios` subset. That allows the
+catalog to prove one or more starter-local scenarios directly from the
+generated workspace without forcing every supported scenario into the default
+proof lane.

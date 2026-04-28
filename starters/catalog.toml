@@ -41,7 +41,7 @@ task_contract = ["init", "lint", "test", "scan", "ci"]
 features = ["security-baseline", "python-engineering", "node-engineering", "agent-runtime"]
 scenarios = ["starter-health", "security-evidence", "non-git-scan-fallback"]
 default_profile = "polyglot-default"
-proof_commands = ["task ci", "task scenarios:verify"]
+proof_commands = ["task ci"]
 proof_paths = [
   ".polyglot-starter.json",
   "Taskfile.yml",
@@ -57,6 +57,7 @@ proof_paths = [
 description = "Default polyglot workspace with Python, Node, and starter-local scenario coverage."
 features = ["security-baseline", "python-engineering", "node-engineering", "agent-runtime"]
 scenarios = ["starter-health", "security-evidence", "non-git-scan-fallback"]
+proof_scenarios = ["starter-health"]
 
 [starters.java-secure]
 title = "Java Secure Starter"
