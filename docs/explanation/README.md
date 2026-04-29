@@ -11,3 +11,4 @@ Explanation pages describe why the repository is structured the way it is.
 - [Testing Strategy](./testing-strategy.md)
 - [Executable Scenarios](./executable-scenarios.md)
 - [Podman + DevPod on macOS Architecture](./podman-devpod-macos.md)
+- [Starter Generator Deployment Brief](./starter-generator-deployment-brief.md)
