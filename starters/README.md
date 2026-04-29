@@ -30,6 +30,9 @@ task starters:show -- --starter python-node-secure --profile polyglot-default
 task starters:verify
 task starters:generate -- --starter java-secure --mode published-image-bootstrap --output .tmp/java-image-seed
 task starters:serve -- --host 127.0.0.1 --port 8877
+task starters:site:start
+task starters:site:status
+task starters:site:stop
 ```
 
 The generator writes a `.polyglot-starter.json` stamp into generated workspaces
@@ -53,3 +56,15 @@ The minimal local UI lives under `starters/site/` and is served by
 `scripts/starter_site.py`. It is intentionally thin: it lists the proven
 catalog metadata and issues generation requests against the same catalog code
 used by the CLI.
+
+For local host testing, prefer the explicit site lifecycle tasks rather than
+starting the service manually:
+
+```bash
+task starters:site:start
+task starters:site:status
+task starters:site:stop
+```
+
+`task starters:serve` remains available for foreground development when you
+want direct stdout/stderr in the current terminal.

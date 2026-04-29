@@ -191,6 +191,21 @@ tasks:
     cmds:
       - python scripts/starter_site.py {{.CLI_ARGS}}
 
+  starters:site:start:
+    desc: Start the local starter catalog service and minimal web UI in the background on the host
+    cmds:
+      - python scripts/manage_starter_site.py start {{.CLI_ARGS}}
+
+  starters:site:stop:
+    desc: Stop the managed local starter catalog service on the host
+    cmds:
+      - python scripts/manage_starter_site.py stop {{.CLI_ARGS}}
+
+  starters:site:status:
+    desc: Show the managed local starter catalog service status on the host
+    cmds:
+      - python scripts/manage_starter_site.py status {{.CLI_ARGS}}
+
   starters:prove:
     desc: Generate and prove one or more starters from the experimental catalog
     deps: [_require_maintainer]
