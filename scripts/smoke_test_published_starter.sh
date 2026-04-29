@@ -4,6 +4,7 @@ set -euo pipefail
 image=""
 run_scenarios=0
 attempts="${POLYGLOT_SMOKE_ATTEMPTS:-2}"
+workspace_override=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -14,6 +15,10 @@ while [[ $# -gt 0 ]]; do
     --run-scenarios)
       run_scenarios=1
       shift
+      ;;
+    --workspace)
+      workspace_override="${2:?missing workspace value}"
+      shift 2
       ;;
     *)
       echo "Unknown argument: $1" >&2
@@ -98,10 +103,16 @@ run_attempt() {
   local attempt="$1"
   local workspace
   local command
+  local cleanup_workspace=1
 
-  workspace="$(mktemp -d)"
-  trap 'rm -rf "'"${workspace}"'" >/dev/null 2>&1 || true' RETURN
-  write_devcontainer_placeholder "${workspace}"
+  if [[ -n "${workspace_override}" ]]; then
+    workspace="${workspace_override}"
+    cleanup_workspace=0
+  else
+    workspace="$(mktemp -d)"
+    trap 'rm -rf "'"${workspace}"'" >/dev/null 2>&1 || true' RETURN
+    write_devcontainer_placeholder "${workspace}"
+  fi
 
   command="$(build_container_command)"
   if [[ "${run_scenarios}" -eq 1 ]]; then
@@ -112,7 +123,7 @@ run_attempt() {
   fi
 
   echo "[starter-smoke] attempt=${attempt}/${attempts} image=${image}" >&2
-  if docker run --rm \
+  if python scripts/oci_runtime.py run --rm \
     -v "${workspace}:/workspaces/project" \
     -w /workspaces/project \
     "${image}" \
@@ -123,6 +134,9 @@ run_attempt() {
 
   echo "[starter-smoke] attempt=${attempt}/${attempts} failed" >&2
   workspace_diagnostics "${workspace}"
+  if [[ "${cleanup_workspace}" -eq 0 ]]; then
+    echo "[starter-smoke] preserved workspace=${workspace}" >&2
+  fi
   return 1
 }
 

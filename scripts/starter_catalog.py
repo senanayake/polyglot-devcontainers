@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shlex
 import shutil
 import subprocess
@@ -265,6 +266,8 @@ def write_generated_stamp(
     starter: StarterDefinition,
     generation_mode: str,
     profile: CompositionProfile,
+    *,
+    relative_path: str = ".polyglot-starter.json",
 ) -> None:
     payload = {
         "starter_id": starter.starter_id,
@@ -286,13 +289,56 @@ def write_generated_stamp(
         "proof_paths": starter.proof_paths,
         "catalog_path": str(CATALOG_PATH.relative_to(ROOT)),
     }
-    stamp_path = output_path / ".polyglot-starter.json"
+    stamp_path = output_path / relative_path
+    stamp_path.parent.mkdir(parents=True, exist_ok=True)
     stamp_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 def generate_source_template(starter: StarterDefinition, output_path: Path) -> None:
     source_path = resolve_repo_relative(starter.source_template)
     shutil.copytree(source_path, output_path, ignore=ignore_copy_entries)
+
+
+def default_published_image_ref(starter: StarterDefinition) -> str:
+    if not starter.published_image:
+        raise SystemExit(f"starter {starter.starter_id!r} does not declare a published_image")
+    if ":" in starter.published_image.rsplit("/", 1)[-1]:
+        return starter.published_image
+    return f"{starter.published_image}:main"
+
+
+def proof_image_override_env_name(starter: StarterDefinition) -> str:
+    normalized = starter.starter_id.upper().replace("-", "_")
+    return f"POLYGLOT_STARTER_PROOF_IMAGE_{normalized}"
+
+
+def proof_image_ref(starter: StarterDefinition) -> str:
+    return os.environ.get(proof_image_override_env_name(starter), default_published_image_ref(starter))
+
+
+def generate_published_image_workspace(
+    starter: StarterDefinition,
+    profile: CompositionProfile,
+    output_path: Path,
+) -> None:
+    output_path.mkdir(parents=True, exist_ok=True)
+    devcontainer_dir = output_path / ".devcontainer"
+    devcontainer_dir.mkdir(parents=True, exist_ok=True)
+    devcontainer_payload = {
+        "name": f"{starter.starter_id}-{profile.profile_id}",
+        "image": default_published_image_ref(starter),
+    }
+    (devcontainer_dir / "devcontainer.json").write_text(
+        json.dumps(devcontainer_payload, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    write_generated_stamp(
+        output_path,
+        starter,
+        "published-image-bootstrap",
+        profile,
+        relative_path=".devcontainer/.polyglot-starter-request.json",
+    )
 
 
 def generate_workspace(
@@ -304,10 +350,13 @@ def generate_workspace(
     force: bool,
 ) -> Path:
     validate_empty_or_force(output_path, force)
-    if generation_mode != "source-template":
+    if generation_mode == "source-template":
+        generate_source_template(starter, output_path)
+        write_generated_stamp(output_path, starter, generation_mode, profile)
+    elif generation_mode == "published-image-bootstrap":
+        generate_published_image_workspace(starter, profile, output_path)
+    else:
         raise SystemExit(f"unsupported generation mode: {generation_mode}")
-    generate_source_template(starter, output_path)
-    write_generated_stamp(output_path, starter, generation_mode, profile)
     return output_path
 
 
@@ -341,6 +390,49 @@ def scenario_result(starter: StarterDefinition, scenario_id: str, workdir: Path)
         "json_output": str(json_output),
         "markdown_output": str(markdown_output),
     }
+
+
+def published_image_result(
+    starter: StarterDefinition,
+    profile: CompositionProfile,
+    workdir: Path,
+) -> dict[str, Any]:
+    if Path("/.dockerenv").exists() or Path("/run/.containerenv").exists():
+        subprocess.run(
+            ["bash", str(ROOT / "scripts" / "start_docker_daemon.sh")],
+            cwd=ROOT,
+            check=True,
+            text=True,
+            env=os.environ.copy(),
+        )
+    image = proof_image_ref(starter)
+    script_path = ROOT / "scripts" / "smoke_test_published_starter.sh"
+    args = [
+        "bash",
+        str(script_path),
+        "--image",
+        image,
+        "--workspace",
+        str(workdir),
+    ]
+    if profile.proof_scenarios:
+        args.append("--run-scenarios")
+    subprocess.run(args, cwd=ROOT, check=True, text=True)
+    return {"image": image, "status": "passed"}
+
+
+def required_paths_for_mode(starter: StarterDefinition, generation_mode: str) -> list[str]:
+    if generation_mode == "source-template":
+        return list(starter.proof_paths)
+    if generation_mode == "published-image-bootstrap":
+        filtered = [path for path in starter.proof_paths if path != ".polyglot-starter.json"]
+        return [
+            ".devcontainer/devcontainer.json",
+            ".devcontainer/.polyglot-starter-request.json",
+            ".polyglot-bootstrap.json",
+            *filtered,
+        ]
+    raise SystemExit(f"unsupported generation mode: {generation_mode}")
 
 
 def check_required_path(workdir: Path, relative_path: str) -> dict[str, Any]:
@@ -392,6 +484,11 @@ def markdown_lines(result: dict[str, Any]) -> list[str]:
     for command in result.get("commands", []):
         lines.append(f"- `{command['command']}`: `{command['status']}`")
 
+    published_image = result.get("published_image_result")
+    if published_image:
+        lines.extend(["", "## Published Image", ""])
+        lines.append(f"- `{published_image['image']}`: `{published_image['status']}`")
+
     lines.extend(["", "## Required Paths", ""])
     for path_result in result.get("path_results", []):
         lines.append(f"- `{path_result['path']}`: `{path_result['status']}`")
@@ -420,6 +517,7 @@ def prove_starter(
     report_root: Path,
 ) -> int:
     workspace = workspace_root / starter.starter_id / profile.profile_id
+    workspace = workspace_root / generation_mode / starter.starter_id / profile.profile_id
     workspace.parent.mkdir(parents=True, exist_ok=True)
     generate_workspace(starter, profile, workspace, generation_mode, force=True)
 
@@ -436,15 +534,19 @@ def prove_starter(
         "commands": [],
         "path_results": [],
         "scenario_results": [],
+        "published_image_result": None,
         "status": "passed",
     }
 
     try:
-        for command in starter.proof_commands:
-            result["commands"].append(command_result(command, workspace))
-        for scenario_id in profile.proof_scenarios:
-            result["scenario_results"].append(scenario_result(starter, scenario_id, workspace))
-        for relative_path in starter.proof_paths:
+        if generation_mode == "published-image-bootstrap":
+            result["published_image_result"] = published_image_result(starter, profile, workspace)
+        else:
+            for command in starter.proof_commands:
+                result["commands"].append(command_result(command, workspace))
+            for scenario_id in profile.proof_scenarios:
+                result["scenario_results"].append(scenario_result(starter, scenario_id, workspace))
+        for relative_path in required_paths_for_mode(starter, generation_mode):
             result["path_results"].append(check_required_path(workspace, relative_path))
         if any(path_result["status"] != "passed" for path_result in result["path_results"]):
             result["status"] = "failed"
@@ -453,8 +555,8 @@ def prove_starter(
         result["status"] = "failed"
         result["failure"] = f"command failed: {' '.join(error.cmd)}"
 
-    json_output = report_root / starter.starter_id / profile.profile_id / "proof.json"
-    markdown_output = report_root / starter.starter_id / profile.profile_id / "proof.md"
+    json_output = report_root / generation_mode / starter.starter_id / profile.profile_id / "proof.json"
+    markdown_output = report_root / generation_mode / starter.starter_id / profile.profile_id / "proof.md"
     write_json(json_output, result)
     write_markdown(markdown_output, result)
     print(

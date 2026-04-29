@@ -10,8 +10,8 @@ apt-get update
 apt-get install -y --no-install-recommends ca-certificates curl gnupg unzip
 rm -rf /var/lib/apt/lists/*
 
-curl -fsSLo /tmp/gradle.zip "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip"
-curl -fsSLo /tmp/gradle.zip.sha256 "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip.sha256"
+curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo /tmp/gradle.zip "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip"
+curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo /tmp/gradle.zip.sha256 "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip.sha256"
 echo "$(cat /tmp/gradle.zip.sha256)  /tmp/gradle.zip" | sha256sum -c -
 rm -rf "/opt/gradle-${GRADLE_VERSION}"
 unzip -q /tmp/gradle.zip -d /opt
@@ -21,7 +21,7 @@ rm -f /tmp/gradle.zip /tmp/gradle.zip.sha256
 mkdir -p /usr/share/keyrings
 # Follow Trivy's current Debian install instructions instead of pinning the
 # raw key file bytes, which can rotate without a package-signing trust change.
-curl -fsSL "${TRIVY_APT_KEY_URL}" | gpg --dearmor --batch --yes -o "${TRIVY_APT_KEYRING}"
+curl --retry 5 --retry-all-errors --retry-delay 2 -fsSL "${TRIVY_APT_KEY_URL}" | gpg --dearmor --batch --yes -o "${TRIVY_APT_KEYRING}"
 echo "deb [signed-by=${TRIVY_APT_KEYRING}] ${TRIVY_APT_REPO} generic main" \
   > /etc/apt/sources.list.d/trivy.list
 apt-get update

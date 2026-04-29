@@ -32,10 +32,10 @@ title = "Python And Node Secure Starter"
 description = "Polyglot Python plus Node starter with source-complete generation and starter-local scenarios."
 language = "python-node"
 source_template = "templates/python-node-secure"
-generation_modes = ["source-template"]
 default_generation_mode = "source-template"
-published_image = "ghcr.io/senanayake/polyglot-devcontainers-python-node"
+published_image = "ghcr.io/senanayake/polyglot-devcontainers-python-node:main"
 published_image_bootstrap_supported = true
+generation_modes = ["source-template", "published-image-bootstrap"]
 runtime_guidance = ["polyglot", "polyglot-starters", "polyglot-python", "polyglot-security"]
 task_contract = ["init", "lint", "test", "scan", "ci"]
 features = ["security-baseline", "python-engineering", "node-engineering", "agent-runtime"]
@@ -51,23 +51,25 @@ proof_paths = [
   ".artifacts/scans/pip-audit-policy.json",
   ".artifacts/scans/pnpm-audit.json",
   ".artifacts/scenarios/starter-health.json",
+  ".artifacts/scenarios/security-evidence.json",
+  ".artifacts/scenarios/non-git-scan-fallback.json",
 ]
 
 [starters.python-node-secure.composition_profiles.polyglot-default]
 description = "Default polyglot workspace with Python, Node, and starter-local scenario coverage."
 features = ["security-baseline", "python-engineering", "node-engineering", "agent-runtime"]
 scenarios = ["starter-health", "security-evidence", "non-git-scan-fallback"]
-proof_scenarios = ["starter-health"]
+proof_scenarios = ["starter-health", "security-evidence", "non-git-scan-fallback"]
 
 [starters.java-secure]
 title = "Java Secure Starter"
 description = "Gradle-based Java starter with source-complete generation and security scans."
 language = "java"
 source_template = "templates/java-secure"
-generation_modes = ["source-template"]
 default_generation_mode = "source-template"
-published_image = "ghcr.io/senanayake/polyglot-devcontainers-java"
+published_image = "ghcr.io/senanayake/polyglot-devcontainers-java:main"
 published_image_bootstrap_supported = true
+generation_modes = ["source-template", "published-image-bootstrap"]
 runtime_guidance = ["polyglot", "polyglot-starters", "polyglot-java", "polyglot-security"]
 task_contract = ["init", "lint", "test", "scan", "ci"]
 features = ["security-baseline", "java-engineering", "agent-runtime"]

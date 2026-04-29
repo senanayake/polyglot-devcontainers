@@ -43,6 +43,7 @@ tasks:
   _require_image_runtime:
     internal: true
     cmds:
+      - bash scripts/start_docker_daemon.sh
       - python scripts/require_maintainer_container.py --require-oci-runtime
 
   init:
@@ -185,6 +186,11 @@ tasks:
     cmds:
       - python scripts/starter_catalog.py generate {{.CLI_ARGS}}
 
+  starters:serve:
+    desc: Start the local starter catalog service and minimal web UI on the host
+    cmds:
+      - python scripts/starter_site.py {{.CLI_ARGS}}
+
   starters:prove:
     desc: Generate and prove one or more starters from the experimental catalog
     deps: [_require_maintainer]
@@ -197,6 +203,19 @@ tasks:
     cmds:
       - task starters:validate
       - task starters:prove -- --all
+      - task starters:verify:image-backed
+
+  starters:verify:image-backed:
+    desc: Prove the published-image bootstrap path for starters that support it
+    deps: [_require_image_runtime]
+    cmds:
+      - task image:build
+      - >
+        POLYGLOT_STARTER_PROOF_IMAGE_JAVA_SECURE=polyglot-devcontainers-java:verify
+        task starters:prove -- --starter java-secure --mode published-image-bootstrap
+      - >
+        POLYGLOT_STARTER_PROOF_IMAGE_PYTHON_NODE_SECURE=polyglot-devcontainers-python-node:verify
+        task starters:prove -- --starter python-node-secure --mode published-image-bootstrap --profile polyglot-default
 
   scan:auto:fixtures:
     desc: Materialize and validate the Python scan:auto fixture matrix

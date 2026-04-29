@@ -6,14 +6,16 @@ generator/proving thin slice.
 Current intent:
 
 - define a small, reviewable metadata surface for starters
-- generate source-complete starter workspaces from templates
-- prove generated starters headlessly through the task contract
+- generate either source-complete starter workspaces or published-image bootstrap
+  seeds
+- prove generated starters headlessly through the task contract and selected
+  starter-local scenarios
 
 Current limitations:
 
-- generation is source-template-first only
-- published starter image references are stored as metadata, but thin
-  image-backed starter generation is not yet a supported default path
+- source-template remains the default generation mode
+- published-image bootstrap is proven only for starters whose images already
+  expose the bootstrap contract
 - the current catalog currently covers:
   - `python-secure`
   - `python-node-secure`
@@ -26,6 +28,8 @@ task starters:list
 task starters:validate
 task starters:show -- --starter python-node-secure --profile polyglot-default
 task starters:verify
+task starters:generate -- --starter java-secure --mode published-image-bootstrap --output .tmp/java-image-seed
+task starters:serve -- --host 127.0.0.1 --port 8877
 ```
 
 The generator writes a `.polyglot-starter.json` stamp into generated workspaces
@@ -40,3 +44,12 @@ Profiles may also declare a smaller `proof_scenarios` subset. That allows the
 catalog to prove one or more starter-local scenarios directly from the
 generated workspace without forcing every supported scenario into the default
 proof lane.
+
+For published-image bootstrap generation, the seed workspace keeps generator
+metadata inside `.devcontainer` so `task init` can still scaffold into an
+otherwise empty workspace.
+
+The minimal local UI lives under `starters/site/` and is served by
+`scripts/starter_site.py`. It is intentionally thin: it lists the proven
+catalog metadata and issues generation requests against the same catalog code
+used by the CLI.
