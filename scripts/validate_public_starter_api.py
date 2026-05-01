@@ -49,7 +49,9 @@ def assert_true(condition: bool, message: str) -> None:
 
 def main() -> int:
     definitions = catalog.load_catalog()
-    with tempfile.TemporaryDirectory(prefix="starter-public-api-", dir=catalog.ROOT / ".tmp") as temp_dir:
+    tmp_root = catalog.ROOT / ".tmp"
+    tmp_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="starter-public-api-", dir=tmp_root) as temp_dir:
         temp_root = Path(temp_dir)
         release_root = temp_root / "releases"
         artifact_root = temp_root / "artifacts"
