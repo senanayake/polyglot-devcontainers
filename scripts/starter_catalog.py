@@ -2,14 +2,18 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
+import zipfile
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +22,8 @@ ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "
 CATALOG_PATH = ROOT / "starters" / "catalog.toml"
 DEFAULT_PROOF_ROOT = ROOT / ".tmp" / "starter-proving"
 DEFAULT_REPORT_ROOT = ROOT / ".artifacts" / "starters"
+DEFAULT_RELEASE_ROOT = ROOT / ".artifacts" / "starter-releases"
+DEFAULT_PUBLIC_ARTIFACT_ROOT = ROOT / ".artifacts" / "starter-downloads"
 REQUIRED_TASKS = {"init", "lint", "test", "scan", "ci"}
 SUPPORTED_GENERATION_MODES = {"source-template", "published-image-bootstrap"}
 IGNORED_COPY_NAMES = {
@@ -35,6 +41,7 @@ IGNORED_COPY_NAMES = {
     "coverage",
     "node_modules",
 }
+ZIP_FIXED_TIMESTAMP = (2026, 1, 1, 0, 0, 0)
 
 
 @dataclass(frozen=True)
@@ -65,6 +72,33 @@ class StarterDefinition:
     proof_paths: list[str]
     published_image: str | None = None
     published_image_bootstrap_supported: bool = False
+
+
+@dataclass(frozen=True)
+class ReleaseSnapshot:
+    catalog_version: str
+    source_git_sha: str
+    exported_at: str
+    catalog_path: Path
+    definitions: dict[str, StarterDefinition]
+
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def current_git_sha() -> str:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return "unknown"
+    return result.stdout.strip() or "unknown"
 
 
 def validate_starter_definition(starter: StarterDefinition) -> None:
@@ -143,62 +177,159 @@ def validate_starter_definition(starter: StarterDefinition) -> None:
             )
 
 
-def load_catalog() -> dict[str, StarterDefinition]:
-    payload = tomllib.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+def _profile_from_payload(starter_id: str, profile_id: str, profile_value: object) -> CompositionProfile:
+    if not isinstance(profile_value, dict):
+        raise SystemExit(
+            f"starter {starter_id!r} composition profile {profile_id!r} must be a table"
+        )
+    return CompositionProfile(
+        profile_id=profile_id,
+        description=str(profile_value["description"]),
+        features=[str(value) for value in profile_value.get("features", [])],
+        scenarios=[str(value) for value in profile_value.get("scenarios", [])],
+        proof_scenarios=[str(value) for value in profile_value.get("proof_scenarios", [])],
+    )
+
+
+def _starter_from_payload(starter_id: str, raw_value: object) -> StarterDefinition:
+    if not isinstance(raw_value, dict):
+        raise SystemExit(f"starter entry {starter_id!r} must be a table")
+    profile_payload = raw_value.get("composition_profiles", {})
+    if not isinstance(profile_payload, dict) or not profile_payload:
+        raise SystemExit(f"starter {starter_id!r} must declare one or more composition_profiles")
+    composition_profiles = {
+        profile_id: _profile_from_payload(starter_id, profile_id, profile_value)
+        for profile_id, profile_value in profile_payload.items()
+    }
+    starter = StarterDefinition(
+        starter_id=starter_id,
+        title=str(raw_value["title"]),
+        description=str(raw_value["description"]),
+        language=str(raw_value["language"]),
+        source_template=str(raw_value["source_template"]),
+        generation_modes=[str(value) for value in raw_value["generation_modes"]],
+        default_generation_mode=str(raw_value["default_generation_mode"]),
+        runtime_guidance=[str(value) for value in raw_value.get("runtime_guidance", [])],
+        task_contract=[str(value) for value in raw_value.get("task_contract", [])],
+        features=[str(value) for value in raw_value.get("features", [])],
+        scenarios=[str(value) for value in raw_value.get("scenarios", [])],
+        default_profile=str(raw_value["default_profile"]),
+        composition_profiles=composition_profiles,
+        proof_commands=[str(value) for value in raw_value.get("proof_commands", [])],
+        proof_paths=[str(value) for value in raw_value.get("proof_paths", [])],
+        published_image=str(raw_value["published_image"]) if "published_image" in raw_value else None,
+        published_image_bootstrap_supported=bool(
+            raw_value.get("published_image_bootstrap_supported", False)
+        ),
+    )
+    validate_starter_definition(starter)
+    return starter
+
+
+def load_catalog(catalog_path: Path = CATALOG_PATH) -> dict[str, StarterDefinition]:
+    payload = tomllib.loads(catalog_path.read_text(encoding="utf-8"))
     schema_version = payload.get("schema_version")
     if schema_version != 1:
         raise SystemExit(f"unsupported starter catalog schema_version: {schema_version!r}")
     starters = payload.get("starters", {})
     if not isinstance(starters, dict):
-        raise SystemExit(f"expected [starters.*] entries in {CATALOG_PATH}")
+        raise SystemExit(f"expected [starters.*] entries in {catalog_path}")
+    return {
+        starter_id: _starter_from_payload(starter_id, raw_value)
+        for starter_id, raw_value in starters.items()
+    }
 
-    definitions: dict[str, StarterDefinition] = {}
-    for starter_id, raw_value in starters.items():
-        if not isinstance(raw_value, dict):
-            raise SystemExit(f"starter entry {starter_id!r} must be a table")
-        profile_payload = raw_value.get("composition_profiles", {})
-        if not isinstance(profile_payload, dict) or not profile_payload:
-            raise SystemExit(
-                f"starter {starter_id!r} must declare one or more composition_profiles"
-            )
-        composition_profiles: dict[str, CompositionProfile] = {}
-        for profile_id, profile_value in profile_payload.items():
-            if not isinstance(profile_value, dict):
-                raise SystemExit(
-                    f"starter {starter_id!r} composition profile {profile_id!r} must be a table"
-                )
-            composition_profiles[profile_id] = CompositionProfile(
-                profile_id=profile_id,
-                description=str(profile_value["description"]),
-                features=[str(value) for value in profile_value.get("features", [])],
-                scenarios=[str(value) for value in profile_value.get("scenarios", [])],
-                proof_scenarios=[str(value) for value in profile_value.get("proof_scenarios", [])],
-            )
-        definitions[starter_id] = StarterDefinition(
-            starter_id=starter_id,
-            title=str(raw_value["title"]),
-            description=str(raw_value["description"]),
-            language=str(raw_value["language"]),
-            source_template=str(raw_value["source_template"]),
-            generation_modes=[str(value) for value in raw_value["generation_modes"]],
-            default_generation_mode=str(raw_value["default_generation_mode"]),
-            runtime_guidance=[str(value) for value in raw_value.get("runtime_guidance", [])],
-            task_contract=[str(value) for value in raw_value.get("task_contract", [])],
-            features=[str(value) for value in raw_value.get("features", [])],
-            scenarios=[str(value) for value in raw_value.get("scenarios", [])],
-            default_profile=str(raw_value["default_profile"]),
-            composition_profiles=composition_profiles,
-            proof_commands=[str(value) for value in raw_value.get("proof_commands", [])],
-            proof_paths=[str(value) for value in raw_value.get("proof_paths", [])],
-            published_image=(
-                str(raw_value["published_image"]) if "published_image" in raw_value else None
-            ),
-            published_image_bootstrap_supported=bool(
-                raw_value.get("published_image_bootstrap_supported", False)
-            ),
+
+def serialize_starter(starter: StarterDefinition) -> dict[str, Any]:
+    payload = asdict(starter)
+    payload["composition_profiles"] = {
+        profile_id: asdict(profile)
+        for profile_id, profile in starter.composition_profiles.items()
+    }
+    return payload
+
+
+def serialize_catalog(definitions: dict[str, StarterDefinition]) -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "starters": {
+            starter_id: serialize_starter(definitions[starter_id])
+            for starter_id in sorted(definitions)
+        },
+    }
+
+
+def release_directory(release_root: Path, catalog_version: str) -> Path:
+    return release_root / catalog_version
+
+
+def release_manifest_path(release_root: Path, catalog_version: str) -> Path:
+    return release_directory(release_root, catalog_version) / "release.json"
+
+
+def release_catalog_path(release_root: Path, catalog_version: str) -> Path:
+    return release_directory(release_root, catalog_version) / "catalog.toml"
+
+
+def export_release_snapshot(
+    definitions: dict[str, StarterDefinition],
+    catalog_version: str,
+    *,
+    release_root: Path = DEFAULT_RELEASE_ROOT,
+) -> ReleaseSnapshot:
+    release_dir = release_directory(release_root, catalog_version)
+    if release_dir.exists():
+        shutil.rmtree(release_dir)
+    release_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_catalog = release_catalog_path(release_root, catalog_version)
+    snapshot_catalog.write_text(CATALOG_PATH.read_text(encoding="utf-8"), encoding="utf-8")
+    manifest = {
+        "catalog_version": catalog_version,
+        "schema_version": 1,
+        "source_git_sha": current_git_sha(),
+        "exported_at": utc_now_iso(),
+        "catalog_path": str(snapshot_catalog.relative_to(ROOT)),
+    }
+    write_json(release_manifest_path(release_root, catalog_version), manifest)
+    return ReleaseSnapshot(
+        catalog_version=catalog_version,
+        source_git_sha=str(manifest["source_git_sha"]),
+        exported_at=str(manifest["exported_at"]),
+        catalog_path=snapshot_catalog,
+        definitions=definitions,
+    )
+
+
+def list_release_versions(release_root: Path = DEFAULT_RELEASE_ROOT) -> list[str]:
+    if not release_root.exists():
+        return []
+    versions: list[str] = []
+    for child in sorted(release_root.iterdir()):
+        if child.is_dir() and (child / "catalog.toml").exists() and (child / "release.json").exists():
+            versions.append(child.name)
+    return versions
+
+
+def load_release_snapshot(
+    catalog_version: str,
+    *,
+    release_root: Path = DEFAULT_RELEASE_ROOT,
+) -> ReleaseSnapshot:
+    manifest_path = release_manifest_path(release_root, catalog_version)
+    catalog_path = release_catalog_path(release_root, catalog_version)
+    if not manifest_path.exists() or not catalog_path.exists():
+        available = ", ".join(list_release_versions(release_root)) or "none"
+        raise SystemExit(
+            f"released catalog version {catalog_version!r} is not available; available versions: {available}"
         )
-        validate_starter_definition(definitions[starter_id])
-    return definitions
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    return ReleaseSnapshot(
+        catalog_version=str(manifest["catalog_version"]),
+        source_git_sha=str(manifest["source_git_sha"]),
+        exported_at=str(manifest["exported_at"]),
+        catalog_path=catalog_path,
+        definitions=load_catalog(catalog_path),
+    )
 
 
 def require_starter(definitions: dict[str, StarterDefinition], starter_id: str) -> StarterDefinition:
@@ -360,6 +491,118 @@ def generate_workspace(
     return output_path
 
 
+def deterministic_zip_path(zip_file: zipfile.ZipFile, source_path: Path, arcname: str) -> None:
+    info = zipfile.ZipInfo(arcname)
+    info.date_time = ZIP_FIXED_TIMESTAMP
+    info.compress_type = zipfile.ZIP_DEFLATED
+    info.create_system = 3
+    info.external_attr = 0o100644 << 16
+    zip_file.writestr(info, source_path.read_bytes())
+
+
+def create_deterministic_zip(source_root: Path, zip_path: Path) -> None:
+    zip_path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(zip_path, "w") as archive:
+        for path in sorted(source_root.rglob("*")):
+            if path.is_dir():
+                continue
+            arcname = path.relative_to(source_root).as_posix()
+            deterministic_zip_path(archive, path, arcname)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def public_artifact_payload(
+    snapshot: ReleaseSnapshot,
+    starter: StarterDefinition,
+    profile: CompositionProfile,
+    generation_mode: str,
+) -> dict[str, str]:
+    return {
+        "catalog_version": snapshot.catalog_version,
+        "source_git_sha": snapshot.source_git_sha,
+        "starter": starter.starter_id,
+        "profile": profile.profile_id,
+        "mode": generation_mode,
+    }
+
+
+def public_artifact_id(
+    snapshot: ReleaseSnapshot,
+    starter: StarterDefinition,
+    profile: CompositionProfile,
+    generation_mode: str,
+) -> str:
+    payload = json.dumps(
+        public_artifact_payload(snapshot, starter, profile, generation_mode),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()[:16]
+
+
+def public_artifact_download_path(catalog_version: str, artifact_id: str) -> str:
+    return f"/api/public/download/{catalog_version}/{artifact_id}"
+
+
+def public_artifact_paths(
+    artifact_root: Path,
+    catalog_version: str,
+    artifact_id: str,
+) -> tuple[Path, Path]:
+    version_root = artifact_root / catalog_version
+    return (
+        version_root / f"{artifact_id}.zip",
+        version_root / f"{artifact_id}.json",
+    )
+
+
+def generate_public_artifact(
+    snapshot: ReleaseSnapshot,
+    starter: StarterDefinition,
+    profile: CompositionProfile,
+    generation_mode: str,
+    *,
+    artifact_root: Path = DEFAULT_PUBLIC_ARTIFACT_ROOT,
+) -> dict[str, Any]:
+    artifact_id = public_artifact_id(snapshot, starter, profile, generation_mode)
+    zip_path, metadata_path = public_artifact_paths(
+        artifact_root,
+        snapshot.catalog_version,
+        artifact_id,
+    )
+    if metadata_path.exists() and zip_path.exists():
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata["cached"] = True
+        return metadata
+
+    stable_stamp = public_artifact_payload(snapshot, starter, profile, generation_mode)
+    stable_stamp["artifact_id"] = artifact_id
+
+    artifact_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="public-starter-", dir=artifact_root) as temp_dir:
+        workspace = Path(temp_dir) / "workspace"
+        generate_workspace(starter, profile, workspace, generation_mode, force=True)
+        write_json(workspace / ".polyglot-starter-artifact.json", stable_stamp)
+        create_deterministic_zip(workspace, zip_path)
+
+    metadata = {
+        **stable_stamp,
+        "download_url": public_artifact_download_path(snapshot.catalog_version, artifact_id),
+        "sha256": sha256_file(zip_path),
+        "size_bytes": zip_path.stat().st_size,
+        "cached": False,
+    }
+    write_json(metadata_path, metadata)
+    return metadata
+
+
 def command_result(command: str, workdir: Path) -> dict[str, Any]:
     args = shlex.split(command)
     subprocess.run(args, cwd=workdir, check=True, text=True)
@@ -516,7 +759,6 @@ def prove_starter(
     workspace_root: Path,
     report_root: Path,
 ) -> int:
-    workspace = workspace_root / starter.starter_id / profile.profile_id
     workspace = workspace_root / generation_mode / starter.starter_id / profile.profile_id
     workspace.parent.mkdir(parents=True, exist_ok=True)
     generate_workspace(starter, profile, workspace, generation_mode, force=True)
@@ -586,6 +828,10 @@ def parse_args() -> argparse.Namespace:
     generate_parser.add_argument("--profile")
     generate_parser.add_argument("--force", action="store_true")
 
+    export_parser = subparsers.add_parser("export-release")
+    export_parser.add_argument("--version", required=True)
+    export_parser.add_argument("--release-root", type=Path, default=DEFAULT_RELEASE_ROOT)
+
     prove_parser = subparsers.add_parser("prove")
     prove_target = prove_parser.add_mutually_exclusive_group(required=True)
     prove_target.add_argument("--starter")
@@ -625,7 +871,7 @@ def main() -> int:
     if args.command == "show":
         starter = require_starter(definitions, args.starter)
         profile = resolve_profile(starter, args.profile)
-        payload = asdict(starter)
+        payload = serialize_starter(starter)
         payload["resolved_profile"] = asdict(profile)
         print(json.dumps(payload, indent=2))
         return 0
@@ -646,6 +892,21 @@ def main() -> int:
             "[starter-generate] "
             f"starter={starter.starter_id} mode={generation_mode} "
             f"profile={profile.profile_id} output={workspace}",
+            flush=True,
+        )
+        return 0
+
+    if args.command == "export-release":
+        release_root = args.release_root if args.release_root.is_absolute() else ROOT / args.release_root
+        snapshot = export_release_snapshot(
+            definitions,
+            args.version,
+            release_root=release_root,
+        )
+        print(
+            "[starter-release] "
+            f"version={snapshot.catalog_version} git_sha={snapshot.source_git_sha} "
+            f"catalog={snapshot.catalog_path}",
             flush=True,
         )
         return 0

@@ -29,6 +29,8 @@ task starters:validate
 task starters:show -- --starter python-node-secure --profile polyglot-default
 task starters:verify
 task starters:generate -- --starter java-secure --mode published-image-bootstrap --output .tmp/java-image-seed
+task starters:release:export -- --version v0.0.27
+task starters:validate:public
 task starters:serve -- --host 127.0.0.1 --port 8877
 task starters:site:start
 task starters:site:status
@@ -56,6 +58,19 @@ The minimal local UI lives under `starters/site/` and is served by
 `scripts/starter_site.py`. It is intentionally thin: it lists the proven
 catalog metadata and issues generation requests against the same catalog code
 used by the CLI.
+
+The hardened hosted derivative uses released catalog snapshots rather than the
+live branch catalog. Export one with:
+
+```bash
+task starters:release:export -- --version v0.0.27
+```
+
+Then validate the public-safe API surface with:
+
+```bash
+task starters:validate:public
+```
 
 For local host testing, prefer the explicit site lifecycle tasks rather than
 starting the service manually:
