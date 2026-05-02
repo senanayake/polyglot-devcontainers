@@ -1,6 +1,18 @@
 catalog_version = 1
 
 [images."polyglot-devcontainers-maintainer"]
+target_id = "maintainer"
+description = "Maintainer and CI validation container for polyglot-devcontainers."
+context = "."
+dockerfile = ".devcontainer/Containerfile"
+devcontainer_json = ".devcontainer/devcontainer.json"
+workdir = "/workspaces/polyglot-devcontainers"
+verify_tag = "polyglot-devcontainers-maintainer:verify"
+artifact_name = "maintainer"
+medium_lane = false
+smoke_test = false
+smoke_test_run_scenarios = false
+starter_proofs = []
 templates = []
 examples = []
 docs = [
@@ -9,6 +21,20 @@ docs = [
 ]
 
 [images."polyglot-devcontainers-java"]
+target_id = "java"
+description = "Gradle-first Java engineering container for polyglot-devcontainers."
+context = "."
+dockerfile = "templates/java-secure/.devcontainer/Containerfile"
+devcontainer_json = "templates/java-secure/.devcontainer/devcontainer.json"
+workdir = "/workspaces/polyglot-devcontainers/templates/java-secure"
+verify_tag = "polyglot-devcontainers-java:verify"
+artifact_name = "java"
+medium_lane = true
+smoke_test = true
+smoke_test_run_scenarios = false
+starter_proofs = [
+  { starter = "java-secure", profile = "baseline" },
+]
 templates = [
   { label = "java-secure", path = "templates/java-secure/README.md" },
 ]
@@ -21,6 +47,18 @@ docs = [
 ]
 
 [images."polyglot-devcontainers-diagrams"]
+target_id = "diagrams"
+description = "D2-first diagram rendering container for presentation-quality software portfolio visuals."
+context = "."
+dockerfile = "templates/diagram-secure/.devcontainer/Containerfile"
+devcontainer_json = "templates/diagram-secure/.devcontainer/devcontainer.json"
+workdir = "/workspaces/polyglot-devcontainers/templates/diagram-secure"
+verify_tag = "polyglot-devcontainers-diagrams:verify"
+artifact_name = "diagrams"
+medium_lane = false
+smoke_test = true
+smoke_test_run_scenarios = false
+starter_proofs = []
 templates = [
   { label = "diagram-secure", path = "templates/diagram-secure/README.md" },
 ]
@@ -32,6 +70,20 @@ docs = [
 ]
 
 [images."polyglot-devcontainers-python-node"]
+target_id = "python-node"
+description = "Focused Python and Node / TypeScript polyglot container for polyglot-devcontainers."
+context = "."
+dockerfile = "templates/python-node-secure/.devcontainer/Containerfile"
+devcontainer_json = "templates/python-node-secure/.devcontainer/devcontainer.json"
+workdir = "/workspaces/polyglot-devcontainers/templates/python-node-secure"
+verify_tag = "polyglot-devcontainers-python-node:verify"
+artifact_name = "python-node"
+medium_lane = true
+smoke_test = true
+smoke_test_run_scenarios = true
+starter_proofs = [
+  { starter = "python-node-secure", profile = "polyglot-default" },
+]
 templates = [
   { label = "python-node-secure", path = "templates/python-node-secure/README.md" },
 ]

@@ -7,7 +7,22 @@ on:
   pull_request:
 
 jobs:
-  ci:
+  plan-medium-image-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Plan medium image matrix
+        id: plan
+        run: |
+          python3 scripts/published_image_pipeline.py matrix --profile medium > medium-image-matrix.json
+          matrix_json="$(python3 -c 'import json; import pathlib; print(json.dumps(json.loads(pathlib.Path("medium-image-matrix.json").read_text(encoding="utf-8"))))')"
+          echo "matrix=${matrix_json}" >> "${GITHUB_OUTPUT}"
+
+  ci-fast:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
@@ -57,25 +72,24 @@ jobs:
           python3 scripts/run_in_maintainer_container.py exec -- python scripts/require_maintainer_container.py
           python3 scripts/run_in_maintainer_container.py git -- status --short --branch
 
-      - name: Capture host disk usage before root workflow
+      - name: Capture host disk usage before fast workflow
         env:
           POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
         run: |
-          python3 scripts/report_disk_usage.py --label host-pre-root-workflow
+          python3 scripts/report_disk_usage.py --label host-pre-fast-workflow
 
-      - name: Run root workflow
+      - name: Run fast repository workflow
         env:
           POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
-          POLYGLOT_OCI_RUNTIME: docker
         run: |
           python3 scripts/run_in_maintainer_container.py exec -- \
-            bash -lc "man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task ci"
+            bash -lc "man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task ci:fast"
 
       - name: Upload disk usage reports
         uses: actions/upload-artifact@v4
         if: ${{ always() && hashFiles('.artifacts/diagnostics/*.json', '.artifacts/diagnostics/*.md') != '' }}
         with:
-          name: disk-usage-reports
+          name: disk-usage-reports-fast
           path: |
             .artifacts/diagnostics/*.json
             .artifacts/diagnostics/*.md
@@ -89,4 +103,85 @@ jobs:
           path: |
             .artifacts/scenarios/*.json
             .artifacts/scenarios/*.md
+          if-no-files-found: error
+
+      - name: Upload starter proof reports
+        uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('.artifacts/starters/**/*.json', '.artifacts/starters/**/*.md') != '' }}
+        with:
+          name: starter-proof-reports-fast
+          path: |
+            .artifacts/starters/**/*.json
+            .artifacts/starters/**/*.md
+          if-no-files-found: error
+
+  ci-medium-image-backed:
+    needs: plan-medium-image-matrix
+    runs-on: ubuntu-latest
+    name: medium / ${{ matrix.target_id }}
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      POLYGLOT_CONTAINER_RUNTIME: docker
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan-medium-image-matrix.outputs.matrix) }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Capture host disk usage before root image build
+        run: |
+          python3 scripts/report_disk_usage.py --label host-pre-medium-${{ matrix.target_id }}-root-image-build
+
+      - name: Build root image
+        run: |
+          docker build --pull --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:ci .
+
+      - name: Validate root image devcontainer metadata
+        run: |
+          python3 scripts/validate_devcontainer_metadata.py \
+            --runtime docker \
+            --image polyglot-devcontainers-maintainer:ci \
+            --devcontainer-json .devcontainer/devcontainer.json
+
+      - name: Smoke test maintainer Dev Containers CLI control path
+        env:
+          POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
+        run: |
+          python3 scripts/run_in_maintainer_container.py exec -- python scripts/require_maintainer_container.py
+
+      - name: Capture host disk usage before medium image proof
+        env:
+          POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
+        run: |
+          python3 scripts/report_disk_usage.py --label host-pre-medium-${{ matrix.target_id }}-workflow
+
+      - name: Run medium image-backed starter proof
+        env:
+          POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
+          POLYGLOT_OCI_RUNTIME: docker
+          TARGET_ID: ${{ matrix.target_id }}
+        run: |
+          python3 scripts/run_in_maintainer_container.py exec -- \
+            bash -lc "man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task starters:verify:image-backed -- --profile medium --image ${TARGET_ID} --disk-label-prefix nested-medium-${TARGET_ID}"
+
+      - name: Upload disk usage reports
+        uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('.artifacts/diagnostics/*.json', '.artifacts/diagnostics/*.md') != '' }}
+        with:
+          name: disk-usage-reports-medium-${{ matrix.target_id }}
+          path: |
+            .artifacts/diagnostics/*.json
+            .artifacts/diagnostics/*.md
+          if-no-files-found: error
+
+      - name: Upload starter proof reports
+        uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('.artifacts/starters/**/*.json', '.artifacts/starters/**/*.md') != '' }}
+        with:
+          name: starter-proof-reports-medium-${{ matrix.target_id }}
+          path: |
+            .artifacts/starters/**/*.json
+            .artifacts/starters/**/*.md
           if-no-files-found: error
