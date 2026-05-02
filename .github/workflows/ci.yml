@@ -35,6 +35,10 @@ jobs:
             .artifacts/scans/base-image-report.md
           if-no-files-found: error
 
+      - name: Capture host disk usage before root image build
+        run: |
+          python3 scripts/report_disk_usage.py --label host-pre-root-image-build
+
       - name: Build root image
         run: |
           docker build --pull --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:ci .
@@ -53,12 +57,28 @@ jobs:
           python3 scripts/run_in_maintainer_container.py exec -- python scripts/require_maintainer_container.py
           python3 scripts/run_in_maintainer_container.py git -- status --short --branch
 
+      - name: Capture host disk usage before root workflow
+        env:
+          POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
+        run: |
+          python3 scripts/report_disk_usage.py --label host-pre-root-workflow
+
       - name: Run root workflow
         env:
           POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
         run: |
           python3 scripts/run_in_maintainer_container.py exec -- \
             bash -lc "man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task ci"
+
+      - name: Upload disk usage reports
+        uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('.artifacts/diagnostics/*.json', '.artifacts/diagnostics/*.md') != '' }}
+        with:
+          name: disk-usage-reports
+          path: |
+            .artifacts/diagnostics/*.json
+            .artifacts/diagnostics/*.md
+          if-no-files-found: error
 
       - name: Upload scenario reports
         uses: actions/upload-artifact@v4

@@ -333,6 +333,7 @@ tasks:
     deps: [_require_image_runtime]
     cmds:
       - mkdir -p .artifacts/images
+      - python scripts/report_disk_usage.py --label nested-pre-image-build
       - rm -f .artifacts/images/maintainer.tar .artifacts/images/java.tar .artifacts/images/diagrams.tar .artifacts/images/python-node.tar
       - python scripts/oci_runtime.py build --pull --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-maintainer:verify --devcontainer-json .devcontainer/devcontainer.json
@@ -346,6 +347,7 @@ tasks:
       - python scripts/oci_runtime.py build --pull --file templates/python-node-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-python-node:verify .
       - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-python-node:verify --devcontainer-json templates/python-node-secure/.devcontainer/devcontainer.json
       - python scripts/oci_runtime.py save --output .artifacts/images/python-node.tar polyglot-devcontainers-python-node:verify
+      - python scripts/report_disk_usage.py --label nested-post-image-build
 
   image:verify:
     desc: Check published image pinning, build the published images, and run their validation workflows
