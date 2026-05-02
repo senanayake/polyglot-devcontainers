@@ -15,11 +15,10 @@ from typing import Any
 ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "AGENTS.md").exists())
 DEFAULT_OUTPUT_ROOT = ROOT / ".artifacts" / "diagnostics"
 DEFAULT_PATHS = [
-    ".artifacts",
     ".artifacts/images",
     ".artifacts/scans",
     ".artifacts/scenarios",
-    ".tmp",
+    ".tmp/starter-proving",
 ]
 RUNTIME_CANDIDATE_ENV_VARS = ("POLYGLOT_OCI_RUNTIME", "POLYGLOT_CONTAINER_RUNTIME")
 
@@ -99,14 +98,29 @@ def collect_path_usage(paths: list[str]) -> list[dict[str, Any]]:
             results.append(entry)
             continue
 
-        human = run_command(["du", "-sh", str(resolved)])
         bytes_result = run_command(["du", "-sb", str(resolved)])
-        entry["human"] = human.get("stdout", "").strip() if human.get("ok") else None
-        entry["bytes"] = bytes_result.get("stdout", "").strip() if bytes_result.get("ok") else None
-        entry["human_error"] = None if human.get("ok") else human.get("error") or human.get("stderr", "").strip()
+        bytes_value = None
+        if bytes_result.get("ok"):
+            raw_value = bytes_result.get("stdout", "").strip().split(maxsplit=1)
+            if raw_value:
+                bytes_value = raw_value[0]
+        entry["bytes"] = bytes_value
+        entry["human"] = humanize_bytes(int(bytes_value)) if bytes_value and bytes_value.isdigit() else None
         entry["bytes_error"] = None if bytes_result.get("ok") else bytes_result.get("error") or bytes_result.get("stderr", "").strip()
         results.append(entry)
     return results
+
+
+def humanize_bytes(value: int) -> str:
+    suffixes = ["B", "KiB", "MiB", "GiB", "TiB"]
+    amount = float(value)
+    for suffix in suffixes:
+        if amount < 1024.0 or suffix == suffixes[-1]:
+            if suffix == "B":
+                return f"{int(amount)} {suffix}"
+            return f"{amount:.1f} {suffix}"
+        amount /= 1024.0
+    return f"{value} B"
 
 
 def configured_runtimes() -> list[str]:
@@ -143,7 +157,7 @@ def collect_oci_runtime_usage() -> dict[str, Any]:
             "error": str(exc),
         }
 
-    system_df = run_command([runtime_name, "system", "df", "-v"])
+    system_df = run_command([runtime_name, "system", "df"])
     image_ls = run_command([runtime_name, "image", "ls", "--format", "{{.Repository}}:{{.Tag}}\t{{.Size}}"])
     return {
         "available": True,
@@ -241,7 +255,7 @@ def write_markdown(path: Path, snapshot: dict[str, Any]) -> None:
     else:
         lines.append(f"- runtime: `{oci_runtime['runtime']}`")
         lines.append("")
-        lines.extend(markdown_command(f"{oci_runtime['runtime']} system df -v", oci_runtime["system_df"]))
+        lines.extend(markdown_command(f"{oci_runtime['runtime']} system df", oci_runtime["system_df"]))
         lines.extend(markdown_command(f"{oci_runtime['runtime']} image ls", oci_runtime["image_ls"]))
 
     path.parent.mkdir(parents=True, exist_ok=True)
