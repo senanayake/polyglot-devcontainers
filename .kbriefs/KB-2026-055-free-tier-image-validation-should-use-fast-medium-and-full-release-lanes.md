@@ -1,7 +1,7 @@
 ---
 id: KB-2026-055
 type: standard
-status: draft
+status: active
 created: 2026-05-02
 updated: 2026-05-02
 tags: [github-actions, free-tier, ci, matrix, published-images, release, starter-proofs]
@@ -12,9 +12,11 @@ related:
   - KB-2026-052
   - KB-2026-053
   - KB-2026-054
+  - KB-2026-057
+  - KB-2026-058
 ---
 
-# Free-Tier Image Validation Should Use Fast, Medium, and Full-Release Lanes
+# Free-Tier Image Validation Should Use Repo-Core, Medium, and Full-Release Lanes
 
 ## Context
 
@@ -36,19 +38,16 @@ image builds and the slowest validation steps.
 
 Published-image validation should be split into three named lanes:
 
-1. `fast`
-   - default for targeted local image work
-   - build and validate selected images only
-   - no tar export
-   - no image smoke test
-   - no in-image `task ci`
+1. `repo-core`
+   - default fast repository lane for branch confidence
+   - proves the maintainer image and the core repository contract
+   - does not run published workload-image validation
 
 2. `medium`
-   - default PR lane for published-image starter coverage
-   - keep the fast repository lane separate from image-backed starter proofs
-   - run image-backed starter proofs one image at a time
-   - fan those proofs out as parallel GitHub matrix jobs on the free tier
-   - skip tar export and other release-only steps
+   - default branch lane for published-image coverage
+   - builds selected published images one at a time
+   - runs starter-proof follow-up only for starter-backed images
+   - skips tar export and other release-only steps
 
 3. `full-release`
    - explicit slow lane for release-grade validation
@@ -87,13 +86,18 @@ That planner should support:
 
 - `task ci` should map to the medium free-tier lane, not the heaviest possible
   release lane.
-- `task ci:fast` should exist as a first-class repository lane for quick core
-  validation.
+- `task ci:repo-core` should exist as a first-class repository lane for quick
+  core validation.
+- `task ci:fast` may remain as a compatibility alias, but it should not be the
+  primary explanatory name.
 - `task ci:full-release` should exist as a first-class explicit slow lane.
 - Published-image starter proofs should run in their own matrix jobs in GitHub
   Actions.
 - Release workflows should consume the same image planner as PR CI to avoid
   image-list drift.
+- The heavyweight full-release lane still needs separate end-to-end proof and
+  explicit release-gating adaptation before it should be treated as fully
+  trusted release evidence.
 
 ## Applicability
 
@@ -108,3 +112,15 @@ That planner should support:
 
 - downstream consumer repositories that only pull one released image
 - local workflows that intentionally choose a custom subset of slow steps
+
+## Evidence
+
+- branch-push run `25252816203` proved the branch-push matrix model with:
+  - `ci-repo-core`
+  - `medium / diagrams`
+  - `medium / java`
+  - `medium / python-node`
+- push run `25253157241` proved the naming cleanup from `ci-fast` to
+  `ci-repo-core`
+- the medium fanout now covers all default published workload images while
+  keeping starter-proof follow-up scoped to starter-backed images only

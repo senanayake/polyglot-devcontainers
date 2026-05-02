@@ -102,6 +102,13 @@ jobs:
 - The matrix-based fanout in `KB-2026-052` fixed the earlier storage coupling by isolating image work per job.
 - The successful run after `KB-2026-056` showed medium starter proofs can reuse branch-local verify images once the smoke workspace contract is correct.
 - `ci-repo-core` already runs in parallel with the medium matrix, so branch-push CI now benefits immediately from the existing parallel structure.
+- push run `25252816203` succeeded with:
+  - `ci-repo-core`
+  - `medium / diagrams`
+  - `medium / java`
+  - `medium / python-node`
+- push run `25253157241` succeeded after the public rename from `ci-fast` to
+  `ci-repo-core`
 
 ## Anti-Patterns
 

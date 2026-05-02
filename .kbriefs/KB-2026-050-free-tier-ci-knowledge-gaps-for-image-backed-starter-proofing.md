@@ -1,9 +1,9 @@
 ---
 id: KB-2026-050
 type: design-space
-status: draft
+status: active
 created: 2026-05-01
-updated: 2026-05-01
+updated: 2026-05-02
 tags: [github-actions, free-tier, ci, starters, images, kbpd]
 related:
   - KB-2026-028
@@ -11,6 +11,7 @@ related:
   - KB-2026-031
   - KB-2026-042
   - KB-2026-049
+  - KB-2026-058
 ---
 
 # Free-Tier CI Knowledge Gaps for Image-Backed Starter Proofing
@@ -34,6 +35,26 @@ so the repository can:
 - keep meaningful branch confidence
 - preserve container-authoritative proofing
 - avoid silently weakening the published task contract
+
+## Resolution Snapshot
+
+Most of the original free-tier branch-CI questions in this brief are now
+substantially resolved:
+
+- disk attribution was captured with targeted diagnostics
+- tar export was removed from the medium branch lane
+- the proof scope was reduced to per-image matrix jobs
+- the default gate placement converged on:
+  - `ci-repo-core`
+  - `medium / <image>`
+- the standard runner is now viable for the default branch lane
+- failure observability improved through preserved disk and starter-proof
+  artifacts
+
+The remaining major open question is no longer whether free-tier branch CI is
+possible. It is whether the heavyweight `full-release` lane and the
+`release-images` workflow provide a strong enough release gate for published
+digests. That follow-on gap is now tracked separately in `KB-2026-058`.
 
 ## What Is Already Known
 
