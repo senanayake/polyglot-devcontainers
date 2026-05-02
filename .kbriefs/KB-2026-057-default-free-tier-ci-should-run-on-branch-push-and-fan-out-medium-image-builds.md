@@ -31,7 +31,7 @@ The earlier workflow waited for pull-request execution and only fanned out the m
 
 ### Description
 
-Use branch-push CI as the default free-tier execution path for non-`main` branches, and fan the medium image lane out across every published workload image that belongs in the default validation set. Keep `ci-fast` running in parallel with the medium image matrix. For starter-backed images, add a starter-proof follow-up after the medium build instead of rebuilding the image again.
+Use branch-push CI as the default free-tier execution path for non-`main` branches, and fan the medium image lane out across every published workload image that belongs in the default validation set. Keep `ci-repo-core` running in parallel with the medium image matrix. For starter-backed images, add a starter-proof follow-up after the medium build instead of rebuilding the image again.
 
 ### Key Principles
 
@@ -51,8 +51,8 @@ jobs:
   plan-medium-image-matrix:
     run: python3 scripts/published_image_pipeline.py matrix --profile medium
 
-  ci-fast:
-    run: task ci:fast
+  ci-repo-core:
+    run: task ci:repo-core
 
   ci-medium-image-backed:
     strategy:
@@ -77,7 +77,7 @@ jobs:
 ## Constraints
 
 - This standard applies to the default free-tier workflow, not the full-release lane.
-- `ci-fast` remains an independent wall-clock bottleneck until its own scope is reduced.
+- `ci-repo-core` remains an independent wall-clock bottleneck until its own scope is reduced.
 - The maintainer container is still built in each GitHub-hosted job because local Docker state is not shared across runners.
 
 ## Alternatives Considered
@@ -101,7 +101,7 @@ jobs:
 
 - The matrix-based fanout in `KB-2026-052` fixed the earlier storage coupling by isolating image work per job.
 - The successful run after `KB-2026-056` showed medium starter proofs can reuse branch-local verify images once the smoke workspace contract is correct.
-- `ci-fast` already runs in parallel with the medium matrix, so branch-push CI now benefits immediately from the existing parallel structure.
+- `ci-repo-core` already runs in parallel with the medium matrix, so branch-push CI now benefits immediately from the existing parallel structure.
 
 ## Anti-Patterns
 
@@ -114,7 +114,7 @@ jobs:
 - `python scripts/published_image_pipeline.py matrix --profile medium` includes every default medium image target.
 - `task image:build -- --profile medium --image <target>` passes for each medium target.
 - Starter-backed targets also pass `task starters:verify:image-backed -- --profile medium --skip-build --image <target>`.
-- GitHub Actions on a non-`main` branch push creates `ci-fast` plus one `medium / <target>` job per medium target.
+- GitHub Actions on a non-`main` branch push creates `ci-repo-core` plus one `medium / <target>` job per medium target.
 
 ## Exceptions
 
@@ -132,4 +132,3 @@ jobs:
 - Branch pushes on non-`main` refs start CI immediately.
 - The medium matrix includes all intended default published images.
 - Starter-backed medium jobs do not perform a second image build before running the proof follow-up.
-

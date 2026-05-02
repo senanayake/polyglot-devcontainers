@@ -366,8 +366,8 @@ tasks:
       - task image:verify
       - task image:scan
 
-  ci:fast:
-    desc: Run the fast free-tier repository lane without published-image bootstrap proofs
+  ci:repo-core:
+    desc: Run the core repository lane without published-image bootstrap proofs
     deps: [_require_maintainer]
     cmds:
       - task init
@@ -378,11 +378,17 @@ tasks:
       - task scenarios:verify
       - task starters:verify:source
 
+  ci:fast:
+    desc: Deprecated alias for task ci:repo-core
+    deps: [_require_maintainer]
+    cmds:
+      - task ci:repo-core
+
   ci:medium:
     desc: Run the default PR lane with medium-profile published-image starter proofs
     deps: [_require_maintainer]
     cmds:
-      - task ci:fast
+      - task ci:repo-core
       - task starters:verify:image-backed -- --profile medium
 
   ci:full-release:
