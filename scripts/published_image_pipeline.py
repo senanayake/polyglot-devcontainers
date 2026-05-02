@@ -75,6 +75,7 @@ def parse_args() -> argparse.Namespace:
     starter_parser.add_argument("--build-profile", choices=SUPPORTED_PROFILES, default="fast")
     starter_parser.add_argument("--image", action="append", default=[])
     starter_parser.add_argument("--disk-label-prefix")
+    starter_parser.add_argument("--skip-build", action="store_true")
 
     scan_parser = subparsers.add_parser("scan")
     scan_parser.add_argument("--profile", choices=SUPPORTED_PROFILES, default="full-release")
@@ -228,6 +229,7 @@ def matrix_payload(targets: list[ImageTarget]) -> dict[str, Any]:
                 "medium_lane": target.medium_lane,
                 "smoke_test": target.smoke_test,
                 "smoke_test_run_scenarios": target.smoke_test_run_scenarios,
+                "has_starter_proofs": bool(target.starter_proofs),
                 "starter_proofs": [
                     {"starter": proof.starter_id, "profile": proof.profile_id}
                     for proof in target.starter_proofs
@@ -347,14 +349,17 @@ def run_starter_proofs(
     *,
     build_profile: str,
     disk_label_prefix: str | None,
+    skip_build: bool,
 ) -> None:
-    build_targets(
-        starter_proof_targets(targets),
-        behavior=build_defaults(build_profile),
-        disk_label_prefix=disk_label_prefix,
-    )
+    selected_targets = starter_proof_targets(targets)
+    if not skip_build:
+        build_targets(
+            selected_targets,
+            behavior=build_defaults(build_profile),
+            disk_label_prefix=disk_label_prefix,
+        )
 
-    for target in starter_proof_targets(targets):
+    for target in selected_targets:
         for proof in target.starter_proofs:
             environment = os.environ.copy()
             environment[starter_override_env_name(proof.starter_id)] = target.verify_tag
@@ -484,6 +489,7 @@ def handle_starter_proof(args: argparse.Namespace) -> int:
         resolve_targets(args.image, args.profile),
         build_profile=args.build_profile,
         disk_label_prefix=args.disk_label_prefix,
+        skip_build=args.skip_build,
     )
     return 0
 

@@ -2,9 +2,12 @@ name: ci
 
 on:
   push:
-    branches:
+    branches-ignore:
       - main
-  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   plan-medium-image-matrix:
@@ -151,20 +154,30 @@ jobs:
         run: |
           python3 scripts/run_in_maintainer_container.py exec -- python scripts/require_maintainer_container.py
 
-      - name: Capture host disk usage before medium image proof
+      - name: Capture host disk usage before medium image validation
         env:
           POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
         run: |
           python3 scripts/report_disk_usage.py --label host-pre-medium-${{ matrix.target_id }}-workflow
 
-      - name: Run medium image-backed starter proof
+      - name: Run medium image validation
         env:
           POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
           POLYGLOT_OCI_RUNTIME: docker
           TARGET_ID: ${{ matrix.target_id }}
         run: |
           python3 scripts/run_in_maintainer_container.py exec -- \
-            bash -lc "man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task starters:verify:image-backed -- --profile medium --image ${TARGET_ID} --disk-label-prefix nested-medium-${TARGET_ID}"
+            bash -lc "man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task image:build -- --profile medium --image ${TARGET_ID} --disk-label-prefix nested-medium-${TARGET_ID}"
+
+      - name: Run published-image starter proof follow-up
+        if: ${{ matrix.has_starter_proofs }}
+        env:
+          POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
+          POLYGLOT_OCI_RUNTIME: docker
+          TARGET_ID: ${{ matrix.target_id }}
+        run: |
+          python3 scripts/run_in_maintainer_container.py exec -- \
+            bash -lc "man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task starters:verify:image-backed -- --profile medium --skip-build --image ${TARGET_ID}"
 
       - name: Upload disk usage reports
         uses: actions/upload-artifact@v4
