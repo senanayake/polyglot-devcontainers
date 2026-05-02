@@ -41,12 +41,22 @@ write_devcontainer_placeholder() {
   local workspace="$1"
 
   mkdir -p "${workspace}/.devcontainer"
-  chmod -R 0777 "${workspace}"
   cat > "${workspace}/.devcontainer/devcontainer.json" <<'EOF'
 {
   "name": "bootstrap-smoke-test"
 }
 EOF
+  chmod -R 0777 "${workspace}"
+}
+
+normalize_workspace_permissions() {
+  local workspace="$1"
+
+  mkdir -p "${workspace}"
+  # The image-backed proof path can hand us a pre-generated workspace created
+  # by a different container/user. Normalize it before bind-mounting into the
+  # nested smoke container so `task init` can scaffold into it.
+  chmod -R 0777 "${workspace}"
 }
 
 workspace_diagnostics() {
@@ -108,6 +118,7 @@ run_attempt() {
   if [[ -n "${workspace_override}" ]]; then
     workspace="${workspace_override}"
     cleanup_workspace=0
+    normalize_workspace_permissions "${workspace}"
   else
     workspace="$(mktemp -d)"
     trap 'rm -rf "'"${workspace}"'" >/dev/null 2>&1 || true' RETURN
