@@ -54,13 +54,11 @@ jobs:
           python3 scripts/run_in_maintainer_container.py git -- status --short --branch
 
       - name: Run root workflow
+        env:
+          POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
         run: |
-          docker run --rm \
-            -u root \
-            -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" \
-            -w /workspaces/polyglot-devcontainers \
-            polyglot-devcontainers-maintainer:ci \
-            bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task ci"
+          python3 scripts/run_in_maintainer_container.py exec -- \
+            bash -lc "man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task ci"
 
       - name: Upload scenario reports
         uses: actions/upload-artifact@v4
