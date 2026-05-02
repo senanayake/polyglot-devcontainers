@@ -89,6 +89,42 @@ Tag-triggered releases also refresh the moving `latest` tag for each published
 image, so downstream consumers can follow the newest released image without
 changing the image reference every time.
 
+## Current release-gating knowledge gap
+
+The branch CI refactor proved the free-tier default development lanes:
+
+- `ci:repo-core`
+- `medium / diagrams`
+- `medium / java`
+- `medium / python-node`
+
+That does **not** yet mean the heavyweight release path is fully re-proven.
+
+Two gaps remain intentionally deferred until after the current merge:
+
+1. `task ci:full-release` and the GitHub `release-images` workflow have not yet
+   been re-run end to end as the new authoritative heavyweight bar.
+2. `.github/workflows/release-images.yml` currently validates one build and
+   later performs a separate `Build and push image` step, so the published
+   digest is not yet proven to be the exact artifact that passed validation.
+
+So today:
+
+- branch confidence is strong for free-tier development
+- release publication still needs a stronger single-build or promotion-style
+  gate before it should be treated as the final release-evidence model
+
+That gap is tracked in
+[`KB-2026-058`](C:/dev/polyglot-devcontainers-starter-generator/.kbriefs/KB-2026-058-full-release-validation-and-release-publication-still-need-a-single-build-gate.md).
+
+The next recommended learning cycle after merge is:
+
+1. run an explicit heavyweight `full-release` validation exercise on a
+   non-release ref
+2. measure runtime, storage, and failure behavior
+3. then adapt release publication so the pushed digest is the validated
+   artifact or a gated promotion of it
+
 ## What the workflow does
 
 For each published image, `release-images`:

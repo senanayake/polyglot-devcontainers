@@ -156,40 +156,36 @@ jobs:
             fi
           } >> "${GITHUB_STEP_SUMMARY}"
 
-  publish:
+  plan-publish-matrix:
     needs: release-context
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.release-context.outputs.checkout_ref }}
+          fetch-depth: 0
+
+      - name: Plan full release image matrix
+        id: plan
+        run: |
+          python3 scripts/published_image_pipeline.py matrix --profile full-release > release-image-matrix.json
+          matrix_json="$(python3 -c 'import json; import pathlib; print(json.dumps(json.loads(pathlib.Path("release-image-matrix.json").read_text(encoding="utf-8"))))')"
+          echo "matrix=${matrix_json}" >> "${GITHUB_OUTPUT}"
+
+  publish:
+    needs:
+      - release-context
+      - plan-publish-matrix
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
       POLYGLOT_CONTAINER_RUNTIME: docker
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: maintainer
-            image_name: polyglot-devcontainers-maintainer
-            dockerfile: .devcontainer/Containerfile
-            context: .
-            workdir: /workspaces/polyglot-devcontainers
-            description: Maintainer and CI validation container for polyglot-devcontainers.
-          - name: java
-            image_name: polyglot-devcontainers-java
-            dockerfile: templates/java-secure/.devcontainer/Containerfile
-            context: .
-            workdir: /workspaces/polyglot-devcontainers/templates/java-secure
-            description: Gradle-first Java engineering container for polyglot-devcontainers.
-          - name: diagrams
-            image_name: polyglot-devcontainers-diagrams
-            dockerfile: templates/diagram-secure/.devcontainer/Containerfile
-            context: .
-            workdir: /workspaces/polyglot-devcontainers/templates/diagram-secure
-            description: D2-first diagram rendering container for presentation-quality software portfolio visuals.
-          - name: python-node
-            image_name: polyglot-devcontainers-python-node
-            dockerfile: templates/python-node-secure/.devcontainer/Containerfile
-            context: .
-            workdir: /workspaces/polyglot-devcontainers/templates/python-node-secure
-            description: Focused Python and Node / TypeScript polyglot container for polyglot-devcontainers.
+      matrix: ${{ fromJSON(needs.plan-publish-matrix.outputs.matrix) }}
 
     steps:
       - name: Check out repository
@@ -205,7 +201,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.package_name }}
           flavor: |
             latest=false
           tags: |
@@ -217,7 +213,7 @@ jobs:
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=${{ matrix.description }}
             org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.title=${{ matrix.image_name }}
+            org.opencontainers.image.title=${{ matrix.package_name }}
 
       - name: Build image for validation
         uses: docker/build-push-action@v6
@@ -227,51 +223,35 @@ jobs:
           pull: true
           load: true
           push: false
-          tags: ${{ matrix.image_name }}:ci
+          tags: ${{ matrix.package_name }}:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Validate image devcontainer metadata
         run: |
-          case "${{ matrix.name }}" in
-            maintainer)
-              devcontainer_json=".devcontainer/devcontainer.json"
-              ;;
-            java)
-              devcontainer_json="templates/java-secure/.devcontainer/devcontainer.json"
-              ;;
-            diagrams)
-              devcontainer_json="templates/diagram-secure/.devcontainer/devcontainer.json"
-              ;;
-            python-node)
-              devcontainer_json="templates/python-node-secure/.devcontainer/devcontainer.json"
-              ;;
-            *)
-              echo "Unsupported image matrix entry: ${{ matrix.name }}" >&2
-              exit 1
-              ;;
-          esac
           python3 scripts/validate_devcontainer_metadata.py \
             --runtime docker \
-            --image "${{ matrix.image_name }}:ci" \
-            --devcontainer-json "${devcontainer_json}"
+            --image "${{ matrix.package_name }}:ci" \
+            --devcontainer-json "${{ matrix.devcontainer_json }}"
 
       - name: Bootstrap empty starter workspace
-        if: ${{ matrix.name == 'java' || matrix.name == 'diagrams' || matrix.name == 'python-node' }}
+        if: ${{ matrix.smoke_test }}
         run: |
-          if [ "${{ matrix.name }}" = "python-node" ]; then
-            bash scripts/smoke_test_published_starter.sh --image "${{ matrix.image_name }}:ci" --run-scenarios
+          if [ "${{ matrix.smoke_test_run_scenarios }}" = "true" ]; then
+            bash scripts/smoke_test_published_starter.sh --image "${{ matrix.package_name }}:ci" --run-scenarios
           else
-            bash scripts/smoke_test_published_starter.sh --image "${{ matrix.image_name }}:ci"
+            bash scripts/smoke_test_published_starter.sh --image "${{ matrix.package_name }}:ci"
           fi
 
       - name: Run task ci inside built image
         run: |
           docker run --rm \
+            -e POLYGLOT_OCI_RUNTIME=docker \
+            -e POLYGLOT_CONTAINER_RUNTIME=docker \
             -u root \
             -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" \
             -w "${{ matrix.workdir }}" \
-            "${{ matrix.image_name }}:ci" \
+            "${{ matrix.package_name }}:ci" \
             bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task ci"
 
       - name: Log in to GHCR
@@ -298,38 +278,38 @@ jobs:
       - name: Generate image SBOM
         uses: anchore/sbom-action@v0
         with:
-          image: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}@${{ steps.push.outputs.digest }}
+          image: ghcr.io/${{ github.repository_owner }}/${{ matrix.package_name }}@${{ steps.push.outputs.digest }}
           registry-username: ${{ github.actor }}
           registry-password: ${{ secrets.GITHUB_TOKEN }}
           format: spdx-json
-          output-file: sbom-${{ matrix.name }}.spdx.json
+          output-file: sbom-${{ matrix.artifact_name }}.spdx.json
           upload-artifact: false
           upload-release-assets: false
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v3
+        uses: sigstore/cosign-installer@v4.1.0
 
       - name: Sign image
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          cosign sign --yes "ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}@${{ steps.push.outputs.digest }}"
+          cosign sign --yes "ghcr.io/${{ github.repository_owner }}/${{ matrix.package_name }}@${{ steps.push.outputs.digest }}"
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}
+          subject-name: ghcr.io/${{ github.repository_owner }}/${{ matrix.package_name }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
 
       - name: Scan published image with Trivy (SARIF)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}@${{ steps.push.outputs.digest }}
+          image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.package_name }}@${{ steps.push.outputs.digest }}
           scan-type: image
           scanners: vuln
           format: sarif
-          output: trivy-${{ matrix.name }}.sarif
+          output: trivy-${{ matrix.artifact_name }}.sarif
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: 0
@@ -341,11 +321,11 @@ jobs:
       - name: Scan published image with Trivy (JSON)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}@${{ steps.push.outputs.digest }}
+          image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.package_name }}@${{ steps.push.outputs.digest }}
           scan-type: image
           scanners: vuln
           format: json
-          output: trivy-${{ matrix.name }}.json
+          output: trivy-${{ matrix.artifact_name }}.json
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: 0
@@ -357,13 +337,13 @@ jobs:
 
       - name: Upload Trivy results
         uses: github/codeql-action/upload-sarif@v4
-        if: ${{ always() && hashFiles(format('trivy-{0}.sarif', matrix.name)) != '' }}
+        if: ${{ always() && hashFiles(format('trivy-{0}.sarif', matrix.artifact_name)) != '' }}
         with:
-          category: trivy-${{ matrix.name }}
-          sarif_file: trivy-${{ matrix.name }}.sarif
+          category: trivy-${{ matrix.artifact_name }}
+          sarif_file: trivy-${{ matrix.artifact_name }}.sarif
 
       - name: Summarize release security results
-        if: ${{ always() && hashFiles(format('trivy-{0}.json', matrix.name)) != '' }}
+        if: ${{ always() && hashFiles(format('trivy-{0}.json', matrix.artifact_name)) != '' }}
         run: |
           python3 scripts/summarize_trivy_report.py \
             --report "trivy-${MATRIX_NAME}.json" \
@@ -374,21 +354,21 @@ jobs:
           cat "trivy-${MATRIX_NAME}-summary.md" >> "${GITHUB_STEP_SUMMARY}"
           echo "" >> "${GITHUB_STEP_SUMMARY}"
         env:
-          MATRIX_NAME: ${{ matrix.name }}
-          IMAGE_NAME: ${{ matrix.image_name }}
+          MATRIX_NAME: ${{ matrix.artifact_name }}
+          IMAGE_NAME: ${{ matrix.package_name }}
           IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
 
       - name: Upload release security artifacts
         uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
-          name: release-security-${{ matrix.name }}
+          name: release-security-${{ matrix.artifact_name }}
           path: |
-            trivy-${{ matrix.name }}.sarif
-            trivy-${{ matrix.name }}.json
-            trivy-${{ matrix.name }}-summary.json
-            trivy-${{ matrix.name }}-summary.md
-            sbom-${{ matrix.name }}.spdx.json
+            trivy-${{ matrix.artifact_name }}.sarif
+            trivy-${{ matrix.artifact_name }}.json
+            trivy-${{ matrix.artifact_name }}-summary.json
+            trivy-${{ matrix.artifact_name }}-summary.md
+            sbom-${{ matrix.artifact_name }}.spdx.json
           if-no-files-found: warn
 
   publish-release-notes:
