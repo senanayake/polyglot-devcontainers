@@ -24,6 +24,10 @@ WORKSPACE_PATH = "/workspaces/polyglot-devcontainers"
 ROLE_ENV = "POLYGLOT_CONTAINER_ROLE"
 ROLE_VALUE = "maintainer"
 GH_OPTION_VALUE_FLAGS = {"--hostname", "--repo", "-R"}
+FORWARDED_REMOTE_ENV_VARS = (
+    "POLYGLOT_OCI_RUNTIME",
+    "POLYGLOT_CONTAINER_RUNTIME",
+)
 
 
 def repo_root() -> Path:
@@ -39,7 +43,7 @@ def devcontainer_cli_version() -> str:
 
 
 def runtime() -> str:
-    configured = os.environ.get("POLYGLOT_CONTAINER_RUNTIME")
+    configured = os.environ.get("POLYGLOT_OCI_RUNTIME") or os.environ.get("POLYGLOT_CONTAINER_RUNTIME")
     candidates = [configured] if configured else ["podman", "docker"]
 
     for candidate in candidates:
@@ -203,6 +207,7 @@ def common_cli_args(override_config: str | None) -> list[str]:
         f"polyglot.maintainer.image={image_hash}",
         "--remote-env",
         f"{ROLE_ENV}={ROLE_VALUE}",
+        *forwarded_remote_env_args(),
         *git_mount_flags(),
     ]
     if override_config:
@@ -218,6 +223,15 @@ def remote_env_args(environment: dict[str, str] | None) -> list[str]:
     for key, value in environment.items():
         args.extend(["--remote-env", f"{key}={value}"])
     return args
+
+
+def forwarded_remote_env_args() -> list[str]:
+    environment = {
+        key: value
+        for key in FORWARDED_REMOTE_ENV_VARS
+        if (value := os.environ.get(key))
+    }
+    return remote_env_args(environment)
 
 
 def up(override_config: str | None) -> int:

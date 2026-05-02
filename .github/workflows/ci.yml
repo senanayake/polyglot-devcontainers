@@ -66,6 +66,7 @@ jobs:
       - name: Run root workflow
         env:
           POLYGLOT_MAINTAINER_IMAGE: polyglot-devcontainers-maintainer:ci
+          POLYGLOT_OCI_RUNTIME: docker
         run: |
           python3 scripts/run_in_maintainer_container.py exec -- \
             bash -lc "man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task ci"

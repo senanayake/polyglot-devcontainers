@@ -82,6 +82,8 @@ jobs:
         run: |
           docker run --rm \
             --privileged \
+            -e POLYGLOT_OCI_RUNTIME=docker \
+            -e POLYGLOT_CONTAINER_RUNTIME=docker \
             -u root \
             -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" \
             -w /workspaces/polyglot-devcontainers \

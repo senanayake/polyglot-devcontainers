@@ -268,6 +268,8 @@ jobs:
       - name: Run task ci inside built image
         run: |
           docker run --rm \
+            -e POLYGLOT_OCI_RUNTIME=docker \
+            -e POLYGLOT_CONTAINER_RUNTIME=docker \
             -u root \
             -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" \
             -w "${{ matrix.workdir }}" \
