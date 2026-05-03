@@ -83,9 +83,9 @@ growth, and it is tracked in the repository knowledge base.
 The scaling primitive is the image, not the workflow.
 
 The planner in
-[`scripts/published_image_pipeline.py`](C:/dev/polyglot-devcontainers-starter-generator/scripts/published_image_pipeline.py)
+[`scripts/published_image_pipeline.py`](../../scripts/published_image_pipeline.py)
 reads
-[`published-image-catalog.toml`](C:/dev/polyglot-devcontainers-starter-generator/published-image-catalog.toml)
+[`published-image-catalog.toml`](../../published-image-catalog.toml)
 and emits the matrix for a named profile.
 
 For `medium`, that gives one job per image target instead of one job for the
@@ -111,14 +111,36 @@ So the core lane must still prove:
 
 That is why the lane is called `repo-core`, not just `lint-and-test`.
 
-## Branch Pushes Versus PR Runs
+## Branch Pushes, Mainline Pushes, And PR Runs
 
-The default free-tier CI now runs on non-`main` branch pushes. That keeps the
-feedback loop attached to the commit that introduced the change, instead of
-waiting for PR-only execution.
+The default free-tier CI now runs on pushes, not only on PRs.
+
+On non-`main` branches, it provides development proof:
+
+- `ci-repo-core`
+- medium image validation jobs
+
+On `main`, it provides the same proof and then publishes integration-grade
+workload images for fast downstream testing.
 
 The workflow also uses GitHub Actions concurrency cancellation so a new push
 replaces an older in-flight run on the same branch.
+
+## Mainline Integration Publication
+
+When the same workflow runs on `main`, a follow-on publish job pushes
+integration-grade workload images after medium proof succeeds.
+
+That channel is intentionally separate from semver release publication:
+
+- it publishes moving `main` tags
+- it publishes immutable SHA tags
+- it does not publish `latest`
+- it does not create release notes
+- it does not generate release-security docs
+
+This keeps merged `main` quickly consumable without collapsing release-grade
+evidence into the fast loop.
 
 ## Local Command Mapping
 
@@ -134,6 +156,10 @@ task starters:verify:image-backed -- --profile medium --skip-build --image java
 task starters:verify:image-backed -- --profile medium --skip-build --image python-node
 ```
 
+The mainline publication job then rebuilds from the same commit and pushes the
+medium-validated image set as integration images. That publication step exists
+only on `main`.
+
 Targeted work can stay narrower:
 
 ```bash
@@ -144,7 +170,7 @@ task image:verify -- --image python-node
 
 ## What Is Proven Today
 
-The following has been proven on the branch:
+The following has been proven in the free-tier CI model:
 
 - `ci-repo-core`
 - `medium / diagrams`
@@ -152,6 +178,10 @@ The following has been proven on the branch:
 - `medium / python-node`
 
 Those successful runs establish the new default branch-development model.
+
+The next proven addition is the `main` integration publication model, where the
+same medium-validated image set becomes available under moving `main` and SHA
+tags for downstream integration loops.
 
 ## What Is Still A Knowledge Gap
 
@@ -171,6 +201,8 @@ model.
 
 See:
 
-- [KB-2026-055](C:/dev/polyglot-devcontainers-starter-generator/.kbriefs/KB-2026-055-free-tier-image-validation-should-use-fast-medium-and-full-release-lanes.md)
-- [KB-2026-057](C:/dev/polyglot-devcontainers-starter-generator/.kbriefs/KB-2026-057-default-free-tier-ci-should-run-on-branch-push-and-fan-out-medium-image-builds.md)
-- [KB-2026-058](C:/dev/polyglot-devcontainers-starter-generator/.kbriefs/KB-2026-058-full-release-validation-and-release-publication-still-need-a-single-build-gate.md)
+- [KB-2026-055](../../.kbriefs/KB-2026-055-free-tier-image-validation-should-use-fast-medium-and-full-release-lanes.md)
+- [KB-2026-057](../../.kbriefs/KB-2026-057-default-free-tier-ci-should-run-on-branch-push-and-fan-out-medium-image-builds.md)
+- [KB-2026-058](../../.kbriefs/KB-2026-058-full-release-validation-and-release-publication-still-need-a-single-build-gate.md)
+- [KB-2026-063](../../.kbriefs/KB-2026-063-image-release-gating-implementation-plan.md)
+- [KB-2026-064](../../.kbriefs/KB-2026-064-mainline-medium-validated-images-should-feed-fast-integration-loops.md)

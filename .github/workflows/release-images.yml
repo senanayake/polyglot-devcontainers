@@ -35,7 +35,6 @@ jobs:
     outputs:
       checkout_ref: ${{ steps.plan.outputs.checkout_ref }}
       is_full_release: ${{ steps.plan.outputs.is_full_release }}
-      push_main_tag: ${{ steps.plan.outputs.push_main_tag }}
       release_mode: ${{ steps.plan.outputs.release_mode }}
       release_sha: ${{ steps.inspect.outputs.release_sha }}
       release_tag: ${{ steps.plan.outputs.release_tag }}
@@ -54,7 +53,6 @@ jobs:
 
           checkout_ref="${REF_NAME}"
           is_full_release=false
-          push_main_tag=false
           release_mode="tag-push"
           release_tag=""
 
@@ -94,13 +92,8 @@ jobs:
             esac
           fi
 
-          if [[ "${is_full_release}" != "true" && "${REF}" == "refs/heads/${DEFAULT_BRANCH}" ]]; then
-            push_main_tag=true
-          fi
-
           echo "checkout_ref=${checkout_ref}" >> "${GITHUB_OUTPUT}"
           echo "is_full_release=${is_full_release}" >> "${GITHUB_OUTPUT}"
-          echo "push_main_tag=${push_main_tag}" >> "${GITHUB_OUTPUT}"
           echo "release_mode=${release_mode}" >> "${GITHUB_OUTPUT}"
           echo "release_tag=${release_tag}" >> "${GITHUB_OUTPUT}"
 
@@ -148,10 +141,11 @@ jobs:
             echo "- Resolved commit: \`${RELEASE_SHA}\`"
             if [[ "${IS_FULL_RELEASE}" == "true" ]]; then
               echo "- Full release enabled for \`${RELEASE_TAG}\`."
+              echo "- This run will validate, publish, sign, attest, scan, and update release-side assets for that release tag."
               echo "- GitHub Release notes, release security assets, and the README recent releases table will run if the publish matrix succeeds."
             else
-              echo "- This run will validate and publish images for the selected ref."
-              echo "- GitHub Release notes, release security assets, and the README recent releases table are disabled in \`validate-only\` mode."
+              echo "- This run will validate images for the selected ref without publishing them."
+              echo "- GHCR image tags, GitHub Release notes, release security assets, and the README recent releases table are disabled in \`validate-only\` mode."
               echo "- Use \`release_mode=full-release\` with an existing release tag to run the release-only steps manually."
             fi
           } >> "${GITHUB_STEP_SUMMARY}"
@@ -208,7 +202,6 @@ jobs:
             type=sha
             type=raw,value=${{ needs.release-context.outputs.release_tag }},enable=${{ needs.release-context.outputs.is_full_release == 'true' }}
             type=raw,value=latest,enable=${{ needs.release-context.outputs.is_full_release == 'true' }}
-            type=raw,value=main,enable=${{ needs.release-context.outputs.push_main_tag == 'true' }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=${{ matrix.description }}
@@ -255,6 +248,7 @@ jobs:
             bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task ci"
 
       - name: Log in to GHCR
+        if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -263,6 +257,7 @@ jobs:
 
       - name: Build and push image
         id: push
+        if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
@@ -276,6 +271,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Generate image SBOM
+        if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
         uses: anchore/sbom-action@v0
         with:
           image: ghcr.io/${{ github.repository_owner }}/${{ matrix.package_name }}@${{ steps.push.outputs.digest }}
@@ -287,15 +283,18 @@ jobs:
           upload-release-assets: false
 
       - name: Install Cosign
+        if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
         uses: sigstore/cosign-installer@v4.1.0
 
       - name: Sign image
+        if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
           cosign sign --yes "ghcr.io/${{ github.repository_owner }}/${{ matrix.package_name }}@${{ steps.push.outputs.digest }}"
 
       - name: Attest build provenance
+        if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
         uses: actions/attest-build-provenance@v4
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/${{ matrix.package_name }}
@@ -303,6 +302,7 @@ jobs:
           push-to-registry: true
 
       - name: Scan published image with Trivy (SARIF)
+        if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.package_name }}@${{ steps.push.outputs.digest }}
@@ -319,6 +319,7 @@ jobs:
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Scan published image with Trivy (JSON)
+        if: ${{ needs.release-context.outputs.is_full_release == 'true' }}
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.package_name }}@${{ steps.push.outputs.digest }}
@@ -337,13 +338,13 @@ jobs:
 
       - name: Upload Trivy results
         uses: github/codeql-action/upload-sarif@v4
-        if: ${{ always() && hashFiles(format('trivy-{0}.sarif', matrix.artifact_name)) != '' }}
+        if: ${{ needs.release-context.outputs.is_full_release == 'true' && always() && hashFiles(format('trivy-{0}.sarif', matrix.artifact_name)) != '' }}
         with:
           category: trivy-${{ matrix.artifact_name }}
           sarif_file: trivy-${{ matrix.artifact_name }}.sarif
 
       - name: Summarize release security results
-        if: ${{ always() && hashFiles(format('trivy-{0}.json', matrix.artifact_name)) != '' }}
+        if: ${{ needs.release-context.outputs.is_full_release == 'true' && always() && hashFiles(format('trivy-{0}.json', matrix.artifact_name)) != '' }}
         run: |
           python3 scripts/summarize_trivy_report.py \
             --report "trivy-${MATRIX_NAME}.json" \
@@ -360,7 +361,7 @@ jobs:
 
       - name: Upload release security artifacts
         uses: actions/upload-artifact@v4
-        if: ${{ always() }}
+        if: ${{ needs.release-context.outputs.is_full_release == 'true' && always() }}
         with:
           name: release-security-${{ matrix.artifact_name }}
           path: |

@@ -37,6 +37,20 @@ The dedicated maintainer workflow is defined in
 It publishes the maintainer image on `main` so agents can pull a fresh GHCR
 artifact instead of rebuilding the maintainer image on the host.
 
+## Understand the two image channels
+
+This repository now uses two separate image-publication channels:
+
+- **Mainline integration channel**: `.github/workflows/ci.yml` runs the
+  medium proof on pushes to `main` and publishes integration-grade workload
+  images with moving `main` and immutable SHA tags.
+- **Release channel**: `.github/workflows/release-images.yml` publishes semver
+  and `latest` tags only for full releases.
+
+The mainline integration channel exists for fast downstream integration loops.
+It does **not** publish semver tags, does **not** move `latest`, and does
+**not** generate release notes or release-security docs.
+
 ## Trigger the release workflow
 
 The release path is split into two workflows:
@@ -46,7 +60,7 @@ The release path is split into two workflows:
   ref, dispatches the full release workflow, and waits for it to finish.
 - `.github/workflows/release-images.yml` is the tag-driven publisher. It can
   still run manually, and manual runs now support an explicit `full-release`
-  mode for an existing tag.
+  mode for an existing tag plus a truly publish-free `validate-only` mode.
 
 Use `cut-release` when you want the full release flow from the GitHub UI:
 
@@ -66,8 +80,7 @@ job.
 
 `release-images` can run:
 
-- manually with workflow dispatch in `validate-only` mode for validation and
-  manual image publish
+- manually with workflow dispatch in `validate-only` mode for validation only
 - manually with workflow dispatch in `full-release` mode for an existing
   version tag
 - on semantic version tags such as `v0.6.0` for a full release
@@ -85,25 +98,32 @@ If you need to backfill release assets for an existing tag, run
 3. the workflow ref left on `main` or any branch that contains the workflow
    file
 
-Tag-triggered releases also refresh the moving `latest` tag for each published
+Tag-triggered full releases refresh the moving `latest` tag for each published
 image, so downstream consumers can follow the newest released image without
 changing the image reference every time.
 
+The `main` tag for workload images is now owned by the mainline integration
+channel, not by `release-images`.
+
 ## Current release-gating knowledge gap
 
-The branch CI refactor proved the free-tier default development lanes:
+The branch CI refactor proved the free-tier default development lanes and the
+mainline integration publication path:
 
 - `ci:repo-core`
 - `medium / diagrams`
 - `medium / java`
 - `medium / python-node`
+- `publish / diagrams`
+- `publish / java`
+- `publish / python-node`
 
 That does **not** yet mean the heavyweight release path is fully re-proven.
 
-Two gaps remain intentionally deferred until after the current merge:
+Two gaps remain:
 
 1. `task ci:full-release` and the GitHub `release-images` workflow have not yet
-   been re-run end to end as the new authoritative heavyweight bar.
+   been re-established as the authoritative heavyweight release bar on `main`.
 2. `.github/workflows/release-images.yml` currently validates one build and
    later performs a separate `Build and push image` step, so the published
    digest is not yet proven to be the exact artifact that passed validation.
@@ -114,20 +134,23 @@ So today:
 - release publication still needs a stronger single-build or promotion-style
   gate before it should be treated as the final release-evidence model
 
-That gap is tracked in
-[`KB-2026-058`](C:/dev/polyglot-devcontainers-starter-generator/.kbriefs/KB-2026-058-full-release-validation-and-release-publication-still-need-a-single-build-gate.md).
+Those gaps are tracked in:
 
-The next recommended learning cycle after merge is:
+- [`KB-2026-058`](../../.kbriefs/KB-2026-058-full-release-validation-and-release-publication-still-need-a-single-build-gate.md)
+- [`KB-2026-063`](../../.kbriefs/KB-2026-063-image-release-gating-implementation-plan.md)
+- [`KB-2026-064`](../../.kbriefs/KB-2026-064-mainline-medium-validated-images-should-feed-fast-integration-loops.md)
 
-1. run an explicit heavyweight `full-release` validation exercise on a
-   non-release ref
-2. measure runtime, storage, and failure behavior
-3. then adapt release publication so the pushed digest is the validated
+The next implementation cycle is:
+
+1. keep the `main` integration channel fast and separate
+2. make full-release validation authoritative on `main`
+3. gate `cut-release` on that heavyweight evidence
+4. then adapt release publication so the pushed digest is the validated
    artifact or a gated promotion of it
 
 ## What the workflow does
 
-For each published image, `release-images`:
+For each published image, `release-images` in `full-release` mode:
 
 1. builds the image
 2. bootstraps an empty workspace for starter images and verifies `task init`
@@ -137,6 +160,9 @@ For each published image, `release-images`:
 5. pushes the image to GHCR
 6. signs the image with Cosign
 7. attaches build provenance
+
+In `validate-only` mode, `release-images` performs the validation part of that
+flow without publishing the image or running release-side effects.
 
 When the workflow runs from a pushed version tag, it also:
 

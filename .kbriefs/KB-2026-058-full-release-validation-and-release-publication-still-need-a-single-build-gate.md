@@ -3,7 +3,7 @@ id: KB-2026-058
 type: design-space
 status: active
 created: 2026-05-02
-updated: 2026-05-02
+updated: 2026-05-03
 tags:
   - release
   - full-release
@@ -16,6 +16,7 @@ related:
   - KB-2026-038
   - KB-2026-055
   - KB-2026-057
+  - KB-2026-062
 ---
 
 # Full-Release Validation And Release Publication Still Need A Single-Build Gate
@@ -30,164 +31,264 @@ The repository now has a proven free-tier branch CI model:
 - `medium / python-node`
 
 That closes the default branch-confidence problem. It does **not** yet prove
-the heavyweight `full-release` path end to end, and it does not yet guarantee
-that the image digest which gets published to GHCR is the exact build artifact
-that passed heavyweight validation.
+that release publication happens only after full-release evidence exists, and it
+does not yet guarantee that the digest which gets published to GHCR is the
+exact artifact that passed heavyweight validation.
 
 ## Problem Statement
 
-How should the repository adapt the `full-release` and `release-images`
-workflow so that:
+How should the repository adapt the `full-release`, `release-images`, and
+`cut-release` path so that:
 
-- the heavyweight release process is explicitly proven after the lane split
-- release publication is gated on a successful heavyweight build
+- full-release validation is an explicit authoritative gate
+- release publication happens only after that gate passes
 - the pushed digest is demonstrably the validated artifact, not a later rebuild
+- release-scan success is defined consistently with the repository's residual
+  risk policy
 
 ## Design Space Dimensions
 
 - Evidence strength for the published digest
+- Irreversibility point in the release flow
 - Workflow complexity
 - Release latency and cost
-- Reuse of current build tooling
 - Human confidence at release time
 
 ## Current State
 
-The branch CI and release workflow now share the same image planner, but the
-release workflow still has two important characteristics:
+The `main` branch release surface is now more capable than the earlier branch
+CI work assumed:
 
-1. it has not been re-proven end to end after the branch-CI restructuring
-2. it validates one build and then performs a separate build-and-push step
+1. `.github/workflows/cut-release.yml` exists and can compute the next semantic
+   tag, push it, dispatch `release-images`, and wait for the downstream run.
+2. `.github/workflows/release-images.yml` now supports manual
+   `workflow_dispatch` with `release_mode=validate-only` or
+   `release_mode=full-release`.
+3. `validate-only` is now publish-free, and moving `main` tags for workload
+   images are owned by the separate `main` integration channel rather than the
+   release workflow.
+4. `scripts/published_image_pipeline.py` already defines a local
+   `full-release` profile that means:
+   - build the image
+   - validate devcontainer metadata
+   - run starter smoke proof where relevant
+   - run `task ci` inside the built image
+   - save the image tarball
+   - scan the saved tarball and summarize residual risk in a separate step
 
-In `.github/workflows/release-images.yml` the current sequence is:
+Those improvements still leave several release-gating gaps.
 
-1. `Build image for validation`
-2. validate metadata
-3. smoke-test starter bootstrap where relevant
-4. run `task ci` inside the built image
-5. `Build and push image`
+### Gap 1: Scan Evidence Is Post-Push And Non-Blocking
 
-That means the image that is published can differ from the image that passed
-validation, even if both are produced from the same sources and cache inputs.
+The release workflow still scans only after the digest has already been pushed.
+Both Trivy steps run against the published digest and use `exit-code: 0`.
+
+That behavior is correct for `KB-2026-038`, which established that upstream
+residual findings must be reported rather than blindly blocking release. It
+also means the current workflow does **not** yet enforce a pre-publication scan
+gate.
+
+### Gap 2: Version Tagging Happens Before Heavyweight Proof Completes
+
+`cut-release` pushes the semantic version tag before the downstream
+`release-images` workflow finishes. If the downstream full release fails, the
+repository is left with a version tag that did not complete a successful full
+release.
+
+### Gap 3: Release Trigger Semantics Are Still Ambiguous
+
+`release-images` runs on semantic version tag pushes, and `cut-release` also
+dispatches `release-images` manually after pushing the tag.
+
+The workflow definitions therefore permit overlapping trigger paths for the
+same release tag unless some outside condition prevents one of them from
+running. That ambiguity should be removed before the release process is treated
+as settled.
+
+## What Was Tested
+
+### Local Single-Image Full-Release Slice
+
+On 2026-05-03, a single-image local heavyweight proof was run from the
+maintainer container using the repository task contract:
+
+```bash
+python scripts/run_in_maintainer_container.py exec -- \
+  task image:build -- --profile full-release --image diagrams \
+  --disk-label-prefix local-full-release-diagrams-task
+
+python scripts/run_in_maintainer_container.py exec -- \
+  task image:scan -- --image diagrams
+```
+
+Observed behavior:
+
+- the run succeeded when invoked through `task image:build`
+- the same pipeline failed when invoked directly through
+  `published_image_pipeline.py build` because that bypassed
+  `_require_image_runtime`
+- the successful task-based run produced:
+  - a validated local image `polyglot-devcontainers-diagrams:verify`
+  - starter smoke proof success
+  - in-image `task ci` success
+  - a saved tarball at `.artifacts/images/diagrams.tar`
+  - Trivy summary artifacts under `.artifacts/scans/image-security/`
+  - residual-risk artifacts under `.artifacts/scans/image-security/`
+
+### Local Evidence Snapshot
+
+From that local slice:
+
+- `.artifacts/images/diagrams.tar` was about `1.3 GiB`
+- `trivy-diagrams-summary.md` reported:
+  - `Critical: 2`
+  - `High: 15`
+- `residual-risk.md` classified both critical findings as
+  `upstream_residual`
+
+That confirms the local `full-release` path already encodes the right policy
+shape for a release gate:
+
+- proof first
+- scan completion second
+- residual-risk classification third
+
+It does **not** require zero findings to count as a successful scan.
 
 ## Options In The Space
 
-### Option A: Keep The Current Two-Build Release Workflow
+### Option A: Keep The Current Two-Build, Tag-First Release Workflow
 
 **Position in space:**
-- Evidence strength: medium-low
+- Evidence strength: low-medium
 - Complexity: low
-- Release latency: medium
+- Drift risk: high
 
 **Characteristics:**
-- easiest to keep
-- validates a pre-push build
-- publishes a second rebuild
-- leaves a proof gap between validated image and released digest
+- validates one build
+- publishes a separate rebuild
+- pushes the release tag before full-release success is known
 
-### Option B: Validate Then Push The Exact Local Validated Image
+### Option B: Separate Mainline Full-Release Validation From Publication
 
 **Position in space:**
 - Evidence strength: high
 - Complexity: medium
-- Release latency: medium-low
+- Drift risk: medium
 
 **Characteristics:**
-- validate the locally built image
-- retag and push the same local image after success
-- reduces rebuild drift
-- may constrain how SBOM, provenance, and signing integrate
+- create explicit full-release evidence on a target `main` commit first
+- allow `cut-release` only for commits with successful recorded evidence
+- still leaves digest continuity unresolved if publication rebuilds
 
-### Option C: Build Once To A Staging Digest, Validate That Digest, Then Promote
+### Option C: Validate Then Push The Exact Local Validated Image
+
+**Position in space:**
+- Evidence strength: high
+- Complexity: medium
+- Drift risk: low
+
+**Characteristics:**
+- validate the local built image
+- retag and push the same local image after success
+- reduces rebuild drift substantially
+
+### Option D: Build Once To A Candidate Digest, Validate That Digest, Then Promote
 
 **Position in space:**
 - Evidence strength: very high
 - Complexity: high
-- Release latency: medium-high
+- Drift risk: very low
 
 **Characteristics:**
-- create a candidate digest first
-- validate the pulled candidate digest
-- publish or retag only after that digest passes
-- strongest evidence chain, but more orchestration
-
-### Option D: Split Full-Release Validation From Publication And Gate Publish On Recorded Evidence
-
-**Position in space:**
-- Evidence strength: high
-- Complexity: high
-- Release latency: high
-
-**Characteristics:**
-- make heavyweight validation its own explicit workflow or mode
-- publish only when a matching commit/tag already has successful full-release evidence
-- strongest process separation
-- requires additional coordination and state lookup
+- build candidate digest once
+- validate the candidate digest
+- promote that exact digest after success
+- strongest chain of custody for the released artifact
 
 ## Design Space Map
 
-| Option | Evidence strength | Complexity | Drift risk | Viable next step? |
-|--------|-------------------|------------|------------|-------------------|
-| A | Low-Med | Low | High | Weak |
-| B | High | Med | Low | Strong |
-| C | Very High | High | Very Low | Strong |
-| D | High | High | Low | Strong |
+| Option | Evidence strength | Complexity | Tag timing risk | Digest drift risk |
+|--------|-------------------|------------|-----------------|-------------------|
+| A | Low-Med | Low | High | High |
+| B | High | Med | Low | Med |
+| C | High | Med | Med | Low |
+| D | Very High | High | Low | Very Low |
 
 ## Constraints That Narrow The Space
 
-- The merge candidate should not be blocked on redesigning release publication.
+- `KB-2026-038` already decided that release scans should report upstream
+  residual risk instead of hard-failing on every finding.
+- The repository wants a release process that stays understandable for a small
+  free-tier project.
 - The maintainer/container-first validation model remains the source of truth.
-- The release workflow still needs metadata validation, smoke proof where
-  relevant, in-image `task ci`, signing, provenance, and Trivy reporting.
-- Any chosen gate needs to stay understandable for a small repo operating on a
-  free-tier development model.
+- The authoritative proof path has to stay within the repo task contract, not
+  ad hoc host-side shell steps.
 
 ## Unexplored Regions
 
-- exact wall-clock and storage profile of the current `full-release` path after
-  the branch-CI refactor
-- whether the current GitHub-hosted runner budget is sufficient for the full
-  matrix without additional shaping
-- the best artifact-promotion mechanism for preserving digest identity between
-  validation and publication
+- exact wall-clock and storage profile of the **full four-image** mainline
+  `full-release` matrix after the CI split
+- whether `cut-release` has already exercised both release trigger paths for
+  the same tag in practice
+- the best mechanism for preserving digest identity between validation and
+  publication
 
 ## Evidence
 
-- push run `25252816203` proved the branch CI restructuring, not the release
-  workflow
 - `.github/workflows/release-images.yml` currently contains separate
   `Build image for validation` and `Build and push image` steps
-- `KB-2026-038` already establishes that release policy depends on structured
-  release-security evidence after publication
+- `.github/workflows/release-images.yml` scans the published digest with Trivy
+  after push using `exit-code: 0`
+- `.github/workflows/release-images.yml` manual `validate-only` mode now skips
+  image publication and release-side effects
+- `.github/workflows/cut-release.yml` pushes the semantic tag before waiting
+  for downstream full-release completion
+- public GitHub Actions workflow pages show:
+  - `release-images` manual runs on `main`
+  - `release-images` tag-triggered runs on `v*.*.*`
+  - `cut-release` runs on `main`
+- local maintainer-container proof on 2026-05-03 showed the task-based
+  `full-release` slice for `diagrams` succeeded and produced both scan and
+  residual-risk artifacts
 
 ## Insights
 
 - The free-tier branch CI problem is largely solved; the remaining uncertainty
-  has moved to release-grade evidence.
-- Sharing the same matrix planner across CI and release prevents image-list
-  drift, but does not by itself guarantee digest-level proof continuity.
-- The next meaningful learning cycle is about release gating, not branch CI
-  parallelism.
+  has moved to release-grade evidence and release orchestration.
+- The repository already has a good **local** heavyweight proof shape, but the
+  hosted release workflow still publishes before that same proof is known to
+  exist for the release target.
+- A successful release scan in this repo must mean:
+  - the scan ran successfully
+  - the summary artifacts exist
+  - residual risk was classified
+  - humans can review the result
+  It does **not** mean zero findings.
 
 ## Recommendations
 
-- Do not redesign the release workflow before merging the current CI work.
-- After merge, run an explicit heavyweight `full-release` validation exercise
-  on a non-release ref to measure runtime, storage, and failure behavior.
-- Then choose a release-gating model that proves the published digest is the
-  validated artifact or a gated promotion of it.
-- Prefer options that make the validated artifact identity explicit in logs and
-  release evidence.
+- Treat the current tag-first `cut-release` flow as a learning artifact, not
+  yet the final release-evidence model.
+- Use the next learning cycle to define a process where:
+  - full-release evidence is created for a specific `main` commit first
+  - release publication happens only after that evidence exists
+  - the final published digest is the validated artifact or a gated promotion
+    of it
+- Prefer future gates that make both the commit SHA and digest identity explicit
+  in the release evidence.
 
 ## Applicability
 
-- Applies to: `.github/workflows/release-images.yml`, heavyweight image
-  validation, release publication policy
+- Applies to: `.github/workflows/cut-release.yml`,
+  `.github/workflows/release-images.yml`, heavyweight image validation, release
+  publication policy
 - Does not apply to: the proven free-tier branch CI lane or source-template
   starter proofing
 
 ## Related Knowledge
 
-- [KB-2026-038](C:/dev/polyglot-devcontainers-starter-generator/.kbriefs/KB-2026-038-release-image-scan-must-report-upstream-residual-risk-without-blocking-release.md)
-- [KB-2026-055](C:/dev/polyglot-devcontainers-starter-generator/.kbriefs/KB-2026-055-free-tier-image-validation-should-use-fast-medium-and-full-release-lanes.md)
-- [KB-2026-057](C:/dev/polyglot-devcontainers-starter-generator/.kbriefs/KB-2026-057-default-free-tier-ci-should-run-on-branch-push-and-fan-out-medium-image-builds.md)
+- [KB-2026-038](KB-2026-038-release-image-scan-must-report-upstream-residual-risk-without-blocking-release.md)
+- [KB-2026-055](KB-2026-055-free-tier-image-validation-should-use-fast-medium-and-full-release-lanes.md)
+- [KB-2026-057](KB-2026-057-default-free-tier-ci-should-run-on-branch-push-and-fan-out-medium-image-builds.md)
+- [KB-2026-062](KB-2026-062-mainline-full-release-evidence-should-gate-cut-release-and-publication.md)
