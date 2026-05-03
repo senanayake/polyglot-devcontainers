@@ -136,6 +136,16 @@ tasks:
       - task lint
       - task scan
 
+  rewrite:dry-run:
+    desc: Report what OpenRewrite would change without modifying source files (safe to run at any time)
+    cmds:
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon rewriteDryRun
+
+  rewrite:run:
+    desc: "MUTATING: Apply OpenRewrite recipes to source files; follow with task ci to verify the build is still green"
+    cmds:
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon rewriteRun
+
   ci:
     cmds:
       - task init

@@ -285,6 +285,13 @@ tasks:
         --json-output .artifacts/scenarios/java-gradle-maintenance.json
         --markdown-output .artifacts/scenarios/java-gradle-maintenance.md
 
+  scenarios:java-openrewrite:
+    desc: Validate the non-mutating OpenRewrite dry-run proof and write scenario artifacts
+    deps: [_require_maintainer]
+    cmds:
+      - mkdir -p .artifacts/scenarios
+      - bash scripts/validate_openrewrite_dry_run.sh
+
   scenarios:podman-devpod-macos:
     desc: Run the Podman+DevPod macOS setup scenario (host-side execution, macOS only)
     cmds:
@@ -305,6 +312,7 @@ tasks:
       - task scenarios:python-maintenance
       - task scenarios:python-audit-policy
       - task scenarios:java-maintenance
+      - task scenarios:java-openrewrite
 
   image:discover:
     desc: Resolve upstream digests for published image base references
