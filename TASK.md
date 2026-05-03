@@ -1,7 +1,7 @@
 # Task: Add OpenRewrite to Java Image/Workflow
 
 ## Status
-IN_PROGRESS
+COMPLETE
 
 ## Orientation
 
@@ -99,13 +99,13 @@ python scripts/run_in_maintainer_container.py exec -- task -t examples/java-imag
 
 ## Acceptance Criteria
 
-- [ ] `rewrite:dry-run` runs inside the maintainer container without modifying source files
-- [ ] `rewrite:run` (if added) is clearly labelled as mutating in the Taskfile description
-- [ ] `task ci` passes on template and both examples after all changes
-- [ ] `task upgrade` behaviour is unchanged
-- [ ] A K-Brief records recipe selection and plugin version rationale
-- [ ] Docs explain when to use `rewrite:dry-run` vs `task upgrade`
-- [ ] Lockfile re-verification discipline is preserved after any mutating run
+- [x] `rewrite:dry-run` runs inside the maintainer container without modifying source files
+- [x] `rewrite:run` (if added) is clearly labelled as mutating in the Taskfile description
+- [x] `task ci` passes on template and both examples after all changes
+- [x] `task upgrade` behaviour is unchanged
+- [x] A K-Brief records recipe selection and plugin version rationale
+- [x] Docs explain when to use `rewrite:dry-run` vs `task upgrade`
+- [x] Lockfile re-verification discipline is preserved after any mutating run
 
 ## Non-Goals
 
@@ -117,3 +117,29 @@ python scripts/run_in_maintainer_container.py exec -- task -t examples/java-imag
 ## Agent Log <!-- [AGENT-MAINTAINED] -->
 
 <!-- Append entries here as work progresses. Format: YYYY-MM-DD: what was done -->
+
+2026-05-02: Wrote K-Brief KB-2026-059 capturing plugin version (7.32.0), recipe
+selection (org.openrewrite.java.RemoveUnusedImports), dry-run-first default,
+and Gradle-first rationale. Added org.openrewrite.rewrite plugin and rewrite {}
+block to templates/java-secure/build.gradle.kts,
+examples/java-maintenance-example/build.gradle.kts, and
+examples/java-image-example/build.gradle.kts. Added rewrite:dry-run and
+rewrite:run tasks to all three Taskfile.yml files; examples carry
+_require_maintainer guard; rewrite:run desc is labelled MUTATING. Added
+SEMANTIC REFACTORING WITH OPENREWRITE section to docs/core/polyglot-java.md
+explaining rewrite:dry-run vs task upgrade and when rewrite:run requires task
+init + task ci; manually translated the new section into man/man7/polyglot-java.7
+(pandoc unavailable in current execution environment). Ran all four proof paths
+(template init+rewrite:dry-run+ci; maintenance-example init+rewrite:dry-run+ci;
+maintenance-example rewrite:run+ci; image-example init+rewrite:dry-run+ci) —
+all BUILD SUCCESSFUL. Discovered that the rewrite Gradle configuration is empty
+by design (built-in recipes ship in the plugin classpath); updated all three
+gradle.lockfile files so that rewrite appears in the empty= line. K-Brief
+updated with lockfile behaviour clarification.
+
+2026-05-02 (session 2): Re-ran all four proof paths; all BUILD SUCCESSFUL. All
+seven acceptance criteria verified. git-log inaccessible from container (worktree
+.git file references Windows path C:/dev/polyglot-devcontainers/.git/worktrees/
+polyglot-openrewrite which is not reachable from the Linux container). All file
+changes are on disk in the worktree and ready for commit from the host. Status
+updated to COMPLETE.

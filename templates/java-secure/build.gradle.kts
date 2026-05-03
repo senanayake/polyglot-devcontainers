@@ -7,6 +7,7 @@ plugins {
     id("com.github.spotbugs") version "6.4.4"
     id("com.github.ben-manes.versions") version "0.53.0"
     id("se.patrikerdes.use-latest-versions") version "0.2.19"
+    id("org.openrewrite.rewrite") version "7.30.0"
 }
 
 group = "dev.polyglot"
@@ -112,6 +113,10 @@ fun isNonStable(version: String): Boolean {
     val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
     val regex = "^[0-9,.v-]+(-r)?$".toRegex()
     return !stableKeyword && !regex.matches(version)
+}
+
+rewrite {
+    activeRecipe("org.openrewrite.java.RemoveUnusedImports")
 }
 
 tasks.named<DependencyUpdatesTask>("dependencyUpdates").configure {
