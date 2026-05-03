@@ -3,7 +3,7 @@ id: KB-2026-059
 type: standard
 status: active
 created: 2026-05-02
-updated: 2026-05-02
+updated: 2026-05-03
 tags: [java, openrewrite, gradle, recipes, code-migration, dependency-locking]
 related: [KB-2026-020, KB-2026-021, KB-2026-022]
 ---
@@ -90,7 +90,7 @@ against the proving paths before merging.
 `rewrite:dry-run` maps to Gradle's `rewriteDryRun` task.
 
 - Calls `rewriteDryRun`, which produces a unified diff report under
-  `build/rewrite/rewrite.patch` and prints a human-readable summary to stdout
+  `build/reports/rewrite/rewrite.patch` and prints a human-readable summary to stdout
 - Source files are never modified
 - Safe to run at any point in the development workflow; does not require
   lockfile regeneration after the run

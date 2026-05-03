@@ -74,6 +74,13 @@ inspect \f[CR].artifacts/scenarios/java\-gradle\-maintenance.md\f[R]
 treat \f[CR]task upgrade\f[R] in
 \f[CR]examples/java\-maintenance\-example\f[R] as the manual follow\-on
 execution step after reading the evidence
+.IP \(bu 2
+from the repository root, run
+\f[CR]task scenarios:java\-openrewrite\f[R] to validate the
+non\-mutating OpenRewrite proof
+.IP \(bu 2
+inspect \f[CR].artifacts/scenarios/java\-openrewrite\-dry\-run.log\f[R]
+and \f[CR].artifacts/scenarios/java\-openrewrite\-dry\-run.patch\f[R]
 .SH SEMANTIC REFACTORING WITH OPENREWRITE
 The Java path includes \f[CR]rewrite:dry\-run\f[R] and
 \f[CR]rewrite:run\f[R] tasks backed by the OpenRewrite Gradle plugin.
@@ -91,7 +98,8 @@ of modifying files
 .PP
 \f[CR]rewrite:dry\-run\f[R] maps to Gradle\[cq]s \f[CR]rewriteDryRun\f[R]
 task.
-It writes a unified diff to \f[CR]build/rewrite/rewrite.patch\f[R] and
+It writes a unified diff report under
+\f[CR]build/reports/rewrite/rewrite.patch\f[R] and
 prints a summary to stdout but does \f[B]not\f[R] modify any source file.
 Safe to run at any time.
 .PP

@@ -59,6 +59,10 @@ Repository-owned scenario slice:
 - inspect `.artifacts/scenarios/java-gradle-maintenance.md`
 - treat `task upgrade` in `examples/java-maintenance-example` as the manual
   follow-on execution step after reading the evidence
+- from the repository root, run `task scenarios:java-openrewrite` to validate
+  the non-mutating OpenRewrite proof
+- inspect `.artifacts/scenarios/java-openrewrite-dry-run.log` and
+  `.artifacts/scenarios/java-openrewrite-dry-run.patch`
 
 # SEMANTIC REFACTORING WITH OPENREWRITE
 
@@ -77,8 +81,8 @@ Use **`task rewrite:dry-run`** when you want to:
   modifying files
 
 `rewrite:dry-run` maps to Gradle's `rewriteDryRun` task. It writes a unified
-diff to `build/rewrite/rewrite.patch` and prints a summary to stdout but does
-**not** modify any source file. Safe to run at any time.
+diff report under `build/reports/rewrite/rewrite.patch` and prints a summary to
+stdout but does **not** modify any source file. Safe to run at any time.
 
 Use **`task upgrade`** when you want to:
 
