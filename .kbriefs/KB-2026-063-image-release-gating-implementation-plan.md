@@ -3,7 +3,7 @@ id: KB-2026-063
 type: standard
 status: active
 created: 2026-05-03
-updated: 2026-05-03
+updated: 2026-05-04
 tags:
   - release
   - implementation-plan
@@ -193,6 +193,22 @@ Create an authoritative heavyweight proof path for a specific `main` commit.
   commit without publishing images
 - evidence artifacts are downloadable and clearly linked to the target SHA
 - scan success is defined by completed scan artifacts and residual-risk output
+
+#### Current Proof Status
+
+The first execution cycle on 2026-05-03 narrowed the remaining blockers:
+
+- local `task ci:full-release` on current `main` is first vulnerable to stale
+  cached/reused maintainer `:main` state, and after refresh is still limited by
+  a Windows + Podman nested Gradle chmod boundary during Java starter proofing
+- hosted `release-images` `validate-only` is publish-free, and branch
+  `codex/full-release-proof-main` has now proven that the maintainer matrix
+  entry succeeds in hosted Linux when it uses `docker run --privileged` for
+  root `task ci`
+
+Phase 3 therefore no longer needs to discover the maintainer validation shape.
+It now needs to merge the proven maintainer-path fix to `main` and rerun the
+authoritative hosted lane there.
 
 ### Phase 4: Record Commit-Scoped Release Eligibility
 
