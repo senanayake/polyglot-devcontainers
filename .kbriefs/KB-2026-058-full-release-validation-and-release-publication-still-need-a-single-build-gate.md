@@ -3,7 +3,7 @@ id: KB-2026-058
 type: design-space
 status: active
 created: 2026-05-02
-updated: 2026-05-03
+updated: 2026-05-04
 tags:
   - release
   - full-release
@@ -75,6 +75,10 @@ CI work assumed:
    - run `task ci` inside the built image
    - save the image tarball
    - scan the saved tarball and summarize residual risk in a separate step
+5. branch `codex/full-release-proof-main` has now proven that
+   `release-images` `validate-only` can complete successfully for the full
+   release matrix in hosted Linux when the maintainer target uses a privileged
+   validation path.
 
 Those improvements still leave several release-gating gaps.
 
@@ -215,6 +219,31 @@ maintainer image by running root `task ci` inside raw `docker run`, which is
 not compatible with the current root task contract once that contract reaches
 `task starters:verify:image-backed`.
 
+### Hosted Release-Images Validate-Only Proof With Maintainer Fix
+
+On 2026-05-04, branch `codex/full-release-proof-main` was validated with:
+
+- `release_mode=validate-only`
+
+Run:
+
+- `25295665680`
+
+Observed behavior:
+
+- overall workflow conclusion: `success`
+- workload-image validation succeeded for:
+  - `python-node`
+  - `java`
+  - `diagrams`
+- maintainer validation also succeeded after switching that matrix entry to:
+  - `docker run --rm --privileged ... task ci`
+- publish-side steps and release-side jobs remained skipped
+
+That run proves the hosted Linux maintainer-lane control-path issue is solved
+by the workflow change. It does **not** yet prove the same behavior on `main`
+until the fix is merged and rerun there.
+
 ## Options In The Space
 
 ### Option A: Keep The Current Two-Build, Tag-First Release Workflow
@@ -335,8 +364,11 @@ not compatible with the current root task contract once that contract reaches
     cached/reused local image and container state
   - local Windows + Podman proof can hit nested Gradle chmod boundaries that do
     not necessarily reflect hosted Linux behavior
-  - hosted maintainer validation in `release-images` still uses a raw container
-    execution model that cannot satisfy the current root `task ci` contract
+  - hosted maintainer validation in `release-images` originally used a raw
+    container execution model that could not satisfy the current root
+    `task ci` contract
+  - branch `codex/full-release-proof-main` now proves the privileged-path
+    remediation in hosted Linux, but that proof still needs to land on `main`
 - A successful release scan in this repo must mean:
   - the scan ran successfully
   - the summary artifacts exist
@@ -350,7 +382,7 @@ not compatible with the current root task contract once that contract reaches
   yet the final release-evidence model.
 - Treat "publish-free validate-only semantics" as proven.
 - Treat "authoritative full-release validation on current main" as still
-  unproven until both maintainer-path blockers are resolved.
+  unproven until the maintainer-lane fix is merged and rerun on `main`.
 - Use the next learning cycle to define a process where:
   - full-release evidence is created for a specific `main` commit first
   - release publication happens only after that evidence exists

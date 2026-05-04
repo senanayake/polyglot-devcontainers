@@ -3,7 +3,7 @@ id: KB-2026-063
 type: standard
 status: active
 created: 2026-05-03
-updated: 2026-05-03
+updated: 2026-05-04
 tags:
   - release
   - implementation-plan
@@ -201,12 +201,14 @@ The first execution cycle on 2026-05-03 narrowed the remaining blockers:
 - local `task ci:full-release` on current `main` is first vulnerable to stale
   cached/reused maintainer `:main` state, and after refresh is still limited by
   a Windows + Podman nested Gradle chmod boundary during Java starter proofing
-- hosted `release-images` `validate-only` is publish-free, but the maintainer
-  matrix entry still uses a raw container control path that cannot satisfy root
-  `task ci` once it reaches image-backed starter proofing
+- hosted `release-images` `validate-only` is publish-free, and branch
+  `codex/full-release-proof-main` has now proven that the maintainer matrix
+  entry succeeds in hosted Linux when it uses `docker run --privileged` for
+  root `task ci`
 
-Phase 3 therefore needs an explicit maintainer-lane validation strategy, not
-just a generic "run the matrix" implementation.
+Phase 3 therefore no longer needs to discover the maintainer validation shape.
+It now needs to merge the proven maintainer-path fix to `main` and rerun the
+authoritative hosted lane there.
 
 ### Phase 4: Record Commit-Scoped Release Eligibility
 

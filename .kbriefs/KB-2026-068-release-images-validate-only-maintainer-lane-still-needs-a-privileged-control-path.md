@@ -3,7 +3,7 @@ id: KB-2026-068
 type: failure-mode
 status: active
 created: 2026-05-03
-updated: 2026-05-03
+updated: 2026-05-04
 tags:
   - release-images
   - validate-only
@@ -17,7 +17,7 @@ related:
   - KB-2026-063
 ---
 
-# Release-Images Validate-Only Maintainer Lane Still Needs A Privileged Control Path
+# Release-Images Maintainer Validation Requires A Privileged Control Path
 
 ## Context
 
@@ -111,23 +111,55 @@ Observed result:
     - `publish-release-security`
     - `update-readme-recent-releases`
 
+## Resolution And Follow-Up Proof
+
+On 2026-05-04, branch `codex/full-release-proof-main` changed
+`.github/workflows/release-images.yml` so the matrix uses two distinct
+validation paths:
+
+- maintainer target:
+  - `docker run --rm --privileged ... task ci`
+- workload targets:
+  - existing unprivileged raw `docker run`
+
+That branch was then proven with a manual hosted run:
+
+- run `25295665680`
+- ref `codex/full-release-proof-main`
+- mode `validate-only`
+
+Observed result:
+
+- overall workflow conclusion: `success`
+- workload-image lanes still succeeded:
+  - `java`
+  - `python-node`
+  - `diagrams`
+- maintainer lane also succeeded:
+  - `Run maintainer task ci inside built image`
+- publish-side steps and release-side jobs remained skipped as intended
+
 ## Implications
 
-- `validate-only` semantics are now proven publish-free
-- the hosted heavyweight proof path is still not green, because the maintainer
-  target uses the wrong validation control path
-- the workload-image release lanes and the maintainer-image release lane should
-  no longer be treated as if they have the same runtime needs
+- `validate-only` semantics are proven publish-free
+- maintainer validation in `release-images` is compatible with root `task ci`
+  when it uses the privileged path
+- workload-image lanes and maintainer-image lanes have distinct runtime needs
+  and should keep distinct validation steps
+- the remaining release-work gaps have moved upstream to:
+  - merging this control-path fix to `main`
+  - proving the hosted heavyweight lane on `main`
+  - commit-scoped release evidence
+  - `cut-release` gating
+  - digest continuity
 
 ## Recommendations
 
 - keep the publish-free `validate-only` semantics; that part is correct
-- adapt maintainer validation in `release-images` so it uses a maintainer-aware
-  control path instead of raw `docker run` for root `task ci`
-- alternatively, narrow what the maintainer lane proves so it does not invoke
-  root `task ci` in a context that cannot satisfy nested runtime requirements
-- treat this as a prerequisite before claiming the hosted full-release lane on
-  `main` is proven
+- keep maintainer validation in `release-images` on the privileged path
+- keep workload-image validation on the lighter unprivileged path
+- treat this K-Brief as the failure-mode and remediation record for future
+  regressions
 
 ## Applicability
 
