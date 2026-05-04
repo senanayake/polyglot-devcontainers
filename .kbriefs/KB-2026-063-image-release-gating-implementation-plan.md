@@ -194,6 +194,20 @@ Create an authoritative heavyweight proof path for a specific `main` commit.
 - evidence artifacts are downloadable and clearly linked to the target SHA
 - scan success is defined by completed scan artifacts and residual-risk output
 
+#### Current Proof Status
+
+The first execution cycle on 2026-05-03 narrowed the remaining blockers:
+
+- local `task ci:full-release` on current `main` is first vulnerable to stale
+  cached/reused maintainer `:main` state, and after refresh is still limited by
+  a Windows + Podman nested Gradle chmod boundary during Java starter proofing
+- hosted `release-images` `validate-only` is publish-free, but the maintainer
+  matrix entry still uses a raw container control path that cannot satisfy root
+  `task ci` once it reaches image-backed starter proofing
+
+Phase 3 therefore needs an explicit maintainer-lane validation strategy, not
+just a generic "run the matrix" implementation.
+
 ### Phase 4: Record Commit-Scoped Release Eligibility
 
 #### Goal

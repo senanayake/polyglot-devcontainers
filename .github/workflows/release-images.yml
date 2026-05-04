@@ -236,7 +236,21 @@ jobs:
             bash scripts/smoke_test_published_starter.sh --image "${{ matrix.package_name }}:ci"
           fi
 
-      - name: Run task ci inside built image
+      - name: Run maintainer task ci inside built image
+        if: ${{ matrix.target_id == 'maintainer' }}
+        run: |
+          docker run --rm \
+            --privileged \
+            -e POLYGLOT_OCI_RUNTIME=docker \
+            -e POLYGLOT_CONTAINER_RUNTIME=docker \
+            -u root \
+            -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" \
+            -w "${{ matrix.workdir }}" \
+            "${{ matrix.package_name }}:ci" \
+            bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && man polyglot >/dev/null && man polyglot-scenarios >/dev/null && task ci"
+
+      - name: Run workload task ci inside built image
+        if: ${{ matrix.target_id != 'maintainer' }}
         run: |
           docker run --rm \
             -e POLYGLOT_OCI_RUNTIME=docker \

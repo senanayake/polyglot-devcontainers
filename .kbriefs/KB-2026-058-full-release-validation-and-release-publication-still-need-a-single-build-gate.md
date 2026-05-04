@@ -155,6 +155,66 @@ shape for a release gate:
 
 It does **not** require zero findings to count as a successful scan.
 
+### Local Full-Release Task Proof On Current Main
+
+On 2026-05-03, local heavyweight proof was then attempted on current `main`
+commit `6bf92f0` from a clean clone using the repo-owned top-level task:
+
+```bash
+python scripts/run_in_maintainer_container.py exec -- task ci:full-release
+```
+
+Observed behavior in the first pass:
+
+- the run failed before heavyweight image verification started
+- the failure happened inside `task ci:repo-core`
+- `examples/diagram-image-example` lint failed with:
+  - `bash: line 2: d2: command not found`
+
+Additional investigation showed that this first local blocker came from stale
+cached/reused maintainer `:main` state, not from the current GHCR image
+contents. After a fresh pull and container recreation, local proof progressed
+far beyond repo-core and into image-backed starter proofing.
+
+Observed behavior in the second pass after refresh:
+
+- repo-core proof advanced successfully
+- the run then failed in `task starters:verify:image-backed`
+- the specific failing nested proof was Java published-image bootstrap
+- Gradle failed in the nested smoke container with:
+  - `Could not set file mode 700 on /workspaces/project/.gradle/daemon/9.1.0`
+
+That second blocker looks like a Windows + Podman local-environment boundary,
+not evidence that the hosted Linux release workload lanes are broken.
+
+### Hosted Release-Images Validate-Only Proof On Current Main
+
+On 2026-05-03, `release-images` was run manually on `main` with:
+
+- `release_mode=validate-only`
+
+Run:
+
+- `25294168787`
+
+Observed behavior:
+
+- publish-free semantics were proven:
+  - GHCR login skipped
+  - image push skipped
+  - SBOM/sign/attest/Trivy/release-security steps skipped
+  - release-note and release-doc publication jobs skipped
+- workload-image validation succeeded for:
+  - `python-node`
+  - `java`
+  - `diagrams`
+- the overall run still failed in the `maintainer` matrix entry
+
+The maintainer failure occurred because `release-images` validates the built
+maintainer image by running root `task ci` inside raw `docker run`, which is
+not compatible with the current root task contract once that contract reaches
+`task starters:verify:image-backed`.
+
 ## Options In The Space
 
 ### Option A: Keep The Current Two-Build, Tag-First Release Workflow
@@ -233,6 +293,8 @@ It does **not** require zero findings to count as a successful scan.
   the same tag in practice
 - the best mechanism for preserving digest identity between validation and
   publication
+- how maintainer-target validation in `release-images` should satisfy the root
+  task contract now that root `task ci` requires image-backed starter proofing
 
 ## Evidence
 
@@ -242,6 +304,16 @@ It does **not** require zero findings to count as a successful scan.
   after push using `exit-code: 0`
 - `.github/workflows/release-images.yml` manual `validate-only` mode now skips
   image publication and release-side effects
+- local maintainer-container proof on 2026-05-03 showed:
+  - `task ci:full-release` on current `main` was first blocked locally by stale
+    cached/reused maintainer `:main` state
+  - after refresh, the same proof advanced into nested Java starter proofing
+    and then hit a Windows + Podman chmod boundary
+- hosted manual `release-images` run `25294168787` showed:
+  - `validate-only` is publish-free in practice
+  - workload-image validate-only lanes can pass
+  - the maintainer lane still fails because raw `docker run` cannot satisfy the
+    nested runtime needs of root `task ci`
 - `.github/workflows/cut-release.yml` pushes the semantic tag before waiting
   for downstream full-release completion
 - public GitHub Actions workflow pages show:
@@ -256,9 +328,15 @@ It does **not** require zero findings to count as a successful scan.
 
 - The free-tier branch CI problem is largely solved; the remaining uncertainty
   has moved to release-grade evidence and release orchestration.
-- The repository already has a good **local** heavyweight proof shape, but the
-  hosted release workflow still publishes before that same proof is known to
-  exist for the release target.
+- The repository already has a good **workload-image** heavyweight proof shape,
+  but there are now two distinct blockers before full hosted release proof can
+  be considered settled:
+  - local maintainer proof on a moving `:main` tag can be distorted by stale
+    cached/reused local image and container state
+  - local Windows + Podman proof can hit nested Gradle chmod boundaries that do
+    not necessarily reflect hosted Linux behavior
+  - hosted maintainer validation in `release-images` still uses a raw container
+    execution model that cannot satisfy the current root `task ci` contract
 - A successful release scan in this repo must mean:
   - the scan ran successfully
   - the summary artifacts exist
@@ -270,6 +348,9 @@ It does **not** require zero findings to count as a successful scan.
 
 - Treat the current tag-first `cut-release` flow as a learning artifact, not
   yet the final release-evidence model.
+- Treat "publish-free validate-only semantics" as proven.
+- Treat "authoritative full-release validation on current main" as still
+  unproven until both maintainer-path blockers are resolved.
 - Use the next learning cycle to define a process where:
   - full-release evidence is created for a specific `main` commit first
   - release publication happens only after that evidence exists
@@ -292,3 +373,6 @@ It does **not** require zero findings to count as a successful scan.
 - [KB-2026-055](KB-2026-055-free-tier-image-validation-should-use-fast-medium-and-full-release-lanes.md)
 - [KB-2026-057](KB-2026-057-default-free-tier-ci-should-run-on-branch-push-and-fan-out-medium-image-builds.md)
 - [KB-2026-062](KB-2026-062-mainline-full-release-evidence-should-gate-cut-release-and-publication.md)
+- [KB-2026-067](KB-2026-067-cached-maintainer-main-reuse-can-block-local-full-release-proof.md)
+- [KB-2026-068](KB-2026-068-release-images-validate-only-maintainer-lane-still-needs-a-privileged-control-path.md)
+- [KB-2026-069](KB-2026-069-windows-podman-bind-mounts-can-break-nested-gradle-starter-proofing.md)
