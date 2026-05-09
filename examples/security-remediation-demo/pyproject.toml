@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "health-monitor"
+version = "0.1.0"
+description = "HTTP endpoint health monitoring service. Frozen in 2023 state for demonstration."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "requests==2.28.0",
+  "packaging==21.3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.0",
+  "pip-audit>=2.0",
+  "pytest>=8.0",
+  "pytest-cov>=6.0",
+  "ruff>=0.1",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=health_monitor --cov-report=term-missing"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests"]

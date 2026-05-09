@@ -1,0 +1,140 @@
+version: "3"
+
+tasks:
+  _require_maintainer:
+    internal: true
+    cmds:
+      - python ../../scripts/require_maintainer_container.py
+
+  # ---------------------------------------------------------------------------
+  # Standard contract
+  # ---------------------------------------------------------------------------
+
+  init:
+    desc: Install dependencies (resolves locked versions from exact pins)
+    deps: [_require_maintainer]
+    cmds:
+      - python tasks.py init
+
+  lint:
+    desc: Check code quality
+    deps: [_require_maintainer]
+    cmds:
+      - python tasks.py lint
+
+  test:
+    desc: Run the full automated test suite
+    deps: [_require_maintainer]
+    cmds:
+      - python tasks.py test
+
+  scan:
+    desc: Run security audit — expects FAILURE on initial checkout (vulnerable state by design)
+    deps: [_require_maintainer]
+    cmds:
+      - python tasks.py scan
+      - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
+
+  deps:inventory:
+    desc: Collect dependency inventory
+    deps: [_require_maintainer]
+    cmds:
+      - python tasks.py inventory
+
+  deps:plan:
+    desc: Build dependency upgrade plan
+    deps: [_require_maintainer]
+    cmds:
+      - python tasks.py plan
+
+  deps:report:
+    desc: Generate dependency inventory + upgrade plan report
+    deps: [_require_maintainer]
+    cmds:
+      - task deps:inventory
+      - task deps:plan
+      - >
+        python ../../scripts/dependency_report.py
+        --inventory .artifacts/scans/dependency-inventory.json
+        --plan .artifacts/scans/dependency-plan.json
+        --json-output .artifacts/scans/dependency-report.json
+        --markdown-output .artifacts/scans/dependency-report.md
+
+  format:
+    desc: Auto-format source code
+    deps: [_require_maintainer]
+    cmds:
+      - python tasks.py format
+
+  upgrade:
+    desc: Upgrade pinned dependencies to latest, then re-sync and verify
+    deps: [_require_maintainer]
+    cmds:
+      - python tasks.py upgrade
+      - uv sync --extra dev
+      - task lint
+      - task test
+
+  ci:
+    desc: Full CI pipeline — scan will fail on initial checkout until task upgrade is run
+    deps: [_require_maintainer]
+    cmds:
+      - task init
+      - task lint
+      - task test
+      - task scan
+
+  # ---------------------------------------------------------------------------
+  # Demo tasks — before/after CVE remediation
+  # ---------------------------------------------------------------------------
+
+  demo:capture-before:
+    desc: Run baseline scan and preserve pre-remediation artifacts
+    deps: [_require_maintainer]
+    cmds:
+      - task init
+      - task scan
+      - mkdir -p .artifacts/demo-before
+      - cp .artifacts/scans/pip-audit.json .artifacts/demo-before/pip-audit.json
+      - cp .artifacts/scans/pip-audit-policy.json .artifacts/demo-before/pip-audit-policy.json
+      - cp .artifacts/scans/pip-audit-policy.md .artifacts/demo-before/pip-audit-policy.md
+
+  demo:remediate:
+    desc: Apply dependency upgrades, re-sync, and verify
+    deps: [_require_maintainer]
+    cmds:
+      - task upgrade
+
+  demo:capture-after:
+    desc: Run post-remediation scan and preserve artifacts
+    deps: [_require_maintainer]
+    cmds:
+      - task scan
+      - mkdir -p .artifacts/demo-after
+      - cp .artifacts/scans/pip-audit.json .artifacts/demo-after/pip-audit.json
+      - cp .artifacts/scans/pip-audit-policy.json .artifacts/demo-after/pip-audit-policy.json
+      - cp .artifacts/scans/pip-audit-policy.md .artifacts/demo-after/pip-audit-policy.md
+
+  demo:report:
+    desc: Generate executive remediation summary from before/after artifacts
+    deps: [_require_maintainer]
+    cmds:
+      - >
+        python ../../scripts/remediation_summary.py
+        --before .artifacts/demo-before/pip-audit.json
+        --after .artifacts/demo-after/pip-audit.json
+        --upgrades .artifacts/scans/pypi-upgrades.json
+        --json-output .artifacts/demo-report.json
+        --markdown-output .artifacts/demo-report.md
+
+  demo:
+    desc: Full end-to-end CVE remediation demonstration
+    deps: [_require_maintainer]
+    cmds:
+      - task demo:capture-before
+      - task demo:remediate
+      - task demo:capture-after
+      - task demo:report
+      - echo ""
+      - echo "=== Remediation complete. Report at .artifacts/demo-report.md ==="
+      - cat .artifacts/demo-report.md
