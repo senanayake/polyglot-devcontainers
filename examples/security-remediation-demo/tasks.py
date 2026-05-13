@@ -577,12 +577,28 @@ def test() -> None:
 def scan() -> None:
     if not PYTHON.exists():
         init()
+    SCANS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Freeze the project venv so pip-audit can run in its own isolated environment.
+    # pip-audit requires requests>=2.31.0 which conflicts with requests==2.28.0 in
+    # this fixture's venv — the tool isolation is what makes the demo possible.
+    freeze_result = run([UV, "pip", "freeze", "--python", str(PYTHON)], capture_output=True)
+    freeze_path = SCANS_DIR / "frozen-requirements.txt"
+    freeze_path.write_text(freeze_result.stdout, encoding="utf-8")
+
     audit_report = SCANS_DIR / "pip-audit.json"
     completed = run(
         [
-            str(PYTHON),
-            "-m",
-            "pip_audit",
+            UV,
+            "tool",
+            "run",
+            "--from",
+            "pip-audit==2.8.0",
+            "--with",
+            "cyclonedx-python-lib>=3.1.5,<4",
+            "pip-audit",
+            "--requirement",
+            str(freeze_path),
             "--format",
             "json",
             "--output",
