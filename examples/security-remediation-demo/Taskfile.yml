@@ -71,7 +71,7 @@ tasks:
     deps: [_require_maintainer]
     cmds:
       - python tasks.py upgrade
-      - uv sync --extra dev
+      - uv pip install --python .venv/bin/python -e .[dev]
       - task lint
       - task test
 

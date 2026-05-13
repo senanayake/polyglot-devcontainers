@@ -547,7 +547,10 @@ def build_plan_artifact() -> dict[str, Any]:
 
 
 def init() -> None:
-    run([UV, "sync", "--extra", "dev"])
+    UV_LOCK.unlink(missing_ok=True)
+    if not VENV_DIR.exists():
+        run([UV, "venv"])
+    run([UV, "pip", "install", "--python", str(PYTHON), "-e", ".[dev]"])
 
 
 def lint() -> None:
