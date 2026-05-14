@@ -66,6 +66,18 @@ tasks:
     cmds:
       - python tasks.py format
 
+  check:
+    desc: Read-only compliance check — inspect scan artifacts against the Polyglot contract
+    deps: [_require_maintainer]
+    cmds:
+      - python ../../scripts/check.py --workspace .
+
+  test:integration:
+    desc: Run full before→upgrade→after flow as an automated integration test
+    deps: [_require_maintainer]
+    cmds:
+      - python ../../scripts/test_security_remediation_demo.py --workspace .
+
   upgrade:
     desc: Upgrade pinned dependencies to latest, then re-sync and verify
     deps: [_require_maintainer]

@@ -579,12 +579,18 @@ def scan() -> None:
         init()
     SCANS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Freeze the project venv so pip-audit can run in its own isolated environment.
-    # pip-audit requires requests>=2.31.0 which conflicts with requests==2.28.0 in
-    # this fixture's venv — the tool isolation is what makes the demo possible.
+    # pip-audit cannot be installed into this venv because it requires requests>=2.31.0
+    # while the fixture pins requests==2.28.0.  Run it isolated via uv tool run.
+    # Freeze the venv to a requirements file and strip editable/local-path entries
+    # before passing to pip-audit: pip-audit --requirement cannot audit file:// paths.
     freeze_result = run([UV, "pip", "freeze", "--python", str(PYTHON)], capture_output=True)
+    freeze_lines = [
+        line
+        for line in freeze_result.stdout.splitlines()
+        if line and not line.startswith("-e ") and "@ file://" not in line
+    ]
     freeze_path = SCANS_DIR / "frozen-requirements.txt"
-    freeze_path.write_text(freeze_result.stdout, encoding="utf-8")
+    freeze_path.write_text("\n".join(freeze_lines) + "\n", encoding="utf-8")
 
     audit_report = SCANS_DIR / "pip-audit.json"
     completed = run(
@@ -594,11 +600,10 @@ def scan() -> None:
             "run",
             "--from",
             "pip-audit==2.8.0",
-            "--with",
-            "cyclonedx-python-lib>=3.1.5,<4",
             "pip-audit",
             "--requirement",
             str(freeze_path),
+            "--no-deps",
             "--format",
             "json",
             "--output",
@@ -871,7 +876,11 @@ def main() -> int:
         print(f"usage: {Path(sys.argv[0]).name} [{'|'.join(COMMANDS)}]")
         return 1
     require_maintainer()
-    COMMANDS[sys.argv[1]]()
+    try:
+        COMMANDS[sys.argv[1]]()
+    except subprocess.CalledProcessError as exc:
+        print(f"[python-tasks] command failed (exit {exc.returncode}): {exc.cmd}", file=sys.stderr)
+        return exc.returncode
     return 0
 
 

@@ -24,3 +24,4 @@ examples/python-example/.ruff_cache/
 examples/python-example/.tmp/
 examples/python-example/.venv/
 .phase10-testing/
+.aider-relay/
