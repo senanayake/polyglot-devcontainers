@@ -128,6 +128,12 @@ tasks:
       - task -t templates/java-secure/Taskfile.yml scan
       - gitleaks git . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
 
+  check:
+    desc: Read-only compliance check — inspect scan artifacts against the Polyglot contract
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/check.py --workspace .
+
   format:
     desc: Format repository-owned Python and Node template sources
     deps: [_require_maintainer]

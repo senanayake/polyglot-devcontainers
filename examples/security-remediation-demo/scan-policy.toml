@@ -1,0 +1,3 @@
+[python_package_audit]
+fail_on_severities = ["CRITICAL", "HIGH"]
+allow_no_fix_advisories = true
