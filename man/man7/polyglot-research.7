@@ -1,0 +1,77 @@
+.TH "polyglot-research" "7" "" "Runtime Documentation" "Polyglot Devcontainers"
+.SH NAME
+polyglot-research \- LLM-assisted research experiment runner workflow
+.SH PURPOSE
+This page explains the supported workflow for the research runner image.
+.SH WHEN TO USE
+Use this image for Python plus Node.js research artifacts that run TypeScript
+test harnesses, invoke LLM APIs, and produce structured result artifacts.
+.SH PRIMARY COMMANDS
+.IP
+.EX
+task init
+task test
+task experiment
+task report
+task ci
+.EE
+.SH WORKFLOW
+The image provides Python, Node.js, npm, pnpm, \f[CR]task\f[R],
+\f[CR]gitleaks\f[R], and a pre-built Python virtual environment at
+\f[CR]/opt/research-venv\f[R].
+.PP
+The image venv is automatically first on \f[CR]PATH\f[R] and includes:
+.IP \(bu 2
+\f[CR]pyyaml\f[R]
+.IP \(bu 2
+\f[CR]openai\f[R]
+.PP
+Project-local lockfiles remain authoritative for experiment-specific code.
+Use \f[CR]npm ci\f[R] for Node projects with a
+\f[CR]package-lock.json\f[R]. If a project needs different Python packages,
+create and activate a project-local \f[CR].venv\f[R]; it will shadow the
+image venv.
+.PP
+LLM experiments must receive credentials at runtime. Do not bake API keys into
+the image or repository. Devcontainers should pass the host value through
+\f[CR]remoteEnv\f[R].
+.SH OUTPUTS / ARTIFACTS
+Research projects commonly write:
+.IP \(bu 2
+\f[CR]results/\f[R]
+.IP \(bu 2
+\f[CR]archive/\f[R]
+.IP \(bu 2
+\f[CR]scenario/runs/\f[R]
+.IP \(bu 2
+generated reports under project-owned paths
+.PP
+Do not commit dependency directories such as \f[CR]node_modules\f[R],
+\f[CR].venv\f[R], \f[CR].pytest_cache\f[R], or \f[CR]__pycache__\f[R].
+.SH COMMON FAILURES
+.IP \(bu 2
+Running the full LLM experiment without \f[CR]OPENAI_API_KEY\f[R].
+.IP \(bu 2
+Treating \f[CR]task ci\f[R] as an API-consuming task. CI should validate
+deterministic no-key paths.
+.IP \(bu 2
+Committing local dependency directories instead of lockfiles and outputs.
+.SH GUIDANCE
+.IP \(bu 2
+Keep deterministic validation separate from API-consuming experiment runs.
+.IP \(bu 2
+Use \f[CR]task ci\f[R] for no-key validation.
+.IP \(bu 2
+Use \f[CR]task experiment\f[R] only when the API key and budget are
+intentionally available.
+.IP \(bu 2
+Capture experiment outputs as reviewable artifacts.
+.SH SEE ALSO
+.IP \(bu 2
+\f[CR]polyglot(7)\f[R]
+.IP \(bu 2
+\f[CR]polyglot-python(7)\f[R]
+.IP \(bu 2
+\f[CR]polyglot-task-contract(7)\f[R]
+.IP \(bu 2
+\f[CR]polyglot-security(7)\f[R]

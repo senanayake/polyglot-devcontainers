@@ -2,7 +2,7 @@
 set -euo pipefail
 
 GRADLE_VERSION="9.1.0"
-TRIVY_KEY_SHA256="51ca5d1384095c462099add67e46b028e0df0ff741c0f95ad30f561c4fad1ad4" # gitleaks:allow
+TRIVY_KEY_SHA256="067f4782e5f2a736710c5256a9695c3ccb4731727a6118da8d8f532be97ecb39" # gitleaks:allow
 
 apt-get update
 apt-get install -y --no-install-recommends ca-certificates curl gnupg unzip

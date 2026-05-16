@@ -40,6 +40,18 @@ jobs:
             context: .
             workdir: /workspaces/polyglot-devcontainers/templates/python-node-secure
             description: Focused Python and Node / TypeScript polyglot container for polyglot-devcontainers.
+          - name: research-runner
+            image_name: polyglot-devcontainers-research-runner
+            dockerfile: templates/research-runner/.devcontainer/Containerfile
+            context: .
+            workdir: /workspaces/polyglot-devcontainers/templates/research-runner
+            description: Python and Node research execution container for LLM-assisted software engineering experiments.
+          - name: latex
+            image_name: polyglot-devcontainers-latex
+            dockerfile: templates/latex/.devcontainer/Containerfile
+            context: .
+            workdir: /workspaces/polyglot-devcontainers/templates/latex
+            description: LaTeX document build container for reproducible academic paper workflows.
 
     steps:
       - name: Check out repository
@@ -90,6 +102,12 @@ jobs:
             python-node)
               devcontainer_json="templates/python-node-secure/.devcontainer/devcontainer.json"
               ;;
+            research-runner)
+              devcontainer_json="templates/research-runner/.devcontainer/devcontainer.json"
+              ;;
+            latex)
+              devcontainer_json="templates/latex/.devcontainer/devcontainer.json"
+              ;;
             *)
               echo "Unsupported image matrix entry: ${{ matrix.name }}" >&2
               exit 1
@@ -100,13 +118,18 @@ jobs:
             --devcontainer-json "${devcontainer_json}"
 
       - name: Bootstrap empty starter workspace
-        if: ${{ matrix.name == 'java' || matrix.name == 'python-node' }}
+        if: ${{ matrix.name == 'java' || matrix.name == 'python-node' || matrix.name == 'research-runner' || matrix.name == 'latex' }}
         run: |
           if [ "${{ matrix.name }}" = "python-node" ]; then
             bash scripts/smoke_test_published_starter.sh --image "${{ matrix.image_name }}:ci" --run-scenarios
           else
             bash scripts/smoke_test_published_starter.sh --image "${{ matrix.image_name }}:ci"
           fi
+
+      - name: Validate default user
+        if: ${{ matrix.name == 'research-runner' || matrix.name == 'latex' }}
+        run: |
+          test "$(docker run --rm "${{ matrix.image_name }}:ci" id -un)" = "vscode"
 
       - name: Run task ci inside built image
         run: |
@@ -282,6 +305,8 @@ jobs:
             --report maintainer=.artifacts/release-assets/trivy-maintainer.json \
             --report java=.artifacts/release-assets/trivy-java.json \
             --report python-node=.artifacts/release-assets/trivy-python-node.json \
+            --report research-runner=.artifacts/release-assets/trivy-research-runner.json \
+            --report latex=.artifacts/release-assets/trivy-latex.json \
             --json-output .artifacts/release-assets/release-security-residual-risk.json \
             --markdown-output .artifacts/release-assets/release-security-residual-risk.md
           gh release view "${TAG_NAME}" --json body --jq .body > .artifacts/release-assets/release-notes-existing.md
@@ -291,6 +316,8 @@ jobs:
             --summary maintainer=.artifacts/release-assets/trivy-maintainer-summary.json \
             --summary java=.artifacts/release-assets/trivy-java-summary.json \
             --summary python-node=.artifacts/release-assets/trivy-python-node-summary.json \
+            --summary research-runner=.artifacts/release-assets/trivy-research-runner-summary.json \
+            --summary latex=.artifacts/release-assets/trivy-latex-summary.json \
             --residual-risk-markdown .artifacts/release-assets/release-security-residual-risk.md \
             --overview-output .artifacts/release-assets/release-security-overview.md \
             --notes-fragment-output .artifacts/release-assets/release-security-notes.md \
@@ -309,6 +336,12 @@ jobs:
           cp .artifacts/release-assets/trivy-python-node-summary.md .artifacts/release-assets/upload/release-security-python-node-summary.md
           cp .artifacts/release-assets/trivy-python-node-summary.json .artifacts/release-assets/upload/release-security-python-node-summary.json
           cp .artifacts/release-assets/sbom-python-node.spdx.json .artifacts/release-assets/upload/release-security-python-node-sbom.spdx.json
+          cp .artifacts/release-assets/trivy-research-runner-summary.md .artifacts/release-assets/upload/release-security-research-runner-summary.md
+          cp .artifacts/release-assets/trivy-research-runner-summary.json .artifacts/release-assets/upload/release-security-research-runner-summary.json
+          cp .artifacts/release-assets/sbom-research-runner.spdx.json .artifacts/release-assets/upload/release-security-research-runner-sbom.spdx.json
+          cp .artifacts/release-assets/trivy-latex-summary.md .artifacts/release-assets/upload/release-security-latex-summary.md
+          cp .artifacts/release-assets/trivy-latex-summary.json .artifacts/release-assets/upload/release-security-latex-summary.json
+          cp .artifacts/release-assets/sbom-latex.spdx.json .artifacts/release-assets/upload/release-security-latex-sbom.spdx.json
           cp .artifacts/release-assets/release-security-overview.md .artifacts/release-assets/upload/release-security-overview.md
           cp .artifacts/release-assets/release-security-residual-risk.md .artifacts/release-assets/upload/release-security-residual-risk.md
           cp .artifacts/release-assets/release-security-residual-risk.json .artifacts/release-assets/upload/release-security-residual-risk.json

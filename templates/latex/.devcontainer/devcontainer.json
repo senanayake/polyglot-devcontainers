@@ -1,0 +1,19 @@
+{
+  "name": "latex",
+  "image": "ghcr.io/senanayake/polyglot-devcontainers-latex:main",
+  "postCreateCommand": "bash /usr/local/share/polyglot-devcontainers/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "latex-workshop.latex.recipe.default": "latexmk (latexmkrc)",
+        "latex-workshop.latex.outDir": "%DIR%"
+      },
+      "extensions": [
+        "james-yu.latex-workshop",
+        "streetsidesoftware.code-spell-checker"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}

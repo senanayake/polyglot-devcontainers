@@ -1,0 +1,30 @@
+{
+  "name": "research-runner",
+  "image": "ghcr.io/senanayake/polyglot-devcontainers-research-runner:main",
+  "postCreateCommand": "bash /usr/local/share/polyglot-devcontainers/post-create.sh",
+  "remoteEnv": {
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "python.defaultInterpreterPath": "/opt/research-venv/bin/python",
+        "python.analysis.typeCheckingMode": "basic",
+        "eslint.validate": [
+          "javascript",
+          "javascriptreact",
+          "typescript",
+          "typescriptreact"
+        ]
+      },
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}

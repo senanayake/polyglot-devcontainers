@@ -9,7 +9,7 @@ ENV POLYGLOT_BOOTSTRAP_TEMPLATE=java-secure
 ARG TASK_VERSION=3.49.1
 ARG GITLEAKS_VERSION=8.30.1
 ARG GRADLE_VERSION=9.1.0
-ARG TRIVY_KEY_SHA256=51ca5d1384095c462099add67e46b028e0df0ff741c0f95ad30f561c4fad1ad4 # gitleaks:allow
+ARG TRIVY_KEY_SHA256=067f4782e5f2a736710c5256a9695c3ccb4731727a6118da8d8f532be97ecb39 # gitleaks:allow
 
 COPY templates/java-secure/.devcontainer/post-create.sh /usr/local/share/polyglot-devcontainers/post-create.sh
 COPY templates/java-secure/.devcontainer/bootstrap-workspace.sh /usr/local/bin/polyglot-bootstrap-workspace

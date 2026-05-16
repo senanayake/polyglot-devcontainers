@@ -1,0 +1,79 @@
+.TH "polyglot-latex" "7" "" "Runtime Documentation" "Polyglot Devcontainers"
+.SH NAME
+polyglot-latex \- reproducible LaTeX paper build workflow
+.SH PURPOSE
+This page explains the supported workflow for the LaTeX image.
+.SH WHEN TO USE
+Use this image for academic paper repositories that need headless,
+container-first PDF builds with LaTeX, BibTeX, TikZ, and \f[CR]latexmk\f[R].
+.SH PRIMARY COMMANDS
+.IP
+.EX
+task init
+task build
+task lint
+task test
+task ci
+.EE
+.SH WORKFLOW
+The image provides a focused TeX Live environment plus the universal Polyglot
+tooling contract:
+.IP \(bu 2
+\f[CR]pdflatex\f[R]
+.IP \(bu 2
+\f[CR]bibtex\f[R]
+.IP \(bu 2
+\f[CR]latexmk\f[R]
+.IP \(bu 2
+\f[CR]pdfinfo\f[R]
+.IP \(bu 2
+\f[CR]chktex\f[R]
+.IP \(bu 2
+\f[CR]texcount\f[R]
+.IP \(bu 2
+\f[CR]task\f[R]
+.IP \(bu 2
+\f[CR]git\f[R]
+.IP \(bu 2
+\f[CR]gitleaks\f[R]
+.IP \(bu 2
+\f[CR]pre-commit\f[R]
+.PP
+The expected project convention is that \f[CR]main.tex\f[R] lives at the
+workspace root. Multi-file documents should use relative paths such as
+\f[CR]\\input{sections/introduction}\f[R].
+.PP
+The normal build command is:
+.IP
+.EX
+latexmk -pdf -interaction=nonstopmode main.tex
+.EE
+.SH OUTPUTS / ARTIFACTS
+LaTeX builds produce \f[CR]main.pdf\f[R] and intermediate files such as
+\f[CR]main.aux\f[R], \f[CR]main.bbl\f[R], and \f[CR]main.log\f[R]. Use
+\f[CR]task clean\f[R] to remove generated files when needed.
+.SH COMMON FAILURES
+.IP \(bu 2
+Running \f[CR]latexmk\f[R] from a directory other than the document root.
+.IP \(bu 2
+Missing bibliography files referenced by \f[CR]\\bibliography{...}\f[R].
+.IP \(bu 2
+Depending on packages that are not installed in the image.
+.IP \(bu 2
+Committing generated PDFs before verifying the reproducible build path.
+.SH GUIDANCE
+.IP \(bu 2
+Keep source files and bibliography files in the repository.
+.IP \(bu 2
+Treat generated PDFs as release artifacts unless the project explicitly
+chooses to version them.
+.IP \(bu 2
+Use \f[CR]pdfinfo\f[R] in \f[CR]task test\f[R] to verify that the PDF was
+actually produced.
+.SH SEE ALSO
+.IP \(bu 2
+\f[CR]polyglot(7)\f[R]
+.IP \(bu 2
+\f[CR]polyglot-task-contract(7)\f[R]
+.IP \(bu 2
+\f[CR]polyglot-security(7)\f[R]

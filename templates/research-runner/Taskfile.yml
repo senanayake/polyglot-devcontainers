@@ -1,0 +1,38 @@
+version: "3"
+
+tasks:
+  init:
+    desc: Validate the research runner toolchain
+    cmds:
+      - test "$(which python3)" = "/opt/research-venv/bin/python3"
+      - python3 -c "import yaml; print(yaml.__version__)"
+      - python3 -c "import openai; print(openai.__version__)"
+      - node --version
+      - npm --version
+      - task --version
+
+  lint:
+    desc: Validate runtime documentation and shell tooling
+    cmds:
+      - man polyglot-research >/dev/null
+      - shellcheck --version
+
+  test:
+    desc: Run research image smoke checks
+    cmds:
+      - test -w .
+      - python3 -c "import sys; raise SystemExit(0 if sys.executable.startswith('/opt/research-venv/') else 1)"
+
+  scan:
+    desc: Run the repository secret scan
+    cmds:
+      - mkdir -p .artifacts/scans
+      - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
+
+  ci:
+    desc: Full research runner validation
+    cmds:
+      - task init
+      - task lint
+      - task test
+      - task scan

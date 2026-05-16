@@ -41,6 +41,24 @@ Contains:
 - SpotBugs with FindSecBugs
 - Trivy-based dependency vulnerability auditing
 
+## research-runner
+
+Contains:
+
+- devcontainer definition for the published research runner image
+- Taskfile smoke checks for Python, Node.js, the pre-built research venv, and
+  runtime documentation
+- baseline guidance for LLM-assisted research artifacts
+
+## latex
+
+Contains:
+
+- devcontainer definition for the published LaTeX image
+- Taskfile commands for `init`, `build`, `lint`, `test`, `scan`, and `ci`
+- a minimal IEEE-style paper that verifies BibTeX, TikZ, tables, and PDF
+  validation
+
 ## Consumption pattern
 
 Use the templates when you want to author or evolve the container definition in

@@ -1,0 +1,28 @@
+FROM ghcr.io/senanayake/polyglot-devcontainers-python-node:main@sha256:fe485710e3ac7308b6c95bf917ef84c72470e43bb59952fb874cc00c8e4fafa5
+
+LABEL org.opencontainers.image.source="https://github.com/senanayake/polyglot-devcontainers" \
+      org.opencontainers.image.description="Python and Node research execution container for LLM-assisted software engineering experiments." \
+      org.opencontainers.image.licenses="MIT" \
+      devcontainer.metadata="[{\"postCreateCommand\":\"bash /usr/local/share/polyglot-devcontainers/post-create.sh\",\"remoteEnv\":{\"OPENAI_API_KEY\":\"\u0024{localEnv:OPENAI_API_KEY}\"},\"customizations\":{\"vscode\":{\"settings\":{\"editor.formatOnSave\":true,\"python.defaultInterpreterPath\":\"/opt/research-venv/bin/python\",\"python.analysis.typeCheckingMode\":\"basic\",\"eslint.validate\":[\"javascript\",\"javascriptreact\",\"typescript\",\"typescriptreact\"]},\"extensions\":[\"ms-python.python\",\"charliermarsh.ruff\",\"dbaeumer.vscode-eslint\",\"esbenp.prettier-vscode\"]}},\"remoteUser\":\"vscode\"}]"
+
+USER root
+
+ENV POLYGLOT_BOOTSTRAP_TEMPLATE=research-runner
+
+COPY templates/research-runner/requirements-research.txt /tmp/requirements-research.txt
+COPY templates/research-runner /usr/local/share/polyglot-devcontainers/bootstrap/research-runner
+COPY scripts/install_runtime_docs.sh /tmp/install_runtime_docs.sh
+COPY man/man7 /tmp/runtime-docs
+
+RUN rm -rf /usr/local/share/polyglot-devcontainers/bootstrap/research-runner/.devcontainer \
+    && uv venv /opt/research-venv \
+    && uv pip install --python /opt/research-venv/bin/python -r /tmp/requirements-research.txt \
+    && printf '%s\n' 'export PATH="/opt/research-venv/bin:${PATH}"' > /etc/profile.d/polyglot-research-venv.sh \
+    && chmod 0644 /etc/profile.d/polyglot-research-venv.sh \
+    && bash /tmp/install_runtime_docs.sh /tmp/runtime-docs \
+    && rm -rf /tmp/requirements-research.txt /tmp/install_runtime_docs.sh /tmp/runtime-docs
+
+ENV PATH="/opt/research-venv/bin:${PATH}"
+
+USER vscode
+WORKDIR /workspace
