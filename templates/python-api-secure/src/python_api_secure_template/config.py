@@ -15,13 +15,13 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Python API Secure Template"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
-    
+
     # CORS
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
-    
+
     # Database
     DATABASE_URL: str = "sqlite:///./app.db"
-    
+
     # Security
     SECRET_KEY: str = "change-me-in-production"
     ALGORITHM: str = "HS256"

@@ -9,6 +9,7 @@
     "format": "prettier --write frontend/src frontend/tests eslint.config.mjs package.json prettier.config.mjs tsconfig.json vitest.config.ts",
     "format:check": "prettier --check frontend/src frontend/tests eslint.config.mjs package.json prettier.config.mjs tsconfig.json vitest.config.ts",
     "test": "vitest run --coverage",
+    "test:unit": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

@@ -1,0 +1,63 @@
+# ADR-__ADR_NUMBER__: __ADR_TITLE__
+
+- Status: Proposed
+- Date: __ADR_DATE__
+- Deciders: [REPLACE: list the people or roles making this decision]
+- Tags: [REPLACE: comma-separated tags]
+- Related K-Briefs: [REPLACE: KB-YYYY-NNN, if applicable]
+- Related Requirements / Specs: [REPLACE: requirement ids, feature specs, or scenarios]
+
+## Context
+
+What problem, constraint, or change requires a durable decision?
+
+## Decision
+
+State the decision clearly and concretely.
+
+## Options Considered
+
+### Option A
+
+- Description
+- Why it might work
+- Why it was not selected
+
+### Option B
+
+- Description
+- Why it might work
+- Why it was not selected
+
+## Consequences
+
+### Positive
+
+- Expected benefits
+- Risks reduced
+- New capabilities enabled
+
+### Negative
+
+- Costs introduced
+- Operational constraints added
+- Follow-on work required
+
+## Verification And Validation Impact
+
+- Verification: how the team will confirm the implementation matches this decision
+- Validation: how the team will confirm the decision serves user or system needs
+- Test strategy impact: `task test`, `task scan`, scenarios, or manual checks affected
+
+## Requirements And Traceability Impact
+
+- New requirement ids created:
+- Existing requirement ids changed:
+- Specs or tests that must be updated:
+- ADR or K-Brief links to maintain:
+
+## Follow-Up
+
+1. [REPLACE: concrete follow-up action]
+2. [REPLACE: concrete follow-up action]
+3. [REPLACE: concrete follow-up action]

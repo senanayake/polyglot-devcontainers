@@ -1,0 +1,56 @@
+version: "3"
+
+tasks:
+  init:
+    cmds:
+      - mkdir -p .artifacts/diagrams .artifacts/scans
+
+  lint:
+    cmds:
+      - >
+        bash -lc 'set -euo pipefail;
+        while IFS= read -r file; do
+          d2 fmt --check "$file";
+          diagram validate --tool d2 --input "$file";
+        done < <(find docs/diagrams -type f -name "*.d2" | sort)'
+
+  render:
+    cmds:
+      - mkdir -p .artifacts/diagrams
+      - >
+        bash -lc 'set -euo pipefail;
+        while IFS= read -r file; do
+          relative="${file#docs/diagrams/}";
+          output=".artifacts/diagrams/${relative%.d2}.svg";
+          manifest=".artifacts/diagrams/${relative%.d2}.json";
+          mkdir -p "$(dirname "$output")";
+          mkdir -p "$(dirname "$manifest")";
+          diagram render --tool d2 --input "$file" --output "$output" --format svg --manifest "$manifest";
+        done < <(find docs/diagrams -type f -name "*.d2" | sort)'
+
+  test:
+    cmds:
+      - task render
+      - >
+        bash -lc 'set -euo pipefail;
+        find .artifacts/diagrams -type f -name "*.svg" | grep -q .'
+
+  scan:
+    cmds:
+      - mkdir -p .artifacts/scans
+      - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
+
+  format:
+    cmds:
+      - >
+        bash -lc 'set -euo pipefail;
+        while IFS= read -r file; do
+          d2 fmt "$file";
+        done < <(find docs/diagrams -type f -name "*.d2" | sort)'
+
+  ci:
+    cmds:
+      - task init
+      - task lint
+      - task test
+      - task scan

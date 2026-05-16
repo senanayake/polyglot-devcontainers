@@ -59,6 +59,60 @@ Repository-owned scenario slice:
 - inspect `.artifacts/scenarios/java-gradle-maintenance.md`
 - treat `task upgrade` in `examples/java-maintenance-example` as the manual
   follow-on execution step after reading the evidence
+- from the repository root, run `task scenarios:java-openrewrite` to validate
+  the non-mutating OpenRewrite proof
+- inspect `.artifacts/scenarios/java-openrewrite-dry-run.log` and
+  `.artifacts/scenarios/java-openrewrite-dry-run.patch`
+
+# SEMANTIC REFACTORING WITH OPENREWRITE
+
+The Java path includes `rewrite:dry-run` and `rewrite:run` tasks backed by the
+OpenRewrite Gradle plugin. These tasks are **separate from and orthogonal to**
+`task upgrade`.
+
+## rewrite:dry-run vs task upgrade
+
+Use **`task rewrite:dry-run`** when you want to:
+
+- Inspect what OpenRewrite recipes would change in source code
+- Check whether any automated refactoring is available before committing to a
+  source-level change
+- Run a non-destructive report at any point in the workflow without risk of
+  modifying files
+
+`rewrite:dry-run` maps to Gradle's `rewriteDryRun` task. It writes a unified
+diff report under `build/reports/rewrite/rewrite.patch` and prints a summary to
+stdout but does **not** modify any source file. Safe to run at any time.
+
+Use **`task upgrade`** when you want to:
+
+- Update dependency version numbers in `build.gradle.kts`
+- Refresh the dependency lockfile after version changes
+- Run the full lint/test/scan verification loop after version updates
+
+`task upgrade` uses the `use-latest-versions` and `dependencyUpdates` Gradle
+plugins to propose and apply version bumps. It does **not** modify Java source
+code.
+
+## When to use rewrite:run
+
+`rewrite:run` is a **mutating** operation. It modifies Java source files in
+place. Always follow it with `task ci` to verify the build is still green.
+
+If `task ci` fails after `rewrite:run`, revert the source changes and narrow
+the active recipe before re-applying.
+
+If a `rewrite:run` execution modifies `build.gradle.kts` (possible with
+dependency-version or build-file recipes), run `task init` before `task ci`
+to regenerate the dependency lockfile.
+
+## OpenRewrite workflow
+
+```
+task rewrite:dry-run   # inspect proposed changes — safe, non-destructive
+task rewrite:run       # apply changes — MUTATING; follow with task ci
+task ci                # verify build is green after rewrite:run
+```
 
 # OUTPUTS / ARTIFACTS
 

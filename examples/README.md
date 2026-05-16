@@ -14,6 +14,8 @@ by having an agent operate against a prewired workspace.
   published Python and Node image directly for Python work
 - [python-maintenance-example](./python-maintenance-example/README.md): richer
   Python dependency-maintenance fixture
+- [diagram-image-example](./diagram-image-example/README.md): consume the
+  published diagrams image directly for CVE presentation visuals
 - [java-image-example](./java-image-example/README.md): consume the published
   Java image directly for Java work
 - [java-maintenance-example](./java-maintenance-example/README.md): richer Java

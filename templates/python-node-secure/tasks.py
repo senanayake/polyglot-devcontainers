@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -59,14 +60,17 @@ def reset_invalid_venv() -> None:
 
 def in_git_repo() -> bool:
     completed = subprocess.run(
-        ["git", "rev-parse", "--is-inside-work-tree"],
+        ["git", "rev-parse", "--show-toplevel"],
         cwd=ROOT,
         check=False,
         text=True,
-        stdout=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
     )
-    return completed.returncode == 0
+    if completed.returncode != 0:
+        return False
+    git_root = completed.stdout.strip()
+    return bool(git_root) and Path(git_root).resolve() == ROOT.resolve()
 
 
 def git_root() -> Path | None:
@@ -95,12 +99,7 @@ def gitleaks_ignore_args() -> list[str]:
     return []
 
 
-def prepare_gitleaks_dir_fallback() -> Path:
-    scan_root = TMP_DIR / "gitleaks-source-scan"
-    if scan_root.exists():
-        shutil.rmtree(scan_root)
-    scan_root.mkdir(parents=True)
-
+def populate_gitleaks_dir_fallback(scan_root: Path) -> None:
     for source in GITLEAKS_FALLBACK_PATHS:
         if not source.exists():
             continue
@@ -110,8 +109,6 @@ def prepare_gitleaks_dir_fallback() -> Path:
             shutil.copytree(source, destination)
         else:
             shutil.copy2(source, destination)
-
-    return scan_root
 
 
 def write_json_artifact(path: Path, payload: dict[str, object]) -> None:
@@ -148,12 +145,54 @@ def format_code() -> None:
     run(PNPM + ["format"])
 
 
-def test() -> None:
+def run_backend_pytest_suite(*paths: str, marker: str | None = None) -> None:
     reset_invalid_venv()
     if not PYTHON.exists():
         init()
-    run([str(PYTHON), "-m", "pytest", "-q", "-s"])
+
+    command = [str(PYTHON), "-m", "pytest", "-q", "-s"]
+    if marker is not None:
+        command.extend(["-m", marker])
+    command.extend(paths)
+    run(command)
+
+
+def test() -> None:
+    """Full automated test suite."""
+    run_backend_pytest_suite("backend/tests")
     run(PNPM + ["test"])
+
+
+def test_fast() -> None:
+    """Fast feedback suite for inner-loop work."""
+    run_backend_pytest_suite("backend/tests/unit", "backend/tests/property")
+    run(PNPM + ["test:unit"])
+
+
+def test_unit() -> None:
+    """Unit tests only."""
+    run_backend_pytest_suite("backend/tests/unit")
+    run(PNPM + ["test:unit"])
+
+
+def test_integration() -> None:
+    """Live Python integration tests only."""
+    run_backend_pytest_suite("backend/tests/integration", marker="integration")
+
+
+def test_acceptance() -> None:
+    """Executable specification and BDD tests."""
+    run_backend_pytest_suite("backend/tests/acceptance", marker="acceptance")
+
+
+def test_property() -> None:
+    """Property-based tests."""
+    run_backend_pytest_suite("backend/tests/property", marker="property")
+
+
+def test_all() -> None:
+    """Alias for the full suite."""
+    test()
 
 
 def scan() -> None:
@@ -198,35 +237,45 @@ def scan() -> None:
             env=os.environ.copy(),
             stdout=report,
         )
-    if in_git_repo():
-        gitleaks_target = ROOT
-        gitleaks_mode = "git"
-    else:
-        gitleaks_target = prepare_gitleaks_dir_fallback()
-        gitleaks_mode = "dir"
+    fallback_dir: tempfile.TemporaryDirectory[str] | None = None
+    try:
+        if in_git_repo():
+            gitleaks_target = ROOT
+            gitleaks_mode = "git"
+        else:
+            TMP_DIR.mkdir(exist_ok=True)
+            fallback_dir = tempfile.TemporaryDirectory(
+                prefix="gitleaks-source-scan-",
+                dir=str(TMP_DIR.resolve()),
+            )
+            gitleaks_target = Path(fallback_dir.name)
+            populate_gitleaks_dir_fallback(gitleaks_target)
+            gitleaks_mode = "dir"
 
-    write_json_artifact(
-        SCANS_DIR / "gitleaks-mode.json",
-        {
-            "mode": gitleaks_mode,
-            "target": str(gitleaks_target),
-        },
-    )
-
-    run(
-        [
-            "gitleaks",
-            gitleaks_mode,
-            str(gitleaks_target),
-            "--no-banner",
-            "--redact",
-            *gitleaks_ignore_args(),
-            "--report-format",
-            "sarif",
-            "--report-path",
-            str(SCANS_DIR / "gitleaks.sarif"),
-        ]
-    )
+        write_json_artifact(
+            SCANS_DIR / "gitleaks-mode.json",
+            {
+                "mode": gitleaks_mode,
+                "target": str(gitleaks_target),
+            },
+        )
+        run(
+            [
+                "gitleaks",
+                gitleaks_mode,
+                str(gitleaks_target),
+                "--no-banner",
+                "--redact",
+                *gitleaks_ignore_args(),
+                "--report-format",
+                "sarif",
+                "--report-path",
+                str(SCANS_DIR / "gitleaks.sarif"),
+            ]
+        )
+    finally:
+        if fallback_dir is not None:
+            fallback_dir.cleanup()
 
 
 COMMANDS = {
@@ -235,6 +284,12 @@ COMMANDS = {
     "lint": lint,
     "scan": scan,
     "test": test,
+    "test_acceptance": test_acceptance,
+    "test_all": test_all,
+    "test_fast": test_fast,
+    "test_integration": test_integration,
+    "test_property": test_property,
+    "test_unit": test_unit,
 }
 
 

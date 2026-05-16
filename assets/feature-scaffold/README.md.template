@@ -1,0 +1,27 @@
+# __FEATURE_NAME__
+
+`__FEATURE_ID__` is a repository-owned OCI devcontainer feature scaffold.
+
+## Purpose
+
+[REPLACE: describe the user problem this feature solves]
+
+## Installed Behavior
+
+- [REPLACE: primary command or capability]
+- [REPLACE: important option or default]
+- [REPLACE: supported operating assumptions]
+
+## Specification Assets
+
+- `specs/requirements.md` captures requirement ids and acceptance intent
+- `specs/acceptance.feature` captures behavior in Gherkin form
+- `specs/traceability.md` maps requirements to automated checks
+- `test/test.sh` is the executable feature smoke test
+
+## Implementation Notes
+
+- Keep installs deterministic and minimal-footprint.
+- Prefer official packages, maintained upstream binaries, or clearly justified
+  vendor steps.
+- Avoid host-specific assumptions and keep cleanup explicit.

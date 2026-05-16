@@ -1,0 +1,7 @@
+# __FEATURE_NAME__ Traceability
+
+| Requirement ID | Specification Artifact | Automated Check | Notes |
+| --- | --- | --- | --- |
+| FEAT-001 | `specs/acceptance.feature` default-install scenario | `test/test.sh` | Replace with the exact command and assertions. |
+| FEAT-002 | `README.md` | Manual review or docs linting | Keep option names and defaults synchronized. |
+| FEAT-003 | `specs/requirements.md` | Feature scenario matrix | Expand when the feature gains non-default options. |

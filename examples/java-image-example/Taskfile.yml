@@ -27,7 +27,7 @@ tasks:
     cmds:
       - mkdir -p .artifacts/scans
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon testClasses
-      - trivy fs --scanners vuln --format json --output .artifacts/scans/trivy-java.json .
+      - trivy fs --timeout 15m --scanners vuln --format json --output .artifacts/scans/trivy-java.json .
       - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
 
   deps:inventory:
@@ -109,6 +109,18 @@ tasks:
       - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon --write-locks test
       - task lint
       - task scan
+
+  rewrite:dry-run:
+    desc: Report what OpenRewrite would change without modifying source files (safe to run at any time)
+    deps: [_require_maintainer]
+    cmds:
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon rewriteDryRun
+
+  rewrite:run:
+    desc: "MUTATING: Apply OpenRewrite recipes to source files; follow with task ci to verify the build is still green"
+    deps: [_require_maintainer]
+    cmds:
+      - GRADLE_USER_HOME="${GRADLE_USER_HOME:-.gradle}" gradle --no-daemon rewriteRun
 
   ci:
     deps: [_require_maintainer]

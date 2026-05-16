@@ -1,0 +1,8 @@
+{
+  "id": "__FEATURE_ID__",
+  "version": "0.1.0",
+  "name": "__FEATURE_NAME__",
+  "description": "__FEATURE_DESCRIPTION__",
+  "installsAfter": [],
+  "options": {}
+}

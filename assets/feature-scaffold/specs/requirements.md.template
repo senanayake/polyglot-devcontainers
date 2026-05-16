@@ -1,0 +1,7 @@
+# __FEATURE_NAME__ Requirements
+
+| ID | Requirement | Verification | Notes |
+| --- | --- | --- | --- |
+| FEAT-001 | Installing `__FEATURE_ID__` makes `__FEATURE_COMMAND__` available on `PATH`. | `test/test.sh`, `specs/acceptance.feature` | Replace with precise expected behavior. |
+| FEAT-002 | The README documents the supported defaults and options. | Documentation review | Replace with the actual option contract. |
+| FEAT-003 | Installation is deterministic, minimal-footprint, and safe to re-run. | Code review and feature test scenarios | Replace with ecosystem-specific constraints. |

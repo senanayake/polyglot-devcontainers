@@ -1,0 +1,12 @@
+title = "Polyglot Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+targetRules = ["generic-api-key"]
+description = "Allow GitHub CLI signing key fingerprints in the maintainer container build."
+condition = "AND"
+regexTarget = "line"
+paths = ['''^\.devcontainer/Containerfile$''']
+regexes = ['''GH_CLI_KEY_FINGERPRINT_[01]=[0-9A-F]{40}''']

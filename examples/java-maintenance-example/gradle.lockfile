@@ -15,4 +15,4 @@ org.junit:junit-bom:5.13.2=testCompileClasspath
 org.opentest4j:opentest4j:1.3.0=testCompileClasspath
 org.slf4j:slf4j-api:2.0.16=compileClasspath,testCompileClasspath
 org.slf4j:slf4j-simple:2.0.16=compileClasspath,testCompileClasspath
-empty=annotationProcessor,testAnnotationProcessor
+empty=annotationProcessor,rewrite,testAnnotationProcessor

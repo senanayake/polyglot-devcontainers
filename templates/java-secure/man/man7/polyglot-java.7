@@ -40,6 +40,16 @@ do the work
 .IP "4." 3
 run \f[CR]task ci\f[R]
 .PP
+Focused testing workflow:
+.IP "1." 3
+use \f[CR]task test:fast\f[R] for the unit plus property loop
+.IP "2." 3
+use \f[CR]task test:unit\f[R], \f[CR]task test:integration\f[R],
+\f[CR]task test:acceptance\f[R], or \f[CR]task test:property\f[R] when
+you need a specific suite
+.IP "3." 3
+use \f[CR]task test\f[R] as the full automated regression bar
+.PP
 Dependency\-oriented workflow:
 .IP "1." 3
 run \f[CR]task deps:inventory\f[R]
@@ -64,6 +74,67 @@ inspect \f[CR].artifacts/scenarios/java\-gradle\-maintenance.md\f[R]
 treat \f[CR]task upgrade\f[R] in
 \f[CR]examples/java\-maintenance\-example\f[R] as the manual follow\-on
 execution step after reading the evidence
+.IP \(bu 2
+from the repository root, run
+\f[CR]task scenarios:java\-openrewrite\f[R] to validate the
+non\-mutating OpenRewrite proof
+.IP \(bu 2
+inspect \f[CR].artifacts/scenarios/java\-openrewrite\-dry\-run.log\f[R]
+and \f[CR].artifacts/scenarios/java\-openrewrite\-dry\-run.patch\f[R]
+.SH SEMANTIC REFACTORING WITH OPENREWRITE
+The Java path includes \f[CR]rewrite:dry\-run\f[R] and
+\f[CR]rewrite:run\f[R] tasks backed by the OpenRewrite Gradle plugin.
+These tasks are separate from and orthogonal to \f[CR]task upgrade\f[R].
+.SS rewrite:dry-run vs task upgrade
+Use \f[B]task rewrite:dry\-run\f[R] when you want to:
+.IP \(bu 2
+inspect what OpenRewrite recipes would change in source code
+.IP \(bu 2
+check whether any automated refactoring is available before committing
+to a source\-level change
+.IP \(bu 2
+run a non\-destructive report at any point in the workflow without risk
+of modifying files
+.PP
+\f[CR]rewrite:dry\-run\f[R] maps to Gradle\[cq]s \f[CR]rewriteDryRun\f[R]
+task.
+It writes a unified diff report under
+\f[CR]build/reports/rewrite/rewrite.patch\f[R] and
+prints a summary to stdout but does \f[B]not\f[R] modify any source file.
+Safe to run at any time.
+.PP
+Use \f[B]task upgrade\f[R] when you want to:
+.IP \(bu 2
+update dependency version numbers in \f[CR]build.gradle.kts\f[R]
+.IP \(bu 2
+refresh the dependency lockfile after version changes
+.IP \(bu 2
+run the full lint/test/scan verification loop after version updates
+.PP
+\f[CR]task upgrade\f[R] uses the \f[CR]use\-latest\-versions\f[R] and
+\f[CR]dependencyUpdates\f[R] Gradle plugins to propose and apply version
+bumps.
+It does \f[B]not\f[R] modify Java source code.
+.SS When to use rewrite:run
+\f[CR]rewrite:run\f[R] is a \f[B]mutating\f[R] operation.
+It modifies Java source files in place.
+Always follow it with \f[CR]task ci\f[R] to verify the build is still
+green.
+.PP
+If \f[CR]task ci\f[R] fails after \f[CR]rewrite:run\f[R], revert the
+source changes and narrow the active recipe before re\-applying.
+.PP
+If a \f[CR]rewrite:run\f[R] execution modifies \f[CR]build.gradle.kts\f[R]
+(possible with dependency\-version or build\-file recipes), run
+\f[CR]task init\f[R] before \f[CR]task ci\f[R] to regenerate the
+dependency lockfile.
+.SS OpenRewrite workflow
+.IP
+.EX
+task rewrite:dry\-run   # inspect proposed changes \[em] safe, non\-destructive
+task rewrite:run       # apply changes \[em] MUTATING; follow with task ci
+task ci                # verify build is green after rewrite:run
+.EE
 .SH OUTPUTS / ARTIFACTS
 Java paths may write:
 .IP \(bu 2
@@ -100,6 +171,9 @@ Prefer normalized report artifacts when triaging multiple update
 candidates.
 .IP \(bu 2
 Keep the verification loop intact after dependency changes.
+.IP \(bu 2
+Treat \f[CR]task test\f[R] as the full bar and use focused
+\f[CR]task test:*\f[R] helpers for suite\-level diagnostics.
 .SH SEE ALSO
 .IP \(bu 2
 \f[CR]polyglot(7)\f[R]

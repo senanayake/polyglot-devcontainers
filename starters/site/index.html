@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Polyglot Starters</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">Local Starter Generator</p>
+        <h1>Polyglot starter projects, generated from the proven catalog.</h1>
+        <p class="lede">
+          This local UI is a thin client over the starter catalog. It lets you inspect the
+          current starter set, choose a profile, and emit either a source-complete workspace
+          or a published-image bootstrap seed.
+        </p>
+      </section>
+
+      <section class="panel controls">
+        <div class="grid">
+          <label>
+            <span>Starter</span>
+            <select id="starter"></select>
+          </label>
+          <label>
+            <span>Profile</span>
+            <select id="profile"></select>
+          </label>
+          <label>
+            <span>Mode</span>
+            <select id="mode"></select>
+          </label>
+          <label>
+            <span>Output</span>
+            <input id="output" type="text" spellcheck="false" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="generate" type="button">Generate Starter</button>
+          <button id="refresh" type="button" class="secondary">Reload Catalog</button>
+        </div>
+      </section>
+
+      <section class="two-up">
+        <article class="panel">
+          <h2>Selection</h2>
+          <div id="selection-summary" class="summary"></div>
+        </article>
+        <article class="panel">
+          <h2>Result</h2>
+          <pre id="result" class="result">Load the catalog to begin.</pre>
+        </article>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

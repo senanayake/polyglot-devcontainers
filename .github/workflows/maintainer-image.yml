@@ -24,6 +24,7 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
       IMAGE_NAME: polyglot-devcontainers-maintainer
+      POLYGLOT_CONTAINER_RUNTIME: docker
 
     steps:
       - name: Check out repository
@@ -61,20 +62,28 @@ jobs:
       - name: Validate maintainer devcontainer metadata
         run: |
           python3 scripts/validate_devcontainer_metadata.py \
+            --runtime docker \
             --image "${IMAGE_NAME}:ci" \
             --devcontainer-json .devcontainer/devcontainer.json
 
       - name: Smoke test maintainer Dev Containers CLI control path
         env:
           POLYGLOT_MAINTAINER_IMAGE: ${{ env.IMAGE_NAME }}:ci
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 scripts/run_in_maintainer_container.py exec -- python scripts/require_maintainer_container.py
           python3 scripts/run_in_maintainer_container.py git -- status --short --branch
+          python3 scripts/run_in_maintainer_container.py gh -- --version
+          python3 scripts/run_in_maintainer_container.py gh -- auth status
+          python3 scripts/run_in_maintainer_container.py exec -- diagram --help
+
 
       - name: Run maintainer workflow
         run: |
           docker run --rm \
             --privileged \
+            -e POLYGLOT_OCI_RUNTIME=docker \
+            -e POLYGLOT_CONTAINER_RUNTIME=docker \
             -u root \
             -v "${{ github.workspace }}:/workspaces/polyglot-devcontainers" \
             -w /workspaces/polyglot-devcontainers \
@@ -103,7 +112,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v3
+        uses: sigstore/cosign-installer@v4.1.0
 
       - name: Sign maintainer image
         env:
@@ -112,7 +121,7 @@ jobs:
           cosign sign --yes "ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}@${{ steps.push.outputs.digest }}"
 
       - name: Attest maintainer build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.push.outputs.digest }}

@@ -8,15 +8,20 @@ version = "0.1.0"
 description = "Secure Python starter template."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+  "python-jose[cryptography]>=3.4.0",
+]
 
 [project.optional-dependencies]
 dev = [
+  "hypothesis==6.152.2",
   "mypy==1.17.1",
   "pip-audit==2.8.0",
   "pre-commit==4.2.0",
   "pytest==8.4.1",
+  "pytest-bdd==8.1.0",
   "pytest-cov==6.2.1",
+  "pytest-xdist==3.8.0",
   "ruff==0.12.0"
 ]
 
@@ -28,7 +33,13 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=python_secure_template --cov-report=term-missing"
+bdd_features_base_dir = "tests/acceptance/features"
+addopts = ["--strict-markers"]
+markers = [
+  "integration: marks tests that call external resources (deselect with -m 'not integration')",
+  "acceptance: marks executable specification and BDD tests",
+  "property: marks property-based tests",
+]
 
 [tool.ruff]
 line-length = 100

@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PUBLISHED_DOCKERFILES = [
     ROOT / ".devcontainer" / "Containerfile",
     ROOT / "templates" / "java-secure" / ".devcontainer" / "Containerfile",
+    ROOT / "templates" / "diagram-secure" / ".devcontainer" / "Containerfile",
     ROOT / "templates" / "python-node-secure" / ".devcontainer" / "Containerfile",
     ROOT / "templates" / "research-runner" / ".devcontainer" / "Containerfile",
     ROOT / "templates" / "latex" / ".devcontainer" / "Containerfile",

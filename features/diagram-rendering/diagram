@@ -1,0 +1,298 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+FONT_DIR="/usr/local/share/polyglot-devcontainers/fonts"
+
+usage() {
+  cat <<'EOF'
+usage:
+  diagram render --tool d2 --input FILE --output FILE [--format svg] [--layout dagre] [--theme THEME] [--pad N] [--target BOARD] [--manifest FILE] [--sketch]
+  diagram validate --tool d2 --input FILE
+
+supported tools:
+  d2
+  graphviz
+  dot
+EOF
+}
+
+require_value() {
+  local flag="$1"
+  local value="${2:-}"
+  if [[ -z "${value}" ]]; then
+    echo "Missing value for ${flag}" >&2
+    exit 2
+  fi
+}
+
+append_d2_fonts() {
+  local -n cmd_ref=$1
+  local flag=""
+
+  for font_name in regular italic bold semibold mono mono-bold mono-italic mono-semibold; do
+    case "${font_name}" in
+      regular)
+        flag="--font-regular"
+        ;;
+      italic)
+        flag="--font-italic"
+        ;;
+      bold)
+        flag="--font-bold"
+        ;;
+      semibold)
+        flag="--font-semibold"
+        ;;
+      mono)
+        flag="--font-mono"
+        ;;
+      mono-bold)
+        flag="--font-mono-bold"
+        ;;
+      mono-italic)
+        flag="--font-mono-italic"
+        ;;
+      mono-semibold)
+        flag="--font-mono-semibold"
+        ;;
+    esac
+
+    if [[ -f "${FONT_DIR}/${font_name}.ttf" ]]; then
+      cmd_ref+=("${flag}=${FONT_DIR}/${font_name}.ttf")
+    fi
+  done
+}
+
+write_manifest() {
+  local manifest_path="$1"
+  local command_name="$2"
+  local tool="$3"
+  local input_path="$4"
+  local output_path="$5"
+  local format_name="$6"
+  local layout_name="$7"
+  local theme_name="$8"
+  local target_name="$9"
+  local sketch_enabled="${10}"
+
+  mkdir -p "$(dirname "${manifest_path}")"
+  jq -n \
+    --arg command "${command_name}" \
+    --arg tool "${tool}" \
+    --arg input "${input_path}" \
+    --arg output "${output_path}" \
+    --arg format "${format_name}" \
+    --arg layout "${layout_name}" \
+    --arg theme "${theme_name}" \
+    --arg target "${target_name}" \
+    --argjson sketch "${sketch_enabled}" \
+    '{
+      command: $command,
+      tool: $tool,
+      input: $input,
+      output: $output,
+      format: $format,
+      layout: (if $layout == "" then null else $layout end),
+      theme: (if $theme == "" then null else $theme end),
+      target: (if $target == "" then null else $target end),
+      sketch: $sketch,
+      warnings: []
+    }' > "${manifest_path}"
+}
+
+render_command() {
+  local tool="d2"
+  local input_path=""
+  local output_path=""
+  local format_name=""
+  local manifest_path=""
+  local layout_name="dagre"
+  local theme_name=""
+  local pad_size="32"
+  local target_name=""
+  local sketch_enabled=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --tool)
+        require_value "$1" "${2:-}"
+        tool="$2"
+        shift 2
+        ;;
+      --input)
+        require_value "$1" "${2:-}"
+        input_path="$2"
+        shift 2
+        ;;
+      --output)
+        require_value "$1" "${2:-}"
+        output_path="$2"
+        shift 2
+        ;;
+      --format)
+        require_value "$1" "${2:-}"
+        format_name="$2"
+        shift 2
+        ;;
+      --layout)
+        require_value "$1" "${2:-}"
+        layout_name="$2"
+        shift 2
+        ;;
+      --theme)
+        require_value "$1" "${2:-}"
+        theme_name="$2"
+        shift 2
+        ;;
+      --pad)
+        require_value "$1" "${2:-}"
+        pad_size="$2"
+        shift 2
+        ;;
+      --target)
+        require_value "$1" "${2:-}"
+        target_name="$2"
+        shift 2
+        ;;
+      --manifest)
+        require_value "$1" "${2:-}"
+        manifest_path="$2"
+        shift 2
+        ;;
+      --sketch)
+        sketch_enabled=true
+        shift
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        echo "Unknown argument for render: $1" >&2
+        exit 2
+        ;;
+    esac
+  done
+
+  if [[ -z "${input_path}" || -z "${output_path}" ]]; then
+    echo "diagram render requires --input and --output" >&2
+    exit 2
+  fi
+
+  if [[ -z "${format_name}" ]]; then
+    format_name="${output_path##*.}"
+  fi
+
+  mkdir -p "$(dirname "${output_path}")"
+
+  case "${tool}" in
+    d2)
+      cmd=(d2 "--layout=${layout_name}" "--pad=${pad_size}")
+      append_d2_fonts cmd
+
+      if [[ -n "${theme_name}" ]]; then
+        cmd+=("--theme=${theme_name}")
+      fi
+      if [[ -n "${target_name}" ]]; then
+        cmd+=("--target=${target_name}")
+      fi
+      if [[ "${sketch_enabled}" == "true" ]]; then
+        cmd+=("--sketch")
+      fi
+
+      cmd+=("${input_path}" "${output_path}")
+      "${cmd[@]}"
+      ;;
+    graphviz|dot)
+      dot -T"${format_name}" "${input_path}" -o "${output_path}"
+      ;;
+    *)
+      echo "Unsupported render tool: ${tool}" >&2
+      exit 2
+      ;;
+  esac
+
+  if [[ -n "${manifest_path}" ]]; then
+    write_manifest \
+      "${manifest_path}" \
+      "render" \
+      "${tool}" \
+      "${input_path}" \
+      "${output_path}" \
+      "${format_name}" \
+      "${layout_name}" \
+      "${theme_name}" \
+      "${target_name}" \
+      "${sketch_enabled}"
+  fi
+}
+
+validate_command() {
+  local tool="d2"
+  local input_path=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --tool)
+        require_value "$1" "${2:-}"
+        tool="$2"
+        shift 2
+        ;;
+      --input)
+        require_value "$1" "${2:-}"
+        input_path="$2"
+        shift 2
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        echo "Unknown argument for validate: $1" >&2
+        exit 2
+        ;;
+    esac
+  done
+
+  if [[ -z "${input_path}" ]]; then
+    echo "diagram validate requires --input" >&2
+    exit 2
+  fi
+
+  case "${tool}" in
+    d2)
+      d2 validate "${input_path}"
+      ;;
+    graphviz|dot)
+      dot -Tsvg "${input_path}" -o /dev/null
+      ;;
+    *)
+      echo "Unsupported validate tool: ${tool}" >&2
+      exit 2
+      ;;
+  esac
+}
+
+subcommand="${1:-}"
+if [[ -z "${subcommand}" ]]; then
+  usage
+  exit 2
+fi
+shift
+
+case "${subcommand}" in
+  render)
+    render_command "$@"
+    ;;
+  validate)
+    validate_command "$@"
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    echo "Unknown subcommand: ${subcommand}" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

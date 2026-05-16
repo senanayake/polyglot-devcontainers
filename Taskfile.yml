@@ -29,6 +29,12 @@ tasks:
     cmds:
       - python scripts/run_in_maintainer_container.py git -- {{.CLI_ARGS}}
 
+  maintainer:gh:
+    desc: Run gh inside the maintainer devcontainer, e.g. task maintainer:gh -- run view 123456789
+    deps: [maintainer:up]
+    cmds:
+      - python scripts/run_in_maintainer_container.py gh -- {{.CLI_ARGS}}
+
   _require_maintainer:
     internal: true
     cmds:
@@ -38,7 +44,7 @@ tasks:
     internal: true
     cmds:
       - bash scripts/start_docker_daemon.sh
-      - python scripts/require_maintainer_container.py --require-docker
+      - python scripts/require_maintainer_container.py --require-oci-runtime
 
   init:
     desc: Bootstrap the maintained repository environments
@@ -46,11 +52,37 @@ tasks:
     cmds:
       - python examples/python-example/tasks.py init
       - task -t examples/python-image-example/Taskfile.yml init
+      - task -t examples/diagram-image-example/Taskfile.yml init
       - task -t examples/java-image-example/Taskfile.yml init
       - task -t templates/python-secure/Taskfile.yml init
       - task -t templates/node-secure/Taskfile.yml init
+      - task -t templates/diagram-secure/Taskfile.yml init
       - task -t templates/python-node-secure/Taskfile.yml init
       - task -t templates/java-secure/Taskfile.yml init
+
+  init:feature:
+    desc: Scaffold a new repository-owned OCI devcontainer feature
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/scaffold_feature.py {{range .CLI_ARGS_LIST}}{{. | q}} {{end}}
+
+  init-feature:
+    desc: Alias for task init:feature
+    deps: [_require_maintainer]
+    cmds:
+      - task init:feature -- {{.CLI_ARGS}}
+
+  init:adr:
+    desc: Scaffold a new architecture decision record
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/scaffold_adr.py {{range .CLI_ARGS_LIST}}{{. | q}} {{end}}
+
+  init-adr:
+    desc: Alias for task init:adr
+    deps: [_require_maintainer]
+    cmds:
+      - task init:adr -- {{.CLI_ARGS}}
 
   lint:
     desc: Run repository quality checks across maintained environments
@@ -58,9 +90,11 @@ tasks:
     cmds:
       - python examples/python-example/tasks.py lint
       - task -t examples/python-image-example/Taskfile.yml lint
+      - task -t examples/diagram-image-example/Taskfile.yml lint
       - task -t examples/java-image-example/Taskfile.yml lint
       - task -t templates/python-secure/Taskfile.yml lint
       - task -t templates/node-secure/Taskfile.yml lint
+      - task -t templates/diagram-secure/Taskfile.yml lint
       - task -t templates/python-node-secure/Taskfile.yml lint
       - task -t templates/java-secure/Taskfile.yml lint
 
@@ -70,9 +104,11 @@ tasks:
     cmds:
       - python examples/python-example/tasks.py test
       - task -t examples/python-image-example/Taskfile.yml test
+      - task -t examples/diagram-image-example/Taskfile.yml test
       - task -t examples/java-image-example/Taskfile.yml test
       - task -t templates/python-secure/Taskfile.yml test
       - task -t templates/node-secure/Taskfile.yml test
+      - task -t templates/diagram-secure/Taskfile.yml test
       - task -t templates/python-node-secure/Taskfile.yml test
       - task -t templates/java-secure/Taskfile.yml test
 
@@ -83,12 +119,20 @@ tasks:
       - mkdir -p .artifacts/scans
       - python examples/python-example/tasks.py scan
       - task -t examples/python-image-example/Taskfile.yml scan
+      - task -t examples/diagram-image-example/Taskfile.yml scan
       - task -t examples/java-image-example/Taskfile.yml scan
       - task -t templates/python-secure/Taskfile.yml scan
       - task -t templates/node-secure/Taskfile.yml scan
+      - task -t templates/diagram-secure/Taskfile.yml scan
       - task -t templates/python-node-secure/Taskfile.yml scan
       - task -t templates/java-secure/Taskfile.yml scan
       - gitleaks git . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
+
+  check:
+    desc: Read-only compliance check — inspect scan artifacts against the Polyglot contract
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/check.py --workspace .
 
   format:
     desc: Format repository-owned Python and Node template sources
@@ -96,8 +140,10 @@ tasks:
     cmds:
       - python examples/python-example/tasks.py format
       - task -t examples/python-image-example/Taskfile.yml format
+      - task -t examples/diagram-image-example/Taskfile.yml format
       - task -t templates/python-secure/Taskfile.yml format
       - task -t templates/node-secure/Taskfile.yml format
+      - task -t templates/diagram-secure/Taskfile.yml format
       - task -t templates/python-node-secure/Taskfile.yml format
 
   deps:report:
@@ -121,6 +167,96 @@ tasks:
         examples/java-image-example/.artifacts/scans/dependency-report.json
         examples/java-maintenance-example/.artifacts/scans/dependency-report.json
         templates/java-secure/.artifacts/scans/dependency-report.json
+
+  starters:list:
+    desc: List experimental starter catalog entries
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py list
+
+  starters:validate:
+    desc: Validate the experimental starter catalog contract
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py validate
+
+  starters:release:export:
+    desc: Export a released starter catalog snapshot for the hosted public derivative
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py export-release {{.CLI_ARGS}}
+
+  starters:validate:public:
+    desc: Validate the hardened public starter API contract from a released catalog snapshot
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/validate_public_starter_api.py
+
+  starters:show:
+    desc: Show one experimental starter catalog entry as JSON
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py show {{.CLI_ARGS}}
+
+  starters:generate:
+    desc: Generate a source-complete starter from the experimental catalog
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py generate {{.CLI_ARGS}}
+
+  starters:serve:
+    desc: Start the local starter catalog service and minimal web UI on the host
+    cmds:
+      - python scripts/starter_site.py {{.CLI_ARGS}}
+
+  starters:site:start:
+    desc: Start the local starter catalog service and minimal web UI in the background on the host
+    cmds:
+      - python scripts/manage_starter_site.py start {{.CLI_ARGS}}
+
+  starters:site:stop:
+    desc: Stop the managed local starter catalog service on the host
+    cmds:
+      - python scripts/manage_starter_site.py stop {{.CLI_ARGS}}
+
+  starters:site:status:
+    desc: Show the managed local starter catalog service status on the host
+    cmds:
+      - python scripts/manage_starter_site.py status {{.CLI_ARGS}}
+
+  starters:prove:
+    desc: Generate and prove one or more starters from the experimental catalog
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/starter_catalog.py prove {{.CLI_ARGS}}
+
+  starters:verify:source:
+    desc: Validate the starter catalog and prove the source-template starter paths
+    deps: [_require_maintainer]
+    cmds:
+      - task starters:validate
+      - task starters:validate:public
+      - task starters:prove -- --all
+
+  starters:verify:
+    desc: Validate all starter paths, including published-image bootstrap proofs
+    deps: [_require_maintainer]
+    cmds:
+      - task starters:verify:source
+      - task starters:verify:image-backed -- --profile medium
+
+  starters:verify:image-backed:
+    desc: Prove the published-image bootstrap path for selected starter-backed images
+    deps: [_require_image_runtime]
+    cmds:
+      - python scripts/published_image_pipeline.py starter-proof {{.CLI_ARGS}}
+
+  scan:auto:fixtures:
+    desc: Materialize and validate the Python scan:auto fixture matrix
+    deps: [_require_maintainer]
+    cmds:
+      - mkdir -p .artifacts/scans
+      - python scripts/run_python_scan_auto_fixtures.py
 
   scenarios:python-maintenance:
     desc: Run the Python dependency-maintenance scenario and write scenario artifacts
@@ -155,6 +291,13 @@ tasks:
         --json-output .artifacts/scenarios/java-gradle-maintenance.json
         --markdown-output .artifacts/scenarios/java-gradle-maintenance.md
 
+  scenarios:java-openrewrite:
+    desc: Validate the non-mutating OpenRewrite dry-run proof and write scenario artifacts
+    deps: [_require_maintainer]
+    cmds:
+      - mkdir -p .artifacts/scenarios
+      - bash scripts/validate_openrewrite_dry_run.sh
+
   scenarios:podman-devpod-macos:
     desc: Run the Podman+DevPod macOS setup scenario (host-side execution, macOS only)
     cmds:
@@ -175,6 +318,7 @@ tasks:
       - task scenarios:python-maintenance
       - task scenarios:python-audit-policy
       - task scenarios:java-maintenance
+      - task scenarios:java-openrewrite
 
   image:discover:
     desc: Resolve upstream digests for published image base references
@@ -198,159 +342,30 @@ tasks:
         --markdown-output .artifacts/scans/base-image-report.md
         {{.CLI_ARGS}}
 
+  image:list:
+    desc: List published image targets and their default validation lanes
+    deps: [_require_maintainer]
+    cmds:
+      - python scripts/published_image_pipeline.py list
+
   image:build:
-    desc: Build and validate the published images with fresh upstream parents
+    desc: Build one or more published images with optional slow validation steps
     deps: [_require_image_runtime]
     cmds:
-      - mkdir -p .artifacts/images
-      - docker build --pull --file .devcontainer/Containerfile --tag polyglot-devcontainers-maintainer:verify .
-      - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-maintainer:verify --devcontainer-json .devcontainer/devcontainer.json
-      - docker save --output .artifacts/images/maintainer.tar polyglot-devcontainers-maintainer:verify
-      - docker build --pull --file templates/java-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-java:verify .
-      - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-java:verify --devcontainer-json templates/java-secure/.devcontainer/devcontainer.json
-      - docker save --output .artifacts/images/java.tar polyglot-devcontainers-java:verify
-      - docker build --pull --file templates/python-node-secure/.devcontainer/Containerfile --tag polyglot-devcontainers-python-node:verify .
-      - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-python-node:verify --devcontainer-json templates/python-node-secure/.devcontainer/devcontainer.json
-      - docker save --output .artifacts/images/python-node.tar polyglot-devcontainers-python-node:verify
-      - docker build --pull --file templates/research-runner/.devcontainer/Containerfile --tag polyglot-devcontainers-research-runner:verify .
-      - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-research-runner:verify --devcontainer-json templates/research-runner/.devcontainer/devcontainer.json
-      - docker save --output .artifacts/images/research-runner.tar polyglot-devcontainers-research-runner:verify
-      - docker build --pull --file templates/latex/.devcontainer/Containerfile --tag polyglot-devcontainers-latex:verify .
-      - python scripts/validate_devcontainer_metadata.py --image polyglot-devcontainers-latex:verify --devcontainer-json templates/latex/.devcontainer/devcontainer.json
-      - docker save --output .artifacts/images/latex.tar polyglot-devcontainers-latex:verify
+      - python scripts/published_image_pipeline.py build {{.CLI_ARGS}}
 
   image:verify:
-    desc: Check published image pinning, build the published images, and run their validation workflows
+    desc: Run the full-release published-image validation profile across selected targets
     deps: [_require_image_runtime]
     cmds:
       - task image:discover -- --check-pinned
-      - task image:build
-      - bash scripts/smoke_test_published_starter.sh --image polyglot-devcontainers-java:verify
-      - bash scripts/smoke_test_published_starter.sh --image polyglot-devcontainers-python-node:verify --run-scenarios
-      - bash scripts/smoke_test_published_starter.sh --image polyglot-devcontainers-research-runner:verify
-      - bash scripts/smoke_test_published_starter.sh --image polyglot-devcontainers-latex:verify
-      - docker run --rm polyglot-devcontainers-research-runner:verify id -un | grep '^vscode$'
-      - docker run --rm polyglot-devcontainers-latex:verify id -un | grep '^vscode$'
-      - >
-        docker run --rm -u root
-        -v "$(pwd):/workspaces/polyglot-devcontainers"
-        -w /workspaces/polyglot-devcontainers
-        polyglot-devcontainers-maintainer:verify
-        bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
-      - >
-        docker run --rm -u root
-        -v "$(pwd):/workspaces/polyglot-devcontainers"
-        -w /workspaces/polyglot-devcontainers/templates/java-secure
-        polyglot-devcontainers-java:verify
-        bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
-      - >
-        docker run --rm -u root
-        -v "$(pwd):/workspaces/polyglot-devcontainers"
-        -w /workspaces/polyglot-devcontainers/templates/python-node-secure
-        polyglot-devcontainers-python-node:verify
-        bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
-      - >
-        docker run --rm -u root
-        -v "$(pwd):/workspaces/polyglot-devcontainers"
-        -w /workspaces/polyglot-devcontainers/templates/research-runner
-        polyglot-devcontainers-research-runner:verify
-        bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
-      - >
-        docker run --rm -u root
-        -v "$(pwd):/workspaces/polyglot-devcontainers"
-        -w /workspaces/polyglot-devcontainers/templates/latex
-        polyglot-devcontainers-latex:verify
-        bash -lc "git config --global --add safe.directory /workspaces/polyglot-devcontainers && task ci"
+      - python scripts/published_image_pipeline.py build --profile full-release {{.CLI_ARGS}}
 
   image:scan:
-    desc: Scan the locally built published images and write security summaries
+    desc: Scan saved published-image tar artifacts for selected targets
     deps: [_require_image_runtime]
     cmds:
-      - mkdir -p .artifacts/scans/image-security
-      - >
-        trivy image
-        --input .artifacts/images/maintainer.tar
-        --format json
-        --severity HIGH,CRITICAL
-        --ignore-unfixed
-        --vuln-type os,library
-        --output .artifacts/scans/image-security/trivy-maintainer.json
-      - >
-        python scripts/summarize_trivy_report.py
-        --report .artifacts/scans/image-security/trivy-maintainer.json
-        --image-name maintainer
-        --image-ref polyglot-devcontainers-maintainer:verify
-        --json-output .artifacts/scans/image-security/trivy-maintainer-summary.json
-        --markdown-output .artifacts/scans/image-security/trivy-maintainer-summary.md
-      - >
-        trivy image
-        --input .artifacts/images/java.tar
-        --format json
-        --severity HIGH,CRITICAL
-        --ignore-unfixed
-        --vuln-type os,library
-        --output .artifacts/scans/image-security/trivy-java.json
-      - >
-        python scripts/summarize_trivy_report.py
-        --report .artifacts/scans/image-security/trivy-java.json
-        --image-name java
-        --image-ref polyglot-devcontainers-java:verify
-        --json-output .artifacts/scans/image-security/trivy-java-summary.json
-        --markdown-output .artifacts/scans/image-security/trivy-java-summary.md
-      - >
-        trivy image
-        --input .artifacts/images/python-node.tar
-        --format json
-        --severity HIGH,CRITICAL
-        --ignore-unfixed
-        --vuln-type os,library
-        --output .artifacts/scans/image-security/trivy-python-node.json
-      - >
-        python scripts/summarize_trivy_report.py
-        --report .artifacts/scans/image-security/trivy-python-node.json
-        --image-name python-node
-        --image-ref polyglot-devcontainers-python-node:verify
-        --json-output .artifacts/scans/image-security/trivy-python-node-summary.json
-        --markdown-output .artifacts/scans/image-security/trivy-python-node-summary.md
-      - >
-        trivy image
-        --input .artifacts/images/research-runner.tar
-        --format json
-        --severity HIGH,CRITICAL
-        --ignore-unfixed
-        --vuln-type os,library
-        --output .artifacts/scans/image-security/trivy-research-runner.json
-      - >
-        python scripts/summarize_trivy_report.py
-        --report .artifacts/scans/image-security/trivy-research-runner.json
-        --image-name research-runner
-        --image-ref polyglot-devcontainers-research-runner:verify
-        --json-output .artifacts/scans/image-security/trivy-research-runner-summary.json
-        --markdown-output .artifacts/scans/image-security/trivy-research-runner-summary.md
-      - >
-        trivy image
-        --input .artifacts/images/latex.tar
-        --format json
-        --severity HIGH,CRITICAL
-        --ignore-unfixed
-        --vuln-type os,library
-        --output .artifacts/scans/image-security/trivy-latex.json
-      - >
-        python scripts/summarize_trivy_report.py
-        --report .artifacts/scans/image-security/trivy-latex.json
-        --image-name latex
-        --image-ref polyglot-devcontainers-latex:verify
-        --json-output .artifacts/scans/image-security/trivy-latex-summary.json
-        --markdown-output .artifacts/scans/image-security/trivy-latex-summary.md
-      - >
-        python scripts/build_residual_risk_report.py
-        --report maintainer=.artifacts/scans/image-security/trivy-maintainer.json
-        --report java=.artifacts/scans/image-security/trivy-java.json
-        --report python-node=.artifacts/scans/image-security/trivy-python-node.json
-        --report research-runner=.artifacts/scans/image-security/trivy-research-runner.json
-        --report latex=.artifacts/scans/image-security/trivy-latex.json
-        --json-output .artifacts/scans/image-security/residual-risk.json
-        --markdown-output .artifacts/scans/image-security/residual-risk.md
+      - python scripts/published_image_pipeline.py scan {{.CLI_ARGS}}
 
   image:maintain:
     desc: Apply published image base pin updates, then verify and scan the refreshed images
@@ -365,12 +380,41 @@ tasks:
       - task image:verify
       - task image:scan
 
-  ci:
-    desc: Run the full repository workflow across maintained environments
+  ci:repo-core:
+    desc: Run the core repository lane without published-image bootstrap proofs
     deps: [_require_maintainer]
     cmds:
       - task init
       - task lint
       - task test
       - task scan
+      - task scan:auto:fixtures
       - task scenarios:verify
+      - task starters:verify:source
+
+  ci:fast:
+    desc: Deprecated alias for task ci:repo-core
+    deps: [_require_maintainer]
+    cmds:
+      - task ci:repo-core
+
+  ci:medium:
+    desc: Run the default PR lane with medium-profile published-image starter proofs
+    deps: [_require_maintainer]
+    cmds:
+      - task ci:repo-core
+      - task starters:verify:image-backed -- --profile medium
+
+  ci:full-release:
+    desc: Run the full release-validation lane, including all image builds and scans
+    deps: [_require_maintainer]
+    cmds:
+      - task ci:medium
+      - task image:verify
+      - task image:scan
+
+  ci:
+    desc: Run the default free-tier repository workflow
+    deps: [_require_maintainer]
+    cmds:
+      - task ci:medium

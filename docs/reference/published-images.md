@@ -7,6 +7,7 @@ template immediately.
 
 - `ghcr.io/<owner>/polyglot-devcontainers-maintainer`
 - `ghcr.io/<owner>/polyglot-devcontainers-java`
+- `ghcr.io/<owner>/polyglot-devcontainers-diagrams`
 - `ghcr.io/<owner>/polyglot-devcontainers-python-node`
 - `ghcr.io/<owner>/polyglot-devcontainers-research-runner`
 - `ghcr.io/<owner>/polyglot-devcontainers-latex`
@@ -16,6 +17,16 @@ same environment that CI validates. It is intentionally broader than the
 starter images and is not part of the recommended downstream starter catalog.
 The research runner and LaTeX images are focused workflow images for
 reproducible experiment execution and paper builds.
+
+## Release note routing
+
+Release notes link each published image to its package page plus the relevant
+starter templates and examples.
+
+That mapping is maintained in `published-image-catalog.toml`.
+
+When a published image is added, renamed, or repurposed, update the catalog in
+the same change so release notes stay aligned with the repository surface.
 
 ## Tag policy
 
