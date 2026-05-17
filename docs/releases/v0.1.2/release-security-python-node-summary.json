@@ -1,0 +1,82 @@
+{
+  "image_name": "python-node",
+  "image_ref": "ghcr.io/senanayake/polyglot-devcontainers-python-node@sha256:76d6f85baf889012add0feef6dba7ad1237e574f3f6b2f1dfda512d028d4f881",
+  "critical": 1,
+  "high": 43,
+  "medium": 0,
+  "low": 0,
+  "fixable": 44,
+  "unfixed": 0,
+  "total": 44,
+  "by_type": {
+    "gobinary": {
+      "total": 17,
+      "critical": 1,
+      "high": 16,
+      "fixable": 17
+    },
+    "node-pkg": {
+      "total": 14,
+      "critical": 0,
+      "high": 14,
+      "fixable": 14
+    },
+    "python-pkg": {
+      "total": 13,
+      "critical": 0,
+      "high": 13,
+      "fixable": 13
+    }
+  },
+  "top_packages": [
+    [
+      "stdlib",
+      17
+    ],
+    [
+      "tar",
+      6
+    ],
+    [
+      "GitPython",
+      5
+    ],
+    [
+      "jaraco.context",
+      3
+    ],
+    [
+      "minimatch",
+      3
+    ],
+    [
+      "pnpm",
+      3
+    ],
+    [
+      "wheel",
+      3
+    ],
+    [
+      "black",
+      1
+    ],
+    [
+      "glob",
+      1
+    ],
+    [
+      "picomatch",
+      1
+    ]
+  ],
+  "critical_rows": [
+    {
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "type": "gobinary"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "image_name": "diagrams",
+  "image_ref": "ghcr.io/senanayake/polyglot-devcontainers-diagrams@sha256:174f1e36aa8cb51da87ef961172a6ce8033b2ee58c4fd1eb8f437f7f949e08a9",
+  "critical": 2,
+  "high": 30,
+  "medium": 0,
+  "low": 0,
+  "fixable": 32,
+  "unfixed": 0,
+  "total": 32,
+  "by_type": {
+    "gobinary": {
+      "total": 32,
+      "critical": 2,
+      "high": 30,
+      "fixable": 32
+    }
+  },
+  "top_packages": [
+    [
+      "stdlib",
+      31
+    ],
+    [
+      "github.com/go-jose/go-jose/v3",
+      1
+    ]
+  ],
+  "critical_rows": [
+    {
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.6",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "type": "gobinary"
+    },
+    {
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "type": "gobinary"
+    }
+  ]
+}

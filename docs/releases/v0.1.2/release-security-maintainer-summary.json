@@ -1,0 +1,95 @@
+{
+  "image_name": "maintainer",
+  "image_ref": "ghcr.io/senanayake/polyglot-devcontainers-maintainer@sha256:524c91ea5b1fce99dbbed881fc7eadc98190ef789a22a0fca810f74ab4d226a4",
+  "critical": 2,
+  "high": 72,
+  "medium": 0,
+  "low": 0,
+  "fixable": 74,
+  "unfixed": 0,
+  "total": 74,
+  "by_type": {
+    "gobinary": {
+      "total": 44,
+      "critical": 2,
+      "high": 42,
+      "fixable": 44
+    },
+    "jar": {
+      "total": 3,
+      "critical": 0,
+      "high": 3,
+      "fixable": 3
+    },
+    "node-pkg": {
+      "total": 14,
+      "critical": 0,
+      "high": 14,
+      "fixable": 14
+    },
+    "python-pkg": {
+      "total": 13,
+      "critical": 0,
+      "high": 13,
+      "fixable": 13
+    }
+  },
+  "top_packages": [
+    [
+      "stdlib",
+      41
+    ],
+    [
+      "tar",
+      6
+    ],
+    [
+      "GitPython",
+      5
+    ],
+    [
+      "jaraco.context",
+      3
+    ],
+    [
+      "minimatch",
+      3
+    ],
+    [
+      "pnpm",
+      3
+    ],
+    [
+      "wheel",
+      3
+    ],
+    [
+      "black",
+      1
+    ],
+    [
+      "github.com/go-git/go-billy/v5",
+      1
+    ],
+    [
+      "github.com/go-git/go-git/v5",
+      1
+    ]
+  ],
+  "critical_rows": [
+    {
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.6",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "type": "gobinary"
+    },
+    {
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "type": "gobinary"
+    }
+  ]
+}

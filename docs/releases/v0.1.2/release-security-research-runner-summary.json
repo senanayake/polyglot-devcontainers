@@ -1,0 +1,88 @@
+{
+  "image_name": "research-runner",
+  "image_ref": "ghcr.io/senanayake/polyglot-devcontainers-research-runner@sha256:3cbfbed6dd91dfeddbcfa22fc0a425857f6b7daee68992442623a83dbc49cb20",
+  "critical": 1,
+  "high": 71,
+  "medium": 0,
+  "low": 0,
+  "fixable": 72,
+  "unfixed": 0,
+  "total": 72,
+  "by_type": {
+    "debian": {
+      "total": 28,
+      "critical": 0,
+      "high": 28,
+      "fixable": 28
+    },
+    "gobinary": {
+      "total": 17,
+      "critical": 1,
+      "high": 16,
+      "fixable": 17
+    },
+    "node-pkg": {
+      "total": 14,
+      "critical": 0,
+      "high": 14,
+      "fixable": 14
+    },
+    "python-pkg": {
+      "total": 13,
+      "critical": 0,
+      "high": 13,
+      "fixable": 13
+    }
+  },
+  "top_packages": [
+    [
+      "stdlib",
+      17
+    ],
+    [
+      "tar",
+      6
+    ],
+    [
+      "GitPython",
+      5
+    ],
+    [
+      "jaraco.context",
+      3
+    ],
+    [
+      "libpython3.11-minimal",
+      3
+    ],
+    [
+      "libpython3.11-stdlib",
+      3
+    ],
+    [
+      "minimatch",
+      3
+    ],
+    [
+      "openssh-client",
+      3
+    ],
+    [
+      "pnpm",
+      3
+    ],
+    [
+      "python3.11",
+      3
+    ]
+  ],
+  "critical_rows": [
+    {
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "type": "gobinary"
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "critical_count": 9,
+  "classification_counts": {
+    "upstream_residual": 9
+  },
+  "residuals": [
+    {
+      "image_name": "diagrams",
+      "target": "usr/local/bin/d2",
+      "type": "gobinary",
+      "classification": "upstream_residual",
+      "action": "wait_for_upstream_release",
+      "upstream_release_source": "terrastruct/d2",
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.6",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "rationale": "Latest upstream-supported release is in use for this managed binary; track the finding and wait for the vendor to publish a refreshed release."
+    },
+    {
+      "image_name": "diagrams",
+      "target": "usr/local/bin/gitleaks",
+      "type": "gobinary",
+      "classification": "upstream_residual",
+      "action": "wait_for_upstream_release",
+      "upstream_release_source": "gitleaks/gitleaks",
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "rationale": "Latest upstream-supported release is in use for this managed binary; track the finding and wait for the vendor to publish a refreshed release."
+    },
+    {
+      "image_name": "java",
+      "target": "usr/local/bin/gitleaks",
+      "type": "gobinary",
+      "classification": "upstream_residual",
+      "action": "wait_for_upstream_release",
+      "upstream_release_source": "gitleaks/gitleaks",
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "rationale": "Latest upstream-supported release is in use for this managed binary; track the finding and wait for the vendor to publish a refreshed release."
+    },
+    {
+      "image_name": "latex",
+      "target": "usr/local/bin/gitleaks",
+      "type": "gobinary",
+      "classification": "upstream_residual",
+      "action": "wait_for_upstream_release",
+      "upstream_release_source": "gitleaks/gitleaks",
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "rationale": "Latest upstream-supported release is in use for this managed binary; track the finding and wait for the vendor to publish a refreshed release."
+    },
+    {
+      "image_name": "latex",
+      "target": "usr/local/libexec/polyglot-devcontainers/task-real",
+      "type": "gobinary",
+      "classification": "upstream_residual",
+      "action": "wait_for_upstream_release",
+      "upstream_release_source": "go-task/task",
+      "vulnerability_id": "CVE-2026-33186",
+      "package_name": "google.golang.org/grpc",
+      "installed_version": "v1.76.0",
+      "fixed_version": "1.79.3",
+      "rationale": "Latest upstream-supported release is in use for this managed binary; track the finding and wait for the vendor to publish a refreshed release."
+    },
+    {
+      "image_name": "maintainer",
+      "target": "usr/local/bin/d2",
+      "type": "gobinary",
+      "classification": "upstream_residual",
+      "action": "wait_for_upstream_release",
+      "upstream_release_source": "terrastruct/d2",
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.6",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "rationale": "Latest upstream-supported release is in use for this managed binary; track the finding and wait for the vendor to publish a refreshed release."
+    },
+    {
+      "image_name": "maintainer",
+      "target": "usr/local/bin/gitleaks",
+      "type": "gobinary",
+      "classification": "upstream_residual",
+      "action": "wait_for_upstream_release",
+      "upstream_release_source": "gitleaks/gitleaks",
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "rationale": "Latest upstream-supported release is in use for this managed binary; track the finding and wait for the vendor to publish a refreshed release."
+    },
+    {
+      "image_name": "python-node",
+      "target": "usr/local/bin/gitleaks",
+      "type": "gobinary",
+      "classification": "upstream_residual",
+      "action": "wait_for_upstream_release",
+      "upstream_release_source": "gitleaks/gitleaks",
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "rationale": "Latest upstream-supported release is in use for this managed binary; track the finding and wait for the vendor to publish a refreshed release."
+    },
+    {
+      "image_name": "research-runner",
+      "target": "usr/local/bin/gitleaks",
+      "type": "gobinary",
+      "classification": "upstream_residual",
+      "action": "wait_for_upstream_release",
+      "upstream_release_source": "gitleaks/gitleaks",
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "rationale": "Latest upstream-supported release is in use for this managed binary; track the finding and wait for the vendor to publish a refreshed release."
+    }
+  ]
+}

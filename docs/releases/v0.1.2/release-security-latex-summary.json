@@ -1,0 +1,61 @@
+{
+  "image_name": "latex",
+  "image_ref": "ghcr.io/senanayake/polyglot-devcontainers-latex@sha256:8a46471ffd1fb2acbb703ea1d791e05cc236ef2e393b5519e29f58e8cbd335a7",
+  "critical": 2,
+  "high": 24,
+  "medium": 0,
+  "low": 0,
+  "fixable": 26,
+  "unfixed": 0,
+  "total": 26,
+  "by_type": {
+    "gobinary": {
+      "total": 26,
+      "critical": 2,
+      "high": 24,
+      "fixable": 26
+    }
+  },
+  "top_packages": [
+    [
+      "stdlib",
+      21
+    ],
+    [
+      "github.com/go-jose/go-jose/v4",
+      1
+    ],
+    [
+      "github.com/hashicorp/go-getter",
+      1
+    ],
+    [
+      "go.opentelemetry.io/otel",
+      1
+    ],
+    [
+      "go.opentelemetry.io/otel/sdk",
+      1
+    ],
+    [
+      "google.golang.org/grpc",
+      1
+    ]
+  ],
+  "critical_rows": [
+    {
+      "vulnerability_id": "CVE-2026-33186",
+      "package_name": "google.golang.org/grpc",
+      "installed_version": "v1.76.0",
+      "fixed_version": "1.79.3",
+      "type": "gobinary"
+    },
+    {
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "type": "gobinary"
+    }
+  ]
+}

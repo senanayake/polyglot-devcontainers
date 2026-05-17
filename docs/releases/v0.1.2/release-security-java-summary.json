@@ -1,0 +1,60 @@
+{
+  "image_name": "java",
+  "image_ref": "ghcr.io/senanayake/polyglot-devcontainers-java@sha256:691673ddf3d74d119a62620529e143d4cd4293de2b6fc563e1d07a8a4701fc85",
+  "critical": 1,
+  "high": 26,
+  "medium": 0,
+  "low": 0,
+  "fixable": 27,
+  "unfixed": 0,
+  "total": 27,
+  "by_type": {
+    "gobinary": {
+      "total": 24,
+      "critical": 1,
+      "high": 23,
+      "fixable": 24
+    },
+    "jar": {
+      "total": 3,
+      "critical": 0,
+      "high": 3,
+      "fixable": 3
+    }
+  },
+  "top_packages": [
+    [
+      "stdlib",
+      22
+    ],
+    [
+      "github.com/go-git/go-billy/v5",
+      1
+    ],
+    [
+      "github.com/go-git/go-git/v5",
+      1
+    ],
+    [
+      "org.bouncycastle:bcpg-jdk18on",
+      1
+    ],
+    [
+      "org.bouncycastle:bcprov-jdk18on",
+      1
+    ],
+    [
+      "org.codehaus.plexus:plexus-utils",
+      1
+    ]
+  ],
+  "critical_rows": [
+    {
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "type": "gobinary"
+    }
+  ]
+}
