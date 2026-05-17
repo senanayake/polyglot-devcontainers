@@ -16,6 +16,7 @@ import argparse
 import json
 import re
 import sys
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -164,6 +165,81 @@ def check_contract(workspace: Path) -> CheckResult:
     return CheckResult("Contract", PASS, _rel(path, workspace))
 
 
+def _published_image_artifact_names(catalog_path: Path) -> list[str]:
+    payload = tomllib.loads(catalog_path.read_text(encoding="utf-8"))
+    images = payload.get("images")
+    if payload.get("catalog_version") != 1 or not isinstance(images, dict):
+        return []
+
+    artifact_names: list[str] = []
+    for entry in images.values():
+        if not isinstance(entry, dict):
+            continue
+        artifact_name = entry.get("artifact_name")
+        if isinstance(artifact_name, str) and artifact_name:
+            artifact_names.append(artifact_name)
+    return sorted(set(artifact_names))
+
+
+def check_release_workflow_catalog_coverage(workspace: Path) -> CheckResult:
+    catalog_path = workspace / "published-image-catalog.toml"
+    workflow_path = workspace / ".github" / "workflows" / "release-images.yml"
+    if not catalog_path.exists() or not workflow_path.exists():
+        return CheckResult("Release image notes", SKIP, "no release image catalog/workflow")
+
+    artifact_names = _published_image_artifact_names(catalog_path)
+    if not artifact_names:
+        return CheckResult("Release image notes", FAIL, "published image catalog has no artifact names")
+
+    workflow_text = workflow_path.read_text(encoding="utf-8")
+    required_dynamic_fragments = [
+        "scripts/build_residual_risk_report.py",
+        "scripts/build_release_security_summary.py",
+        "scripts/published_image_pipeline.py stage-release-security-assets",
+    ]
+    missing_fragments = [
+        fragment for fragment in required_dynamic_fragments if fragment not in workflow_text
+    ]
+    if workflow_text.count("scripts/published_image_pipeline.py release-security-args") < 3:
+        missing_fragments.append("three release-security-args invocations")
+    if missing_fragments:
+        return CheckResult(
+            "Release image notes",
+            FAIL,
+            f"release workflow is not catalog-driven: {', '.join(missing_fragments)}",
+            _rel(workflow_path, workspace),
+        )
+
+    hard_coded_patterns = [
+        pattern
+        for artifact_name in artifact_names
+        for pattern in (
+            f"--report {artifact_name}=",
+            f"--summary {artifact_name}=",
+            f"trivy-{artifact_name}-summary.",
+            f"sbom-{artifact_name}.spdx.json",
+            f"release-security-{artifact_name}-summary.",
+            f"release-security-{artifact_name}-sbom.spdx.json",
+        )
+        if pattern in workflow_text
+    ]
+    if hard_coded_patterns:
+        return CheckResult(
+            "Release image notes",
+            FAIL,
+            "release workflow hard-codes catalog artifacts: "
+            + ", ".join(hard_coded_patterns[:5]),
+            _rel(workflow_path, workspace),
+        )
+
+    return CheckResult(
+        "Release image notes",
+        PASS,
+        f"release security aggregation is catalog-driven for {len(artifact_names)} image artifacts",
+        _rel(workflow_path, workspace),
+    )
+
+
 def _overall(results: list[CheckResult]) -> str:
     rank = max(_RANK[r.status] for r in results)
     return (PASS, WARN, FAIL)[rank]
@@ -210,6 +286,7 @@ def main() -> int:
         check_secret_scan(workspace),
         check_vuln_scan(workspace),
         check_contract(workspace),
+        check_release_workflow_catalog_coverage(workspace),
     ]
 
     overall = _overall(results)
