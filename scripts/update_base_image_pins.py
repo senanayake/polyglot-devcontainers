@@ -8,6 +8,7 @@ import json
 import re
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,6 +21,8 @@ PUBLISHED_DOCKERFILES = [
     ROOT / "templates" / "java-secure" / ".devcontainer" / "Containerfile",
     ROOT / "templates" / "diagram-secure" / ".devcontainer" / "Containerfile",
     ROOT / "templates" / "python-node-secure" / ".devcontainer" / "Containerfile",
+    ROOT / "templates" / "research-runner" / ".devcontainer" / "Containerfile",
+    ROOT / "templates" / "latex" / ".devcontainer" / "Containerfile",
 ]
 MANIFEST_ACCEPT = ", ".join(
     [
@@ -68,10 +71,18 @@ def parse_image_reference(reference: str) -> ImageReference:
 def split_registry_and_repository(reference: str) -> tuple[str, str]:
     first, _, rest = reference.partition("/")
     if not rest:
-        return "docker.io", reference
+        return "docker.io", normalize_docker_hub_repository(reference)
     if "." in first or ":" in first or first == "localhost":
+        if first == "docker.io":
+            return first, normalize_docker_hub_repository(rest)
         return first, rest
-    return "docker.io", reference
+    return "docker.io", normalize_docker_hub_repository(reference)
+
+
+def normalize_docker_hub_repository(repository: str) -> str:
+    if "/" in repository:
+        return repository
+    return f"library/{repository}"
 
 
 def split_repository_and_tag(reference: str) -> tuple[str, str]:
@@ -82,17 +93,83 @@ def split_repository_and_tag(reference: str) -> tuple[str, str]:
     return reference, "latest"
 
 
-def resolve_digest(reference: ImageReference) -> str:
-    url = f"https://{reference.registry}/v2/{reference.repository}/manifests/{reference.tag}"
+def registry_api_host(registry: str) -> str:
+    if registry == "docker.io":
+        return "registry-1.docker.io"
+    return registry
+
+
+def parse_www_authenticate(header: str) -> dict[str, str]:
+    scheme, _, param_text = header.partition(" ")
+    if scheme.lower() != "bearer":
+        return {}
+
+    params: dict[str, str] = {}
+    for part in re.split(r",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", param_text):
+        key, separator, value = part.strip().partition("=")
+        if not separator:
+            continue
+        params[key] = value.strip().strip('"')
+    return params
+
+
+def fetch_bearer_token(params: dict[str, str]) -> str:
+    realm = params.get("realm")
+    if not realm:
+        raise SystemExit("registry requested bearer auth without a token realm")
+
+    query = {
+        key: value
+        for key, value in {
+            "service": params.get("service"),
+            "scope": params.get("scope"),
+        }.items()
+        if value
+    }
+    url = realm
+    if query:
+        url = f"{realm}?{urllib.parse.urlencode(query)}"
+
+    request = urllib.request.Request(
+        url,
+        headers={"Accept": "application/json", "User-Agent": "polyglot-devcontainers"},
+    )
+    with urllib.request.urlopen(request) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    token = payload.get("token") or payload.get("access_token")
+    if not token:
+        raise SystemExit(f"registry token response did not include a token: {realm}")
+    return str(token)
+
+
+def manifest_digest_request(reference: ImageReference, token: str | None = None) -> urllib.request.Request:
+    host = registry_api_host(reference.registry)
+    url = f"https://{host}/v2/{reference.repository}/manifests/{reference.tag}"
+    headers = {"Accept": MANIFEST_ACCEPT, "User-Agent": "polyglot-devcontainers"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     request = urllib.request.Request(
         url,
         method="HEAD",
-        headers={"Accept": MANIFEST_ACCEPT, "User-Agent": "polyglot-devcontainers"},
+        headers=headers,
     )
+    return request
+
+
+def resolve_digest(reference: ImageReference) -> str:
+    request = manifest_digest_request(reference)
     try:
         with urllib.request.urlopen(request) as response:
             digest = response.headers.get("Docker-Content-Digest")
     except urllib.error.HTTPError as exc:
+        if exc.code == 401:
+            params = parse_www_authenticate(exc.headers.get("WWW-Authenticate", ""))
+            token = fetch_bearer_token(params)
+            with urllib.request.urlopen(manifest_digest_request(reference, token)) as response:
+                digest = response.headers.get("Docker-Content-Digest")
+            if digest:
+                return digest
         raise SystemExit(
             f"failed to resolve digest for {reference.image_without_digest}: "
             f"{exc.code} {exc.reason}"

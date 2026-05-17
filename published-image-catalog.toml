@@ -46,6 +46,27 @@ docs = [
   { label = "Use the Published Java Image", path = "docs/how-to/use-the-published-java-image.md" },
 ]
 
+[images."polyglot-devcontainers-latex"]
+target_id = "latex"
+description = "LaTeX document build container for reproducible academic paper workflows."
+context = "."
+dockerfile = "templates/latex/.devcontainer/Containerfile"
+devcontainer_json = "templates/latex/.devcontainer/devcontainer.json"
+workdir = "/workspaces/polyglot-devcontainers/templates/latex"
+verify_tag = "polyglot-devcontainers-latex:verify"
+artifact_name = "latex"
+medium_lane = true
+smoke_test = true
+smoke_test_run_scenarios = false
+starter_proofs = []
+templates = [
+  { label = "latex", path = "templates/latex/README.md" },
+]
+examples = []
+docs = [
+  { label = "Polyglot LaTeX Image", path = "docs/core/polyglot-latex.md" },
+]
+
 [images."polyglot-devcontainers-diagrams"]
 target_id = "diagrams"
 description = "D2-first diagram rendering container for presentation-quality software portfolio visuals."
@@ -92,3 +113,24 @@ examples = [
   { label = "python-maintenance-example", path = "examples/python-maintenance-example/README.md" },
 ]
 docs = []
+
+[images."polyglot-devcontainers-research-runner"]
+target_id = "research-runner"
+description = "Python and Node research execution container for LLM-assisted software engineering experiments."
+context = "."
+dockerfile = "templates/research-runner/.devcontainer/Containerfile"
+devcontainer_json = "templates/research-runner/.devcontainer/devcontainer.json"
+workdir = "/workspaces/polyglot-devcontainers/templates/research-runner"
+verify_tag = "polyglot-devcontainers-research-runner:verify"
+artifact_name = "research-runner"
+medium_lane = true
+smoke_test = true
+smoke_test_run_scenarios = false
+starter_proofs = []
+templates = [
+  { label = "research-runner", path = "templates/research-runner/README.md" },
+]
+examples = []
+docs = [
+  { label = "Polyglot Research Runner Image", path = "docs/core/polyglot-research.md" },
+]

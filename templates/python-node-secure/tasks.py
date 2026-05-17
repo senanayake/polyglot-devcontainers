@@ -73,6 +73,32 @@ def in_git_repo() -> bool:
     return bool(git_root) and Path(git_root).resolve() == ROOT.resolve()
 
 
+def git_root() -> Path | None:
+    completed = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=ROOT,
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    if completed.returncode != 0:
+        return None
+    return Path(completed.stdout.strip())
+
+
+def gitleaks_ignore_args() -> list[str]:
+    candidates = []
+    root = git_root()
+    if root is not None:
+        candidates.append(root / ".gitleaksignore")
+    candidates.append(ROOT / ".gitleaksignore")
+
+    for candidate in candidates:
+        if candidate.exists():
+            return ["--gitleaks-ignore-path", str(candidate)]
+    return []
+
+
 def populate_gitleaks_dir_fallback(scan_root: Path) -> None:
     for source in GITLEAKS_FALLBACK_PATHS:
         if not source.exists():
@@ -240,6 +266,7 @@ def scan() -> None:
                 str(gitleaks_target),
                 "--no-banner",
                 "--redact",
+                *gitleaks_ignore_args(),
                 "--report-format",
                 "sarif",
                 "--report-path",

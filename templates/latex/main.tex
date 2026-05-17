@@ -1,0 +1,64 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{balance}
+\usepackage{tikz}
+\usepackage{makecell}
+\usetikzlibrary{positioning,shapes.geometric,arrows.meta,fit,backgrounds,calc}
+
+\begin{document}
+
+\title{Minimal Reproducible IEEE Paper}
+
+\author{\IEEEauthorblockN{Polyglot Devcontainers}
+\IEEEauthorblockA{\textit{Runtime Verification Template}\\
+example@example.com}}
+
+\maketitle
+
+\begin{abstract}
+This minimal document verifies the LaTeX image package set.
+\end{abstract}
+
+\section{Introduction}
+\input{sections/introduction}
+
+\begin{table}[h]
+\centering
+\caption{Package Smoke Test}
+\begin{tabular}{ll}
+\toprule
+Feature & Status \\
+\midrule
+IEEEtran & available \\
+TikZ & available \\
+\makecell{Multi-line\\cell} & available \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=1.5cm]
+  \node[draw, rounded corners] (source) {Source};
+  \node[draw, rounded corners, right=of source] (pdf) {PDF};
+  \draw[-{Latex}] (source) -- (pdf);
+\end{tikzpicture}
+\caption{TikZ smoke test}
+\end{figure}
+
+The bibliography path is verified with a citation \cite{example}.
+
+\balance
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

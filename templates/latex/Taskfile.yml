@@ -1,0 +1,60 @@
+version: "3"
+
+vars:
+  MAIN: main.tex
+  PDF: main.pdf
+
+tasks:
+  init:
+    desc: Validate the LaTeX toolchain
+    cmds:
+      - pdflatex --version
+      - bibtex --version
+      - latexmk --version
+      - kpsewhich IEEEtran.cls
+      - kpsewhich tikz.sty
+      - kpsewhich booktabs.sty
+      - chktex --version
+      - texcount -version
+
+  build:
+    desc: Compile the paper to PDF
+    cmds:
+      - latexmk -pdf -interaction=nonstopmode {{.MAIN}}
+
+  clean:
+    desc: Remove generated LaTeX files
+    cmds:
+      - latexmk -C
+
+  lint:
+    desc: Run lightweight LaTeX lint checks
+    cmds:
+      - chktex -q {{.MAIN}} || true
+
+  wordcount:
+    desc: Count document words
+    cmds:
+      - texcount -inc {{.MAIN}}
+
+  test:
+    desc: Build and verify PDF output
+    cmds:
+      - task: build
+      - test -f {{.PDF}}
+      - pdfinfo {{.PDF}}
+      - man polyglot-latex >/dev/null
+
+  scan:
+    desc: Run the repository secret scan
+    cmds:
+      - mkdir -p .artifacts/scans
+      - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
+
+  ci:
+    desc: Full LaTeX validation
+    cmds:
+      - task init
+      - task lint
+      - task test
+      - task scan

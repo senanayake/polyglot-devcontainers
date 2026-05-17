@@ -120,6 +120,8 @@ Choose a starter from [templates](./templates/README.md):
 - [python-node-secure](./templates/python-node-secure/README.md)
 - [diagram-secure](./templates/diagram-secure/README.md)
 - [java-secure](./templates/java-secure/README.md)
+- [research-runner](./templates/research-runner/README.md)
+- [latex](./templates/latex/README.md)
 
 Open the copied starter in a devcontainer, then run `task ci`.
 
@@ -199,9 +201,12 @@ Current published images:
 - [`ghcr.io/senanayake/polyglot-devcontainers-java`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-java)
 - [`ghcr.io/senanayake/polyglot-devcontainers-diagrams`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-diagrams)
 - [`ghcr.io/senanayake/polyglot-devcontainers-python-node`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-python-node)
+- [`ghcr.io/senanayake/polyglot-devcontainers-research-runner`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-research-runner)
+- [`ghcr.io/senanayake/polyglot-devcontainers-latex`](https://github.com/senanayake/polyglot-devcontainers/pkgs/container/polyglot-devcontainers-latex)
 
 The maintainer image is for working on this repository and preserving CI parity.
-The starter images are the recommended downstream base images.
+The focused starter and workflow images are the recommended downstream base
+images.
 
 ## Using Polyglot Images Downstream
 
