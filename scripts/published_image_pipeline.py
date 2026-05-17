@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -80,6 +81,16 @@ def parse_args() -> argparse.Namespace:
     scan_parser = subparsers.add_parser("scan")
     scan_parser.add_argument("--profile", choices=SUPPORTED_PROFILES, default="full-release")
     scan_parser.add_argument("--image", action="append", default=[])
+
+    release_args_parser = subparsers.add_parser("release-security-args")
+    release_args_parser.add_argument("--kind", choices=("report", "summary"), required=True)
+    release_args_parser.add_argument("--source-dir", type=Path, required=True)
+    release_args_parser.add_argument("--path-template", required=True)
+    release_args_parser.add_argument("--require-existing", action="store_true")
+
+    stage_release_parser = subparsers.add_parser("stage-release-security-assets")
+    stage_release_parser.add_argument("--source-dir", type=Path, required=True)
+    stage_release_parser.add_argument("--output-dir", type=Path, required=True)
 
     return parser.parse_args()
 
@@ -447,6 +458,67 @@ def run_scan(targets: list[ImageTarget]) -> None:
     )
 
 
+def release_security_artifact_path(
+    source_dir: Path,
+    path_template: str,
+    target: ImageTarget,
+) -> Path:
+    return source_dir / path_template.format(
+        artifact=target.artifact_name,
+        package=target.package_name,
+        target=target.target_id,
+    )
+
+
+def handle_release_security_args(args: argparse.Namespace) -> int:
+    option = "--report" if args.kind == "report" else "--summary"
+    for target in resolve_targets([], "full-release"):
+        path = release_security_artifact_path(args.source_dir, args.path_template, target)
+        if args.require_existing and not path.exists():
+            raise SystemExit(f"missing {args.kind} artifact for {target.target_id}: {path}")
+        print(option)
+        print(f"{target.artifact_name}={path.as_posix()}")
+    return 0
+
+
+def copy_release_asset(source: Path, destination: Path) -> None:
+    if not source.exists():
+        raise SystemExit(f"missing release security asset: {source}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, destination)
+
+
+def handle_stage_release_security_assets(args: argparse.Namespace) -> int:
+    if args.output_dir.exists():
+        shutil.rmtree(args.output_dir)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+
+    for target in resolve_targets([], "full-release"):
+        artifact_name = target.artifact_name
+        copy_release_asset(
+            args.source_dir / f"trivy-{artifact_name}-summary.md",
+            args.output_dir / f"release-security-{artifact_name}-summary.md",
+        )
+        copy_release_asset(
+            args.source_dir / f"trivy-{artifact_name}-summary.json",
+            args.output_dir / f"release-security-{artifact_name}-summary.json",
+        )
+        copy_release_asset(
+            args.source_dir / f"sbom-{artifact_name}.spdx.json",
+            args.output_dir / f"release-security-{artifact_name}-sbom.spdx.json",
+        )
+
+    for asset_name in (
+        "release-security-overview.md",
+        "release-security-residual-risk.md",
+        "release-security-residual-risk.json",
+    ):
+        copy_release_asset(args.source_dir / asset_name, args.output_dir / asset_name)
+
+    print(f"[release-security-assets] staged={args.output_dir}", flush=True)
+    return 0
+
+
 def handle_list() -> int:
     rows = []
     for target in load_targets():
@@ -511,6 +583,10 @@ def main() -> int:
         return handle_starter_proof(args)
     if args.command == "scan":
         return handle_scan(args)
+    if args.command == "release-security-args":
+        return handle_release_security_args(args)
+    if args.command == "stage-release-security-assets":
+        return handle_stage_release_security_assets(args)
     raise SystemExit(f"unsupported command: {args.command}")
 
 

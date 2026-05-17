@@ -165,10 +165,6 @@ def check_contract(workspace: Path) -> CheckResult:
     return CheckResult("Contract", PASS, _rel(path, workspace))
 
 
-def _release_summary_invocation_count(workflow_text: str) -> int:
-    return workflow_text.count("scripts/build_release_security_summary.py")
-
-
 def _published_image_artifact_names(catalog_path: Path) -> list[str]:
     payload = tomllib.loads(catalog_path.read_text(encoding="utf-8"))
     images = payload.get("images")
@@ -196,32 +192,50 @@ def check_release_workflow_catalog_coverage(workspace: Path) -> CheckResult:
         return CheckResult("Release image notes", FAIL, "published image catalog has no artifact names")
 
     workflow_text = workflow_path.read_text(encoding="utf-8")
-    invocation_count = _release_summary_invocation_count(workflow_text)
-    if invocation_count == 0:
+    required_dynamic_fragments = [
+        "scripts/build_residual_risk_report.py",
+        "scripts/build_release_security_summary.py",
+        "scripts/published_image_pipeline.py stage-release-security-assets",
+    ]
+    missing_fragments = [
+        fragment for fragment in required_dynamic_fragments if fragment not in workflow_text
+    ]
+    if workflow_text.count("scripts/published_image_pipeline.py release-security-args") < 3:
+        missing_fragments.append("three release-security-args invocations")
+    if missing_fragments:
         return CheckResult(
             "Release image notes",
             FAIL,
-            "release workflow does not build release security summaries",
+            f"release workflow is not catalog-driven: {', '.join(missing_fragments)}",
             _rel(workflow_path, workspace),
         )
 
-    missing = [
-        artifact_name
+    hard_coded_patterns = [
+        pattern
         for artifact_name in artifact_names
-        if workflow_text.count(f"--summary {artifact_name}=") < invocation_count
+        for pattern in (
+            f"--report {artifact_name}=",
+            f"--summary {artifact_name}=",
+            f"trivy-{artifact_name}-summary.",
+            f"sbom-{artifact_name}.spdx.json",
+            f"release-security-{artifact_name}-summary.",
+            f"release-security-{artifact_name}-sbom.spdx.json",
+        )
+        if pattern in workflow_text
     ]
-    if missing:
+    if hard_coded_patterns:
         return CheckResult(
             "Release image notes",
             FAIL,
-            f"summary coverage missing: {', '.join(missing)}",
+            "release workflow hard-codes catalog artifacts: "
+            + ", ".join(hard_coded_patterns[:5]),
             _rel(workflow_path, workspace),
         )
 
     return CheckResult(
         "Release image notes",
         PASS,
-        f"{len(artifact_names)} image summaries covered",
+        f"release security aggregation is catalog-driven for {len(artifact_names)} image artifacts",
         _rel(workflow_path, workspace),
     )
 

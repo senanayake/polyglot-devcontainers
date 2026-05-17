@@ -447,54 +447,39 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
         run: |
+          python3 scripts/published_image_pipeline.py release-security-args \
+            --kind report \
+            --source-dir .artifacts/release-assets \
+            --path-template 'trivy-{artifact}.json' \
+            --require-existing \
+            > .artifacts/release-assets/residual-report-args.txt
+          mapfile -t residual_report_args < .artifacts/release-assets/residual-report-args.txt
           python3 scripts/build_residual_risk_report.py \
-            --report maintainer=.artifacts/release-assets/trivy-maintainer.json \
-            --report java=.artifacts/release-assets/trivy-java.json \
-            --report diagrams=.artifacts/release-assets/trivy-diagrams.json \
-            --report python-node=.artifacts/release-assets/trivy-python-node.json \
-            --report research-runner=.artifacts/release-assets/trivy-research-runner.json \
-            --report latex=.artifacts/release-assets/trivy-latex.json \
+            "${residual_report_args[@]}" \
             --json-output .artifacts/release-assets/release-security-residual-risk.json \
             --markdown-output .artifacts/release-assets/release-security-residual-risk.md
+          python3 scripts/published_image_pipeline.py release-security-args \
+            --kind summary \
+            --source-dir .artifacts/release-assets \
+            --path-template 'trivy-{artifact}-summary.json' \
+            --require-existing \
+            > .artifacts/release-assets/release-summary-args.txt
+          mapfile -t release_summary_args < .artifacts/release-assets/release-summary-args.txt
           python3 scripts/build_release_security_summary.py \
             --repo "${GITHUB_REPOSITORY}" \
             --tag "${TAG_NAME}" \
             --docs-base-url "https://github.com/${GITHUB_REPOSITORY}/blob/${DEFAULT_BRANCH}/docs/releases/${TAG_NAME}" \
             --image-catalog published-image-catalog.toml \
-            --summary maintainer=.artifacts/release-assets/trivy-maintainer-summary.json \
-            --summary java=.artifacts/release-assets/trivy-java-summary.json \
-            --summary diagrams=.artifacts/release-assets/trivy-diagrams-summary.json \
-            --summary python-node=.artifacts/release-assets/trivy-python-node-summary.json \
-            --summary research-runner=.artifacts/release-assets/trivy-research-runner-summary.json \
-            --summary latex=.artifacts/release-assets/trivy-latex-summary.json \
+            "${release_summary_args[@]}" \
             --residual-risk-markdown .artifacts/release-assets/release-security-residual-risk.md \
             --overview-output .artifacts/release-assets/release-security-overview.md \
             --notes-fragment-output .artifacts/release-assets/release-security-notes.md
 
       - name: Stage release security assets
         run: |
-          mkdir -p .artifacts/release-assets/upload
-          cp .artifacts/release-assets/trivy-maintainer-summary.md .artifacts/release-assets/upload/release-security-maintainer-summary.md
-          cp .artifacts/release-assets/trivy-maintainer-summary.json .artifacts/release-assets/upload/release-security-maintainer-summary.json
-          cp .artifacts/release-assets/sbom-maintainer.spdx.json .artifacts/release-assets/upload/release-security-maintainer-sbom.spdx.json
-          cp .artifacts/release-assets/trivy-java-summary.md .artifacts/release-assets/upload/release-security-java-summary.md
-          cp .artifacts/release-assets/trivy-java-summary.json .artifacts/release-assets/upload/release-security-java-summary.json
-          cp .artifacts/release-assets/sbom-java.spdx.json .artifacts/release-assets/upload/release-security-java-sbom.spdx.json
-          cp .artifacts/release-assets/trivy-diagrams-summary.md .artifacts/release-assets/upload/release-security-diagrams-summary.md
-          cp .artifacts/release-assets/trivy-diagrams-summary.json .artifacts/release-assets/upload/release-security-diagrams-summary.json
-          cp .artifacts/release-assets/sbom-diagrams.spdx.json .artifacts/release-assets/upload/release-security-diagrams-sbom.spdx.json
-          cp .artifacts/release-assets/trivy-python-node-summary.md .artifacts/release-assets/upload/release-security-python-node-summary.md
-          cp .artifacts/release-assets/trivy-python-node-summary.json .artifacts/release-assets/upload/release-security-python-node-summary.json
-          cp .artifacts/release-assets/sbom-python-node.spdx.json .artifacts/release-assets/upload/release-security-python-node-sbom.spdx.json
-          cp .artifacts/release-assets/trivy-research-runner-summary.md .artifacts/release-assets/upload/release-security-research-runner-summary.md
-          cp .artifacts/release-assets/trivy-research-runner-summary.json .artifacts/release-assets/upload/release-security-research-runner-summary.json
-          cp .artifacts/release-assets/sbom-research-runner.spdx.json .artifacts/release-assets/upload/release-security-research-runner-sbom.spdx.json
-          cp .artifacts/release-assets/trivy-latex-summary.md .artifacts/release-assets/upload/release-security-latex-summary.md
-          cp .artifacts/release-assets/trivy-latex-summary.json .artifacts/release-assets/upload/release-security-latex-summary.json
-          cp .artifacts/release-assets/sbom-latex.spdx.json .artifacts/release-assets/upload/release-security-latex-sbom.spdx.json
-          cp .artifacts/release-assets/release-security-overview.md .artifacts/release-assets/upload/release-security-overview.md
-          cp .artifacts/release-assets/release-security-residual-risk.md .artifacts/release-assets/upload/release-security-residual-risk.md
-          cp .artifacts/release-assets/release-security-residual-risk.json .artifacts/release-assets/upload/release-security-residual-risk.json
+          python3 scripts/published_image_pipeline.py stage-release-security-assets \
+            --source-dir .artifacts/release-assets \
+            --output-dir .artifacts/release-assets/upload
 
       - name: Upload staged release security asset bundle
         uses: actions/upload-artifact@v4
@@ -589,17 +574,19 @@ jobs:
           TAG_NAME: ${{ needs.release-context.outputs.release_tag }}
         run: |
           gh release view "${TAG_NAME}" --json body --jq .body > .artifacts/release-assets/release-notes-existing.md
+          python3 scripts/published_image_pipeline.py release-security-args \
+            --kind summary \
+            --source-dir .artifacts/release-assets/upload \
+            --path-template 'release-security-{artifact}-summary.json' \
+            --require-existing \
+            > .artifacts/release-assets/release-summary-args.txt
+          mapfile -t release_summary_args < .artifacts/release-assets/release-summary-args.txt
           python3 scripts/build_release_security_summary.py \
             --repo "${GITHUB_REPOSITORY}" \
             --tag "${TAG_NAME}" \
             --docs-base-url "${DOCS_BASE_URL}" \
             --image-catalog published-image-catalog.toml \
-            --summary maintainer=.artifacts/release-assets/upload/release-security-maintainer-summary.json \
-            --summary java=.artifacts/release-assets/upload/release-security-java-summary.json \
-            --summary diagrams=.artifacts/release-assets/upload/release-security-diagrams-summary.json \
-            --summary python-node=.artifacts/release-assets/upload/release-security-python-node-summary.json \
-            --summary research-runner=.artifacts/release-assets/upload/release-security-research-runner-summary.json \
-            --summary latex=.artifacts/release-assets/upload/release-security-latex-summary.json \
+            "${release_summary_args[@]}" \
             --residual-risk-markdown .artifacts/release-assets/upload/release-security-residual-risk.md \
             --overview-output .artifacts/release-assets/upload/release-security-overview.md \
             --notes-fragment-output .artifacts/release-assets/release-security-notes.md \

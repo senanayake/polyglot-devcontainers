@@ -58,7 +58,7 @@ Published Images and Security Status sections.
 ### Failure Scenario
 
 - The release matrix is generated from `published-image-catalog.toml`.
-- The first release-security summary step passes all six image summaries.
+- The first release-security summary step passed all six image summaries.
 - A later release-note update step rebuilds the same release-security block but
   passes only four hard-coded `--summary` arguments.
 - The second generated block replaces the complete block in the release notes.
@@ -81,10 +81,10 @@ updated when `latex` and `research-runner` were added.
 
 ### Contributing Factors
 
-- The image build path was catalog-driven, but the final release-note update
-  path still had a hard-coded summary argument list.
-- The workflow had no check that every catalog image appears in every
-  `build_release_security_summary.py` invocation.
+- The image build path was catalog-driven, but release evidence aggregation
+  still duplicated image-specific report, summary, and staging paths.
+- The workflow had no dynamic argument/staging layer between the image catalog
+  and the release summary scripts.
 - Success of the publish jobs masked the documentation drift.
 - Release docs publishing had a separate untracked-file detection bug:
   `git diff --quiet` ran before `git add`, so newly created `docs/releases/*`
@@ -125,8 +125,11 @@ summary files, while `publish-release-security` passed only four.
 ### Design Changes
 
 - Keep release-note image coverage tied to `published-image-catalog.toml`.
-- Check release workflow summary coverage against catalog artifact names.
-- Avoid duplicating image summary lists across jobs when possible.
+- Generate residual-risk report arguments, release summary arguments, and staged
+  release asset paths from `published-image-catalog.toml`.
+- Check that the release workflow uses the catalog-driven helper path and does
+  not reintroduce hard-coded image artifact names.
+- Avoid duplicating image-specific release evidence paths across jobs.
 - When committing generated docs, stage the target path before checking whether
   there is a diff so untracked release docs are detected.
 
@@ -144,28 +147,29 @@ summary files, while `publish-release-security` passed only four.
 
 ### Early Warning Signs
 
-- `published-image-catalog.toml` changes without corresponding workflow summary
-  coverage changes.
+- `published-image-catalog.toml` changes require release workflow edits outside
+  the catalog helper.
 - Release assets and release-note tables have different image counts.
 - A release docs job says "already up to date" immediately after creating a new
   `docs/releases/<tag>` directory.
 
 ### Detection Methods
 
-- `scripts/check.py --workspace .` now checks that every published image
-  artifact name appears in each release summary command in
-  `.github/workflows/release-images.yml`.
+- `scripts/check.py --workspace .` now checks that release evidence aggregation
+  uses `scripts/published_image_pipeline.py` helper commands and that
+  `.github/workflows/release-images.yml` does not hard-code per-image report,
+  summary, or staged SBOM paths.
 - Manual release review can compare package assets against the generated notes.
 
 ## Mitigation
 
 ### Immediate Response
 
-1. Add the missing `latex` and `research-runner` summaries to the
-   release-note update step.
+1. Replace per-image release report, summary, and staging paths with
+   catalog-driven helper commands.
 2. Fix the release docs commit step to run `git add` before
    `git diff --cached --quiet`.
-3. Add a repository check to prevent future catalog/workflow coverage drift.
+3. Add a repository check to prevent future hard-coded release evidence drift.
 4. Regenerate or edit the affected release notes if the existing release page
    must be corrected before the next release.
 
@@ -197,7 +201,7 @@ summary files, while `publish-release-security` passed only four.
 ## Status
 
 - [x] Documented
-- [x] Prevention implemented for summary coverage
+- [x] Prevention implemented with catalog-driven release evidence aggregation
 - [x] Detection implemented in `scripts/check.py`
 - [x] Release docs untracked-file detection fixed
 - [ ] Affected `v0.1.1` release notes regenerated
