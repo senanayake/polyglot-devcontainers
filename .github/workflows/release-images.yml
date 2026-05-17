@@ -545,13 +545,13 @@ jobs:
         run: |
           set -euo pipefail
           docs_dir="docs/releases/${TAG_NAME}"
-          if git diff --quiet -- "${docs_dir}"; then
+          git add "${docs_dir}"
+          if git diff --cached --quiet -- "${docs_dir}"; then
             echo "Release security docs already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "${docs_dir}"
           git commit -m "Publish release security docs for ${TAG_NAME}"
           git push origin "HEAD:${DEFAULT_BRANCH}"
 
@@ -598,6 +598,8 @@ jobs:
             --summary java=.artifacts/release-assets/upload/release-security-java-summary.json \
             --summary diagrams=.artifacts/release-assets/upload/release-security-diagrams-summary.json \
             --summary python-node=.artifacts/release-assets/upload/release-security-python-node-summary.json \
+            --summary research-runner=.artifacts/release-assets/upload/release-security-research-runner-summary.json \
+            --summary latex=.artifacts/release-assets/upload/release-security-latex-summary.json \
             --residual-risk-markdown .artifacts/release-assets/upload/release-security-residual-risk.md \
             --overview-output .artifacts/release-assets/upload/release-security-overview.md \
             --notes-fragment-output .artifacts/release-assets/release-security-notes.md \
