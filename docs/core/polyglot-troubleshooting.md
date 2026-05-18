@@ -76,6 +76,17 @@ Recommended response:
 - treat the container as the source of truth
 - rerun inside the container before drawing conclusions
 
+## Windows Podman starts, stops, or cannot answer `podman ps`
+
+Recommended response:
+
+- treat this as host-runtime failure until `podman ps` succeeds
+- run `powershell -ExecutionPolicy Bypass -File scripts\windows-podman-preflight.ps1`
+- use `scripts\windows-podman-cleanup-report.ps1` for disk-pressure evidence
+- dry-run `scripts\windows-podman-repair.ps1` before applying repair actions
+- pass `--docker-path podman` to Dev Containers CLI so it does not call Docker
+- see `docs/how-to/repair-windows-podman.md`
+
 ## a starter is too experimental for the job
 
 Recommended response:

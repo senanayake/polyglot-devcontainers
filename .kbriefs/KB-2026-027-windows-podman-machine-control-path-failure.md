@@ -5,7 +5,7 @@ status: active
 created: 2026-04-25
 updated: 2026-04-25
 tags: [podman, windows, wsl, devcontainers, maintainer-container, host-runtime, failure-mode]
-related: [KB-2026-011]
+related: [KB-2026-011, KB-2026-073]
 ---
 
 # Windows Podman Machine Control Path Failure

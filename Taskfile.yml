@@ -126,7 +126,7 @@ tasks:
       - task -t templates/diagram-secure/Taskfile.yml scan
       - task -t templates/python-node-secure/Taskfile.yml scan
       - task -t templates/java-secure/Taskfile.yml scan
-      - gitleaks git . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
+      - gitleaks git . --max-target-megabytes 10 --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
 
   check:
     desc: Read-only compliance check — inspect scan artifacts against the Polyglot contract

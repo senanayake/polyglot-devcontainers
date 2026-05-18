@@ -16,6 +16,7 @@ related:
   - KB-2026-049
   - KB-2026-055
   - KB-2026-069
+  - KB-2026-073
 ---
 
 # Windows Podman Image Validation Can Exhaust User Profile Storage
