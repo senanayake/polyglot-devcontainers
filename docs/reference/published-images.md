@@ -10,13 +10,15 @@ template immediately.
 - `ghcr.io/<owner>/polyglot-devcontainers-diagrams`
 - `ghcr.io/<owner>/polyglot-devcontainers-python-node`
 - `ghcr.io/<owner>/polyglot-devcontainers-research-runner`
+- `ghcr.io/<owner>/polyglot-devcontainers-solver-runner`
 - `ghcr.io/<owner>/polyglot-devcontainers-latex`
 
 The maintainer image is published so repository contributors can consume the
 same environment that CI validates. It is intentionally broader than the
 starter images and is not part of the recommended downstream starter catalog.
-The research runner and LaTeX images are focused workflow images for
-reproducible experiment execution and paper builds.
+The research runner, solver runner, and LaTeX images are focused workflow
+images for reproducible experiment execution, formal-tool receipts, and paper
+builds.
 
 ## Release note routing
 

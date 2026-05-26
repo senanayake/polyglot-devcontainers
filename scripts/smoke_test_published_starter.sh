@@ -37,6 +37,39 @@ if ! [[ "${attempts}" =~ ^[0-9]+$ ]] || [[ "${attempts}" -lt 1 ]]; then
   exit 2
 fi
 
+resolve_python() {
+  if [[ -n "${PYTHON:-}" ]]; then
+    if [[ -x "${PYTHON}" ]]; then
+      printf '%s\n' "${PYTHON}"
+      return 0
+    fi
+
+    if command -v cygpath >/dev/null 2>&1; then
+      local converted_python
+      converted_python="$(cygpath -u "${PYTHON}")"
+      if [[ -x "${converted_python}" ]]; then
+        printf '%s\n' "${converted_python}"
+        return 0
+      fi
+    fi
+  fi
+
+  if command -v python >/dev/null 2>&1; then
+    printf '%s\n' python
+    return 0
+  fi
+
+  if command -v python3 >/dev/null 2>&1; then
+    printf '%s\n' python3
+    return 0
+  fi
+
+  echo "python or python3 is required to run the published-image smoke test" >&2
+  return 1
+}
+
+python_bin="$(resolve_python)"
+
 write_devcontainer_placeholder() {
   local workspace="$1"
 
@@ -134,7 +167,7 @@ run_attempt() {
   fi
 
   echo "[starter-smoke] attempt=${attempt}/${attempts} image=${image}" >&2
-  if python scripts/oci_runtime.py run --rm \
+  if "${python_bin}" scripts/oci_runtime.py run --rm \
     -v "${workspace}:/workspaces/project" \
     -w /workspaces/project \
     "${image}" \

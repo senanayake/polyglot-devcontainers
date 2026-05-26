@@ -226,6 +226,39 @@ RUN gradle --version  # Always available
 
 ---
 
+## Solver Runner Image Contract
+
+**Image:** `ghcr.io/senanayake/polyglot-devcontainers-solver-runner:latest`
+
+### Solver Tool Guarantees
+
+| Component | Path | Version | Stability |
+|-----------|------|---------|-----------|
+| Alloy wrapper | `/usr/local/bin/alloy` | 6.2.x | Experimental |
+| Alloy jar | `/opt/alloy/org.alloytools.alloy.dist.jar` | 6.2.x | Experimental |
+| Z3 | `/usr/bin/z3` | Distro package | Experimental |
+| cvc5 | `/usr/bin/cvc5` | Distro package | Experimental |
+| MiniSat | `/usr/bin/minisat` | Distro package | Experimental |
+| SQLite client | `/usr/bin/sqlite3` | Distro package | Experimental |
+| Postgres client | `/usr/bin/psql` | Distro package | Experimental |
+
+This image inherits the Python-Node and research-runner contracts, then adds a
+solver layer for formal-methods and data-modeling correctness checks. The image
+promises executable tools and stable command paths, but individual solver minor
+versions may move with image releases, security rebuilds, or upstream package
+maintenance.
+
+**Example:**
+```dockerfile
+FROM ghcr.io/senanayake/polyglot-devcontainers-solver-runner:latest
+# You can rely on:
+RUN alloy solvers
+RUN z3 --version
+RUN cvc5 --version
+RUN sqlite3 --version
+RUN psql --version
+```
+
 ## Diagrams Image Contract
 
 **Image:** `ghcr.io/senanayake/polyglot-devcontainers-diagrams:latest`

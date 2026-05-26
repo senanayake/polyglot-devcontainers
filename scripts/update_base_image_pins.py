@@ -22,6 +22,7 @@ PUBLISHED_DOCKERFILES = [
     ROOT / "templates" / "diagram-secure" / ".devcontainer" / "Containerfile",
     ROOT / "templates" / "python-node-secure" / ".devcontainer" / "Containerfile",
     ROOT / "templates" / "research-runner" / ".devcontainer" / "Containerfile",
+    ROOT / "templates" / "solver-runner" / ".devcontainer" / "Containerfile",
     ROOT / "templates" / "latex" / ".devcontainer" / "Containerfile",
 ]
 MANIFEST_ACCEPT = ", ".join(

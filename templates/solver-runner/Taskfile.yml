@@ -1,0 +1,60 @@
+version: "3"
+
+tasks:
+  init:
+    desc: Validate the solver runner toolchain
+    cmds:
+      - java -version
+      - alloy solvers | grep -q sat4j
+      - z3 --version
+      - cvc5 --version
+      - minisat --help >/dev/null 2>&1 || test "$?" = "1"
+      - sqlite3 --version
+      - psql --version
+      - python3 --version
+      - node --version
+      - pnpm --version
+      - task --version
+
+  lint:
+    desc: Validate runtime documentation and shell tooling
+    cmds:
+      - man polyglot-solver-runner >/dev/null
+      - shellcheck scripts/*.sh
+
+  test:
+    desc: Run deterministic solver smoke checks
+    cmds:
+      - task test:alloy
+      - task test:smt
+      - task test:db-clients
+
+  test:alloy:
+    desc: Execute a small Alloy model and verify the SAT4J receipt
+    cmds:
+      - bash scripts/alloy-smoke.sh
+
+  test:smt:
+    desc: Execute small SMT-LIB checks through Z3 and cvc5
+    cmds:
+      - bash scripts/smt-smoke.sh
+
+  test:db-clients:
+    desc: Verify local SQLite execution and Postgres client availability
+    cmds:
+      - bash scripts/db-client-smoke.sh
+
+  scan:
+    desc: Run the repository secret scan
+    cmds:
+      - mkdir -p .artifacts/scans
+      - gitleaks dir . --no-banner --redact --report-format sarif --report-path .artifacts/scans/gitleaks.sarif
+
+  ci:
+    desc: Full solver runner validation
+    cmds:
+      - task init
+      - task lint
+      - task test
+      - task scan
+

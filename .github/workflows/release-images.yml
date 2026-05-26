@@ -237,7 +237,7 @@ jobs:
           fi
 
       - name: Validate default user
-        if: ${{ matrix.target_id == 'research-runner' || matrix.target_id == 'latex' }}
+        if: ${{ matrix.target_id == 'research-runner' || matrix.target_id == 'solver-runner' || matrix.target_id == 'latex' }}
         run: |
           test "$(docker run --rm "${{ matrix.package_name }}:ci" id -un)" = "vscode"
 
