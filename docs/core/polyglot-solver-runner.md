@@ -32,8 +32,12 @@ task ci
 
 # WORKFLOW
 
-The image extends the Python-Node image and adds:
+The image is built directly from the pinned Python devcontainer base so CI can
+reuse the base layers already pulled for maintainer validation. It installs the
+shared starter bootstrap contract plus:
 
+- Node.js and pnpm for JavaScript and TypeScript harnesses
+- `task`, `gitleaks`, `shellcheck`, and runtime docs for the image contract
 - Java runtime for Alloy and JVM-based solver integrations
 - Alloy 6.2.0 with the upstream distribution jar installed at `/opt/alloy`
 - an `alloy` command wrapper that executes the pinned jar

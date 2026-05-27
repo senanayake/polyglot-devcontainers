@@ -1,4 +1,4 @@
-FROM ghcr.io/senanayake/polyglot-devcontainers-python-node:main@sha256:fe485710e3ac7308b6c95bf917ef84c72470e43bb59952fb874cc00c8e4fafa5
+FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm@sha256:7876580dc67fd460fd962f004cbeb480027e9bbc0657096f1087db11f9eaff39
 
 LABEL org.opencontainers.image.source="https://github.com/senanayake/polyglot-devcontainers" \
       org.opencontainers.image.description="Formal solver runner container for data-modeling correctness experiments." \
@@ -10,23 +10,88 @@ USER root
 ENV POLYGLOT_BOOTSTRAP_TEMPLATE=solver-runner \
     ALLOY_JAR=/opt/alloy/org.alloytools.alloy.dist.jar
 
+ARG TASK_VERSION=3.50.0
+ARG GITLEAKS_VERSION=8.30.1
+ARG PRE_COMMIT_VERSION=4.2.0
+ARG PNPM_VERSION=10.7.0
 ARG ALLOY_VERSION=6.2.0
 ARG ALLOY_SHA256=6b8c1cb5bc93bedfc7c61435c4e1ab6e688a242dc702a394628d9a9801edb78d
+ARG NODESOURCE_GPG_SHA256=b42e0321dabdc24e892115da705cf061167eac12a317f23d329862d0aa0a271d # gitleaks:allow
 
+COPY templates/python-node-secure/.devcontainer/post-create.sh /usr/local/share/polyglot-devcontainers/post-create.sh
+COPY templates/python-node-secure/.devcontainer/bootstrap-workspace.sh /usr/local/bin/polyglot-bootstrap-workspace
+COPY templates/python-node-secure/.devcontainer/task-wrapper.sh /usr/local/bin/task
 COPY templates/solver-runner /usr/local/share/polyglot-devcontainers/bootstrap/solver-runner
+COPY scripts/scaffold_project_conventions.sh /usr/local/bin/polyglot-scaffold-project-conventions
+COPY assets/starter-scaffold /usr/local/share/polyglot-devcontainers/starter-scaffold
 COPY scripts/install_runtime_docs.sh /tmp/install_runtime_docs.sh
 COPY man/man7 /tmp/runtime-docs
 
-RUN rm -rf /usr/local/share/polyglot-devcontainers/bootstrap/solver-runner/.devcontainer \
+RUN rm -f /etc/apt/sources.list.d/yarn.list \
+    && chmod 0755 /usr/local/share/polyglot-devcontainers/post-create.sh \
+    && chmod 0755 /usr/local/bin/polyglot-bootstrap-workspace /usr/local/bin/task /usr/local/bin/polyglot-scaffold-project-conventions \
+    && chmod 0755 /tmp/install_runtime_docs.sh \
+    && rm -rf /usr/local/share/polyglot-devcontainers/bootstrap/solver-runner/.devcontainer \
     && apt-get update \
     && apt-get -y dist-upgrade \
     && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
         cvc5 \
+        fd-find \
+        git \
+        gnupg \
+        jq \
+        less \
+        man-db \
         minisat \
         openjdk-17-jre-headless \
         postgresql-client \
+        ripgrep \
+        shellcheck \
         sqlite3 \
+        tar \
+        unzip \
         z3 \
+    && mkdir -p /etc/apt/keyrings \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo /tmp/nodesource.key https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+    && echo "${NODESOURCE_GPG_SHA256}  /tmp/nodesource.key" | sha256sum -c - \
+    && gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource.key \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
+    > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
+    && arch="$(dpkg --print-architecture)" \
+    && case "${arch}" in \
+        amd64) task_archive="task_linux_amd64.tar.gz"; gitleaks_archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" ;; \
+        arm64) task_archive="task_linux_arm64.tar.gz"; gitleaks_archive="gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" ;; \
+        *) echo "Unsupported architecture: ${arch}" >&2; exit 1 ;; \
+      esac \
+    && tmpdir="$(mktemp -d)" \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo "${tmpdir}/${task_archive}" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/${task_archive}" \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo "${tmpdir}/task_checksums.txt" "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_checksums.txt" \
+    && task_checksum_line=$(grep "${task_archive}" "${tmpdir}/task_checksums.txt") \
+    && if [ -z "$task_checksum_line" ]; then \
+         echo "ERROR: Checksum not found for ${task_archive}" >&2; \
+         exit 1; \
+       fi \
+    && (cd "${tmpdir}" && echo "$task_checksum_line" | sha256sum -c -) \
+    && mkdir -p /usr/local/libexec/polyglot-devcontainers \
+    && tar -xzf "${tmpdir}/${task_archive}" -C /usr/local/libexec/polyglot-devcontainers task \
+    && mv /usr/local/libexec/polyglot-devcontainers/task /usr/local/libexec/polyglot-devcontainers/task-real \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo "${tmpdir}/${gitleaks_archive}" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${gitleaks_archive}" \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo "${tmpdir}/gitleaks_checksums.txt" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt" \
+    && gitleaks_checksum_line=$(grep "${gitleaks_archive}" "${tmpdir}/gitleaks_checksums.txt") \
+    && if [ -z "$gitleaks_checksum_line" ]; then \
+         echo "ERROR: Checksum not found for ${gitleaks_archive}" >&2; \
+         exit 1; \
+       fi \
+    && (cd "${tmpdir}" && echo "$gitleaks_checksum_line" | sha256sum -c -) \
+    && tar -xzf "${tmpdir}/${gitleaks_archive}" -C /usr/local/bin gitleaks \
+    && chmod +x /usr/local/bin/gitleaks \
+    && python3 -m pip install --no-cache-dir "pre-commit==${PRE_COMMIT_VERSION}" \
+    && npm install --global "pnpm@${PNPM_VERSION}" \
+    && pnpm --version \
     && mkdir -p /opt/alloy \
     && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo "${ALLOY_JAR}" \
         "https://github.com/AlloyTools/org.alloytools.alloy/releases/download/v${ALLOY_VERSION}/org.alloytools.alloy.dist.jar" \
@@ -34,7 +99,8 @@ RUN rm -rf /usr/local/share/polyglot-devcontainers/bootstrap/solver-runner/.devc
     && printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' 'exec java -jar "${ALLOY_JAR}" "$@"' > /usr/local/bin/alloy \
     && chmod 0755 /usr/local/bin/alloy \
     && bash /tmp/install_runtime_docs.sh /tmp/runtime-docs \
-    && rm -rf /tmp/install_runtime_docs.sh /tmp/runtime-docs /var/lib/apt/lists/*
+    && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
+    && rm -rf "${tmpdir}" /tmp/nodesource.key /tmp/install_runtime_docs.sh /tmp/runtime-docs /var/lib/apt/lists/* /etc/apt/keyrings /etc/apt/sources.list.d/nodesource.list
 
 USER vscode
 WORKDIR /workspace

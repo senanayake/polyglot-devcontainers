@@ -21,7 +21,14 @@ task test:smt
 task ci
 .EE
 .SH WORKFLOW
-The image extends the Python\-Node image and adds:
+The image is built directly from the pinned Python devcontainer base so
+CI can reuse the base layers already pulled for maintainer validation.
+It installs the shared starter bootstrap contract plus:
+.IP \(bu 2
+Node.js and pnpm for JavaScript and TypeScript harnesses
+.IP \(bu 2
+\f[CR]task\f[R], \f[CR]gitleaks\f[R], \f[CR]shellcheck\f[R], and runtime
+docs for the image contract
 .IP \(bu 2
 Java runtime for Alloy and JVM\-based solver integrations
 .IP \(bu 2
