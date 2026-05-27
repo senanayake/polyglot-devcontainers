@@ -6,7 +6,7 @@
     "vscode": {
       "settings": {
         "editor.formatOnSave": true,
-        "python.defaultInterpreterPath": "/opt/research-venv/bin/python",
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.analysis.typeCheckingMode": "basic",
         "eslint.validate": [
           "javascript",
@@ -27,4 +27,3 @@
   },
   "remoteUser": "vscode"
 }
-

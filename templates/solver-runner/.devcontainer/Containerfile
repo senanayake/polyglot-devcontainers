@@ -1,9 +1,9 @@
-FROM ghcr.io/senanayake/polyglot-devcontainers-research-runner:main@sha256:3cbfbed6dd91dfeddbcfa22fc0a425857f6b7daee68992442623a83dbc49cb20
+FROM ghcr.io/senanayake/polyglot-devcontainers-python-node:main@sha256:fe485710e3ac7308b6c95bf917ef84c72470e43bb59952fb874cc00c8e4fafa5
 
 LABEL org.opencontainers.image.source="https://github.com/senanayake/polyglot-devcontainers" \
       org.opencontainers.image.description="Formal solver runner container for data-modeling correctness experiments." \
       org.opencontainers.image.licenses="MIT" \
-      devcontainer.metadata="[{\"postCreateCommand\":\"bash /usr/local/share/polyglot-devcontainers/post-create.sh\",\"customizations\":{\"vscode\":{\"settings\":{\"editor.formatOnSave\":true,\"python.defaultInterpreterPath\":\"/opt/research-venv/bin/python\",\"python.analysis.typeCheckingMode\":\"basic\",\"eslint.validate\":[\"javascript\",\"javascriptreact\",\"typescript\",\"typescriptreact\"],\"java.configuration.updateBuildConfiguration\":\"automatic\"},\"extensions\":[\"ms-python.python\",\"charliermarsh.ruff\",\"dbaeumer.vscode-eslint\",\"esbenp.prettier-vscode\",\"vscjava.vscode-java-pack\"]}},\"remoteUser\":\"vscode\"}]"
+      devcontainer.metadata="[{\"postCreateCommand\":\"bash /usr/local/share/polyglot-devcontainers/post-create.sh\",\"customizations\":{\"vscode\":{\"settings\":{\"editor.formatOnSave\":true,\"python.defaultInterpreterPath\":\"/usr/local/bin/python\",\"python.analysis.typeCheckingMode\":\"basic\",\"eslint.validate\":[\"javascript\",\"javascriptreact\",\"typescript\",\"typescriptreact\"],\"java.configuration.updateBuildConfiguration\":\"automatic\"},\"extensions\":[\"ms-python.python\",\"charliermarsh.ruff\",\"dbaeumer.vscode-eslint\",\"esbenp.prettier-vscode\",\"vscjava.vscode-java-pack\"]}},\"remoteUser\":\"vscode\"}]"
 
 USER root
 
@@ -38,4 +38,3 @@ RUN rm -rf /usr/local/share/polyglot-devcontainers/bootstrap/solver-runner/.devc
 
 USER vscode
 WORKDIR /workspace
-

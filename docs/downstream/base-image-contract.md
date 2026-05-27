@@ -242,8 +242,8 @@ RUN gradle --version  # Always available
 | SQLite client | `/usr/bin/sqlite3` | Distro package | Experimental |
 | Postgres client | `/usr/bin/psql` | Distro package | Experimental |
 
-This image inherits the Python-Node and research-runner contracts, then adds a
-solver layer for formal-methods and data-modeling correctness checks. The image
+This image inherits the Python-Node contract, then adds a solver layer for
+formal-methods and data-modeling correctness checks. The image
 promises executable tools and stable command paths, but individual solver minor
 versions may move with image releases, security rebuilds, or upstream package
 maintenance.

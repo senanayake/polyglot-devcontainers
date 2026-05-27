@@ -32,7 +32,7 @@ task ci
 
 # WORKFLOW
 
-The image extends the research runner image and adds:
+The image extends the Python-Node image and adds:
 
 - Java runtime for Alloy and JVM-based solver integrations
 - Alloy 6.2.0 with the upstream distribution jar installed at `/opt/alloy`
@@ -80,7 +80,6 @@ review artifact.
 # SEE ALSO
 
 - `polyglot(7)`
-- `polyglot-research(7)`
+- `polyglot-python(7)`
 - `polyglot-task-contract(7)`
 - `polyglot-security(7)`
-
