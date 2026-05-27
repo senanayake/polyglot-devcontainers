@@ -1,0 +1,158 @@
+{
+  "image_name": "research-runner",
+  "image_ref": "ghcr.io/senanayake/polyglot-devcontainers-research-runner@sha256:a9dc31c2acdaa2779b2a9435ad2034cb3a6c33f0efb95ff9d2b2933e202b6b7a",
+  "critical": 11,
+  "high": 81,
+  "medium": 0,
+  "low": 0,
+  "fixable": 92,
+  "unfixed": 0,
+  "total": 92,
+  "by_type": {
+    "debian": {
+      "total": 49,
+      "critical": 10,
+      "high": 39,
+      "fixable": 49
+    },
+    "gobinary": {
+      "total": 16,
+      "critical": 1,
+      "high": 15,
+      "fixable": 16
+    },
+    "node-pkg": {
+      "total": 14,
+      "critical": 0,
+      "high": 14,
+      "fixable": 14
+    },
+    "python-pkg": {
+      "total": 13,
+      "critical": 0,
+      "high": 13,
+      "fixable": 13
+    }
+  },
+  "top_packages": [
+    [
+      "stdlib",
+      16
+    ],
+    [
+      "tar",
+      6
+    ],
+    [
+      "GitPython",
+      5
+    ],
+    [
+      "libgnutls-dane0",
+      5
+    ],
+    [
+      "libgnutls-openssl27",
+      5
+    ],
+    [
+      "libgnutls28-dev",
+      5
+    ],
+    [
+      "libgnutls30",
+      5
+    ],
+    [
+      "libgnutlsxx30",
+      5
+    ],
+    [
+      "jaraco.context",
+      3
+    ],
+    [
+      "minimatch",
+      3
+    ]
+  ],
+  "critical_rows": [
+    {
+      "vulnerability_id": "CVE-2026-33845",
+      "package_name": "libgnutls-dane0",
+      "installed_version": "3.7.9-2+deb12u6",
+      "fixed_version": "3.7.9-2+deb12u7",
+      "type": "debian"
+    },
+    {
+      "vulnerability_id": "CVE-2026-42010",
+      "package_name": "libgnutls-dane0",
+      "installed_version": "3.7.9-2+deb12u6",
+      "fixed_version": "3.7.9-2+deb12u7",
+      "type": "debian"
+    },
+    {
+      "vulnerability_id": "CVE-2026-33845",
+      "package_name": "libgnutls-openssl27",
+      "installed_version": "3.7.9-2+deb12u6",
+      "fixed_version": "3.7.9-2+deb12u7",
+      "type": "debian"
+    },
+    {
+      "vulnerability_id": "CVE-2026-42010",
+      "package_name": "libgnutls-openssl27",
+      "installed_version": "3.7.9-2+deb12u6",
+      "fixed_version": "3.7.9-2+deb12u7",
+      "type": "debian"
+    },
+    {
+      "vulnerability_id": "CVE-2026-33845",
+      "package_name": "libgnutls28-dev",
+      "installed_version": "3.7.9-2+deb12u6",
+      "fixed_version": "3.7.9-2+deb12u7",
+      "type": "debian"
+    },
+    {
+      "vulnerability_id": "CVE-2026-42010",
+      "package_name": "libgnutls28-dev",
+      "installed_version": "3.7.9-2+deb12u6",
+      "fixed_version": "3.7.9-2+deb12u7",
+      "type": "debian"
+    },
+    {
+      "vulnerability_id": "CVE-2026-33845",
+      "package_name": "libgnutls30",
+      "installed_version": "3.7.9-2+deb12u6",
+      "fixed_version": "3.7.9-2+deb12u7",
+      "type": "debian"
+    },
+    {
+      "vulnerability_id": "CVE-2026-42010",
+      "package_name": "libgnutls30",
+      "installed_version": "3.7.9-2+deb12u6",
+      "fixed_version": "3.7.9-2+deb12u7",
+      "type": "debian"
+    },
+    {
+      "vulnerability_id": "CVE-2026-33845",
+      "package_name": "libgnutlsxx30",
+      "installed_version": "3.7.9-2+deb12u6",
+      "fixed_version": "3.7.9-2+deb12u7",
+      "type": "debian"
+    },
+    {
+      "vulnerability_id": "CVE-2026-42010",
+      "package_name": "libgnutlsxx30",
+      "installed_version": "3.7.9-2+deb12u6",
+      "fixed_version": "3.7.9-2+deb12u7",
+      "type": "debian"
+    },
+    {
+      "vulnerability_id": "CVE-2025-68121",
+      "package_name": "stdlib",
+      "installed_version": "v1.24.11",
+      "fixed_version": "1.24.13, 1.25.7, 1.26.0-rc.3",
+      "type": "gobinary"
+    }
+  ]
+}
