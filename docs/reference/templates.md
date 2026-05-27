@@ -50,6 +50,15 @@ Contains:
   runtime documentation
 - baseline guidance for LLM-assisted research artifacts
 
+## solver-runner
+
+Contains:
+
+- devcontainer definition for the published solver runner image
+- Taskfile smoke checks for Alloy/Kodkod, Z3, cvc5, SQLite, Postgres client
+  tooling, Python, Node.js, and runtime documentation
+- a small Alloy model and SMT-LIB probes for deterministic formal-tool receipts
+
 ## latex
 
 Contains:

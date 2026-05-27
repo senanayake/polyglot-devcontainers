@@ -254,6 +254,34 @@ def run(command: list[str], *, env: dict[str, str] | None = None) -> None:
     subprocess.run(command, cwd=ROOT, check=True, text=True, env=env)
 
 
+def python_env() -> dict[str, str]:
+    environment = os.environ.copy()
+    environment["PYTHON"] = sys.executable
+    return environment
+
+
+def selected_oci_runtime() -> str:
+    completed = subprocess.run(
+        [sys.executable, "scripts/oci_runtime.py", "--print"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
+def local_runtime_image_ref(image_ref: str) -> str:
+    if selected_oci_runtime() != "podman":
+        return image_ref
+
+    image_without_digest = image_ref.partition("@")[0]
+    if "/" in image_without_digest:
+        return image_ref
+
+    return f"localhost/{image_ref}"
+
+
 def run_disk_snapshot(label: str) -> None:
     run([sys.executable, "scripts/report_disk_usage.py", "--label", label])
 
@@ -292,7 +320,7 @@ def build_targets(
                     sys.executable,
                     "scripts/validate_devcontainer_metadata.py",
                     "--image",
-                    target.verify_tag,
+                    local_runtime_image_ref(target.verify_tag),
                     "--devcontainer-json",
                     target.devcontainer_json,
                 ]
@@ -306,7 +334,7 @@ def build_targets(
                         "save",
                         "--output",
                         str(artifact_path),
-                        target.verify_tag,
+                        local_runtime_image_ref(target.verify_tag),
                     ]
                 )
 
@@ -315,11 +343,11 @@ def build_targets(
                     "bash",
                     "scripts/smoke_test_published_starter.sh",
                     "--image",
-                    target.verify_tag,
+                    local_runtime_image_ref(target.verify_tag),
                 ]
                 if target.smoke_test_run_scenarios:
                     smoke_command.append("--run-scenarios")
-                run(smoke_command)
+                run(smoke_command, env=python_env())
 
             if behavior.inner_ci:
                 run(
@@ -334,7 +362,7 @@ def build_targets(
                         f"{ROOT}:/workspaces/polyglot-devcontainers",
                         "-w",
                         target.workdir,
-                        target.verify_tag,
+                        local_runtime_image_ref(target.verify_tag),
                         "bash",
                         "-lc",
                         (
@@ -373,7 +401,9 @@ def run_starter_proofs(
     for target in selected_targets:
         for proof in target.starter_proofs:
             environment = os.environ.copy()
-            environment[starter_override_env_name(proof.starter_id)] = target.verify_tag
+            environment[starter_override_env_name(proof.starter_id)] = local_runtime_image_ref(
+                target.verify_tag
+            )
             command = [
                 sys.executable,
                 "scripts/starter_catalog.py",

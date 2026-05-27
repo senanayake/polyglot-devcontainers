@@ -119,6 +119,25 @@ def advisory_review_state(advisory: dict[str, Any] | None) -> str:
     return "unknown"
 
 
+def resolve_advisory_metadata(
+    ids: list[str], cache: dict[str, dict[str, Any] | None]
+) -> tuple[str | None, dict[str, Any] | None]:
+    fallback_id = None
+    fallback_advisory = None
+
+    for advisory_id in ids:
+        advisory = resolve_osv_metadata(advisory_id, cache)
+        if not advisory:
+            continue
+        if fallback_advisory is None:
+            fallback_id = advisory_id
+            fallback_advisory = advisory
+        if advisory_severity(advisory) != "UNKNOWN":
+            return advisory_id, advisory
+
+    return fallback_id, fallback_advisory
+
+
 def accepted_exception(
     ids: list[str],
     accepted_advisories: list[AcceptedAdvisory],
@@ -146,13 +165,7 @@ def evaluate_findings(audit_payload: dict[str, Any], policy: dict[str, Any]) -> 
     for dependency in audit_payload.get("dependencies", []):
         for vulnerability in dependency.get("vulns", []):
             ids = advisory_ids(vulnerability)
-            advisory = None
-            resolved_id = None
-            for advisory_id in ids:
-                advisory = resolve_osv_metadata(advisory_id, osv_cache)
-                if advisory:
-                    resolved_id = advisory_id
-                    break
+            resolved_id, advisory = resolve_advisory_metadata(ids, osv_cache)
 
             severity = advisory_severity(advisory)
             review_state = advisory_review_state(advisory)

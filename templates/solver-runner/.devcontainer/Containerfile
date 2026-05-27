@@ -1,0 +1,40 @@
+FROM ghcr.io/senanayake/polyglot-devcontainers-python-node:main@sha256:fe485710e3ac7308b6c95bf917ef84c72470e43bb59952fb874cc00c8e4fafa5
+
+LABEL org.opencontainers.image.source="https://github.com/senanayake/polyglot-devcontainers" \
+      org.opencontainers.image.description="Formal solver runner container for data-modeling correctness experiments." \
+      org.opencontainers.image.licenses="MIT" \
+      devcontainer.metadata="[{\"postCreateCommand\":\"bash /usr/local/share/polyglot-devcontainers/post-create.sh\",\"customizations\":{\"vscode\":{\"settings\":{\"editor.formatOnSave\":true,\"python.defaultInterpreterPath\":\"/usr/local/bin/python\",\"python.analysis.typeCheckingMode\":\"basic\",\"eslint.validate\":[\"javascript\",\"javascriptreact\",\"typescript\",\"typescriptreact\"],\"java.configuration.updateBuildConfiguration\":\"automatic\"},\"extensions\":[\"ms-python.python\",\"charliermarsh.ruff\",\"dbaeumer.vscode-eslint\",\"esbenp.prettier-vscode\",\"vscjava.vscode-java-pack\"]}},\"remoteUser\":\"vscode\"}]"
+
+USER root
+
+ENV POLYGLOT_BOOTSTRAP_TEMPLATE=solver-runner \
+    ALLOY_JAR=/opt/alloy/org.alloytools.alloy.dist.jar
+
+ARG ALLOY_VERSION=6.2.0
+ARG ALLOY_SHA256=6b8c1cb5bc93bedfc7c61435c4e1ab6e688a242dc702a394628d9a9801edb78d
+
+COPY templates/solver-runner /usr/local/share/polyglot-devcontainers/bootstrap/solver-runner
+COPY scripts/install_runtime_docs.sh /tmp/install_runtime_docs.sh
+COPY man/man7 /tmp/runtime-docs
+
+RUN rm -rf /usr/local/share/polyglot-devcontainers/bootstrap/solver-runner/.devcontainer \
+    && apt-get update \
+    && apt-get -y dist-upgrade \
+    && apt-get install -y --no-install-recommends \
+        cvc5 \
+        minisat \
+        openjdk-17-jre-headless \
+        postgresql-client \
+        sqlite3 \
+        z3 \
+    && mkdir -p /opt/alloy \
+    && curl --retry 5 --retry-all-errors --retry-delay 2 -fsSLo "${ALLOY_JAR}" \
+        "https://github.com/AlloyTools/org.alloytools.alloy/releases/download/v${ALLOY_VERSION}/org.alloytools.alloy.dist.jar" \
+    && echo "${ALLOY_SHA256}  ${ALLOY_JAR}" | sha256sum -c - \
+    && printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' 'exec java -jar "${ALLOY_JAR}" "$@"' > /usr/local/bin/alloy \
+    && chmod 0755 /usr/local/bin/alloy \
+    && bash /tmp/install_runtime_docs.sh /tmp/runtime-docs \
+    && rm -rf /tmp/install_runtime_docs.sh /tmp/runtime-docs /var/lib/apt/lists/*
+
+USER vscode
+WORKDIR /workspace

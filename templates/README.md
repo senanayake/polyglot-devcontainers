@@ -9,6 +9,7 @@ The repository currently provides starter templates:
 - `python-node-secure` - Polyglot Python + Node starter
 - `java-secure` - Java starter with Gradle
 - `research-runner` - Python + Node research experiment runner
+- `solver-runner` - Alloy, SMT, and database client solver runner
 - `latex` - LaTeX paper builder
 
 Each template is designed to satisfy the standard task contract with minimal

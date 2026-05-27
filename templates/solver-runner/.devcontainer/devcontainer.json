@@ -1,0 +1,29 @@
+{
+  "name": "solver-runner",
+  "image": "ghcr.io/senanayake/polyglot-devcontainers-solver-runner:main",
+  "postCreateCommand": "bash /usr/local/share/polyglot-devcontainers/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.analysis.typeCheckingMode": "basic",
+        "eslint.validate": [
+          "javascript",
+          "javascriptreact",
+          "typescript",
+          "typescriptreact"
+        ],
+        "java.configuration.updateBuildConfiguration": "automatic"
+      },
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "vscjava.vscode-java-pack"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}

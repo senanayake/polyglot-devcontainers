@@ -27,6 +27,8 @@ All images are available at `ghcr.io/senanayake/polyglot-devcontainers-*`:
 | `python-node:main` | Python 3.12 + Node 22 | Latest development version |
 | `java:latest` | Java 21 (Temurin) | Java applications, JVM services |
 | `java:main` | Java 21 (Temurin) | Latest development version |
+| `solver-runner:latest` | Python + Node + Java + solvers | Formal methods and data-modeling correctness checks |
+| `solver-runner:main` | Python + Node + Java + solvers | Latest development version |
 | `diagrams:latest` | Diagram tools | Documentation, architecture diagrams |
 | `diagrams:main` | Diagram tools | Latest development version |
 
@@ -120,7 +122,9 @@ Creating private scenarios following polyglot patterns:
 
 ## Real-World Example: Sententia
 
-The Sententia project successfully uses polyglot images as base for private services:
+The Sententia project uses polyglot images as base images for private services.
+The solver-runner image is the shared-image replacement for earlier private
+Alloy installs:
 
 **API Service (Node.js/TypeScript):**
 ```dockerfile
@@ -138,20 +142,18 @@ USER vscode
 CMD ["pnpm", "tsx", "src/index.ts"]
 ```
 
-**Formal Methods Service (Java):**
+**Formal Methods Service (solver runner):**
 ```dockerfile
-FROM ghcr.io/senanayake/polyglot-devcontainers-java:latest
-USER root
-RUN mkdir -p /opt/alloy && \
-    curl -fsSL "https://github.com/AlloyTools/org.alloytools.alloy/releases/download/v6.1.0/org.alloytools.alloy.dist.jar" \
-    -o /opt/alloy/alloy.jar
-COPY alloy-runner.sh /opt/alloy/
-RUN chmod +x /opt/alloy/alloy-runner.sh
+FROM ghcr.io/senanayake/polyglot-devcontainers-solver-runner:latest
+WORKDIR /workspace
+COPY models/ ./models/
+COPY scripts/ ./scripts/
 USER vscode
-ENTRYPOINT ["/opt/alloy/alloy-runner.sh"]
+CMD ["task", "ci"]
 ```
 
-Both images built and ran successfully with Podman.
+Validate downstream images with the same `task ci` contract before treating
+solver output as decision evidence.
 
 ---
 
@@ -245,7 +247,12 @@ ENV API_KEY=secret123
 - Building JVM applications
 - Need Java 21 (Temurin)
 - Spring Boot, Quarkus, etc.
-- Formal methods tools (Alloy, TLA+)
+
+### Choose `solver-runner` when:
+- Running Alloy/Kodkod checks
+- Running SMT-LIB checks with Z3 or cvc5
+- Combining solver receipts with Python or Node harnesses
+- Probing data-modeling correctness against SQL client fixtures
 
 ### Choose `diagrams` when:
 - Generating architecture diagrams

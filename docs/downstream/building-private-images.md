@@ -31,6 +31,7 @@ This guide shows you how to build private container images using polyglot-devcon
 |-------|-----------|-------|----------|
 | `python-node:latest` | Python 3.12, Node 22 | uv, pnpm, task | Full-stack apps, APIs |
 | `java:latest` | Java 21 (Temurin) | Gradle, task | JVM applications |
+| `solver-runner:latest` | Python, Node, Java | Alloy, Z3, cvc5, DB clients | Formal methods, data-modeling checks |
 | `diagrams:latest` | - | Mermaid, PlantUML | Documentation |
 
 ### Decision Matrix
@@ -46,7 +47,12 @@ This guide shows you how to build private container images using polyglot-devcon
 - ✅ Java 21 (Temurin JDK)
 - ✅ Gradle build system
 - ✅ JVM-based applications
-- ✅ Formal methods tools (Alloy, TLA+)
+
+**Choose `solver-runner` if you need:**
+- Alloy/Kodkod execution
+- SMT-LIB execution through Z3 or cvc5
+- SQLite and Postgres client probes
+- Python or Node harnesses around formal checks
 
 **Choose `diagrams` if you need:**
 - ✅ Diagram generation (Mermaid, PlantUML, Graphviz)

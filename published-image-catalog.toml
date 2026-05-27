@@ -134,3 +134,24 @@ examples = []
 docs = [
   { label = "Polyglot Research Runner Image", path = "docs/core/polyglot-research.md" },
 ]
+
+[images."polyglot-devcontainers-solver-runner"]
+target_id = "solver-runner"
+description = "Formal solver execution container for data-modeling correctness experiments."
+context = "."
+dockerfile = "templates/solver-runner/.devcontainer/Containerfile"
+devcontainer_json = "templates/solver-runner/.devcontainer/devcontainer.json"
+workdir = "/workspaces/polyglot-devcontainers/templates/solver-runner"
+verify_tag = "polyglot-devcontainers-solver-runner:verify"
+artifact_name = "solver-runner"
+medium_lane = true
+smoke_test = true
+smoke_test_run_scenarios = false
+starter_proofs = []
+templates = [
+  { label = "solver-runner", path = "templates/solver-runner/README.md" },
+]
+examples = []
+docs = [
+  { label = "Polyglot Solver Runner Image", path = "docs/core/polyglot-solver-runner.md" },
+]
